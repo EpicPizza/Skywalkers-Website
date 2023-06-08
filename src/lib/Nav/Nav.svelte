@@ -5,7 +5,7 @@
     import Menu from "$lib/Nav/Menu.svelte";
     let width: number;
 
-    $: $navmode = width <= 700 ? false : true; //false - reduced, true - full; used to disable menu on expand
+    $: $navmode = width <= 640 ? false : true; //false - reduced, true - full; used to disable menu on expand
 </script>
 
 <svelte:window bind:innerWidth={width}></svelte:window>

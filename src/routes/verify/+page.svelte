@@ -84,7 +84,7 @@
         <p class="text-red-500 dark:text-red-500 font-bold">{$message}</p>
     {/if}
     <div class="flex justify-between mt-8 items-center">
-        <button class="b-default" on:click={(event) => { event.preventDefault(); client.signOut(); }}>Sign out</button>
+        <button class="b-default" on:click={(event) => { event.preventDefault(); client.setRedirect("/"); client.signOut(); }}>Sign out</button>
         <button class="b-blue flex flex-row items-center sm:gap-[0.125rem] h-[2.125rem] before:content-[''] sm:before:content-['Next']"><Icon icon=arrow_forward scale="1.3rem"></Icon></button>
     </div>
 </form>

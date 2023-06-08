@@ -29,9 +29,7 @@
 
 <Background>
     <Page>
-        {#if $loading}
-            <Loading></Loading>
-        {:else if $client == undefined}
+        {#if $client == undefined}
             <h1 class="text-3xl text-center font-light">Skywalkers Team Website</h1>
             <p class="mt-4 text-center">This is only for team members to access team resources. Our public website can be found at <Link href="https://www.frcskywalkers.org/">frcskywalkers.org</Link>.</p>
             <SignIn></SignIn>   

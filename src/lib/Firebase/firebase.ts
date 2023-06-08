@@ -27,12 +27,13 @@ function firebaseClient() {
     const getApp = (): FirebaseApp => {
         if(app == undefined) {
             const firebaseConfig = {
-                apiKey: "AIzaSyDGM8cQ5m8Cnbbdf5N9iKdKs9ZWbDsyOq8",
-                authDomain: "skywalkers-operations-373322.firebaseapp.com",
-                projectId: "skywalkers-operations-373322",
-                storageBucket: "skywalkers-operations-373322.appspot.com",
-                messagingSenderId: "688324481368",
-                appId: "1:688324481368:web:89bec25378bef4cda7952d"
+                apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
+                authDomain: "frc-skywalkers.firebaseapp.com",
+                projectId: "frc-skywalkers",
+                storageBucket: "frc-skywalkers.appspot.com",
+                messagingSenderId: "86129312478",
+                appId: "1:86129312478:web:b06670457b876827e1784f",
+                measurementId: "G-GMZX3PY5H6"
             };
     
             app = initializeApp(firebaseConfig);
@@ -75,10 +76,24 @@ function firebaseClient() {
 
     const clientInit = () => {
         onAuthStateChanged(getAuth(), async (currentUser) => {
+            console.log(currentUser);
+            console.log(get(user));
+
             if(currentUser == null && typeof get(user) == 'object') {
                 user.set(undefined);
 
-                invalidateAll();
+                if(redirect != undefined) {
+                    console.log("REDIRECTING");
+                    console.log("/");
+
+                    await goto(redirect, {
+                        invalidateAll: true,
+                    });
+
+                    redirect = undefined;
+                } else {
+                    invalidateAll();
+                }
                 
                 return;
             } else if(currentUser == null && typeof get(user) == 'string') {
@@ -111,19 +126,22 @@ function firebaseClient() {
                     await goto(redirect);
 
                     await invalidateAll();
-                    loading.set(false);
+
                     redirect = undefined;
                 } else {
                     invalidateAll();
                 }
+                loading.set(false);
             } else if(currentUser != null) {
+                loading.set(false);
+
                 user.set(currentUser);
             }
         })
     }
 
     const signIn = async () => {
-        const fetched = await fetch('/session/logout', {
+        /*const fetched = await fetch('/session/logout', {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
@@ -132,7 +150,9 @@ function firebaseClient() {
 
         signOut();
 
-        user.set(undefined);
+        user.set(undefined);*/
+
+        getAuth().signOut();
         
         signInWithPopup(getAuth(), getProvider())
             .catch((error) => {

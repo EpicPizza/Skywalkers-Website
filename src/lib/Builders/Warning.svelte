@@ -6,6 +6,7 @@
     import colors, { current } from 'tailwindcss/colors'
     import { tweened } from 'svelte/motion';
     import { cubicOut } from "svelte/easing";
+    import { fade } from "svelte/transition";
 
     let color: string;
     let message: string;
@@ -62,12 +63,14 @@
     })
 </script>
 
-<div class="{popup ? "absolute" : "hidden"} bottom-0 left-0 ml-2 mb-2 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-2xl overflow-auto">
-    <div class="relative flex items-center p-4">
-        <p class="whitespace-nowrap">{message}</p>
-        <button class="b-clear ml-2" on:click={() => {popup = false;}}>
-            <Icon scale=1.75rem icon=close/>
-        </button>
+{#if popup}
+    <div out:fade class="absolute bottom-0 left-0 ml-2 mb-2 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-2xl overflow-auto">
+        <div class="relative flex items-center p-4">
+            <p class="whitespace-nowrap">{message}</p>
+            <button class="b-clear ml-2" on:click={() => {popup = false;}}>
+                <Icon scale=1.75rem icon=close/>
+            </button>
+        </div>
+        <div style="width: {$delay * 100}%; background-color: {color};" class="absolute h-1 bottom-0 left-0"></div>
     </div>
-    <div style="width: {$delay * 100}%; background-color: {color};" class="absolute h-1 bottom-0 left-0"></div>
-</div>
+{/if}
