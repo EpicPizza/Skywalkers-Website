@@ -1,0 +1,1 @@
+<div class="border-[3px] border-border-light border-t-black rounded-full dark:border-border-dark relative dark:border-t-white animate-spin w-7 h-7"></div>

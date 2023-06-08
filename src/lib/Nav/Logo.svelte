@@ -1,0 +1,1 @@
+<a href="/"><img alt="logo" src="/favicon.webp" class="max-h-[3rem] max-w-[3rem] rounded-lg"></a>
