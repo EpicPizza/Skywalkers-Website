@@ -1,15 +1,15 @@
+import type { User } from "firebase/auth";
 import { writable, type Readable, type Writable } from "svelte/store";
 import { get } from 'svelte/store';
 
-export const navmenu = writable(false);
-
 export const mode = createMode();
+
+export const navmenu = writable(false);
 export const scroll = writable<boolean>(true);
-
 export const navmode = writable<boolean>(); //false - reduced, true - full
-
 export const localLoading = writable<boolean>(); //on same page loading signals
 export const loading = writable<boolean>(); //on navigation loading
+export const team = writable<boolean>(false);
 
 interface Warning {
     color: 'red' | 'yellow' | 'aqua' | 'green' | 'default',
@@ -131,3 +131,37 @@ function createMode() {
         subscribe,
     }
 }
+
+    interface Link {
+        href: string,
+        display: string,
+        protected: boolean,
+    }
+
+export const navLinks: Writable<Link[]> = writable([
+    {
+        href: "/",
+        display: "Home",
+        protected: false,
+    },
+    {
+        href: "/resources",
+        display: "Resources",
+        protected: true,
+    },
+    {
+        href: "/tasks",
+        display: "Tasks",
+        protected: true,
+    },
+    {
+        href: "/meetings",
+        display: "Meetings",
+        protected: true,
+    },
+    {
+        href: "/reports",
+        display: "Reports",
+        protected: true,
+    }
+]);

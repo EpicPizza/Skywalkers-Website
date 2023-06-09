@@ -15,8 +15,8 @@ import Icon from "$lib/Builders/Icon.svelte";
             <div class="bg-border-light dark:bg-border-dark w-[1px] ml-3 -mr-1 h-4/6"></div>
             <p class="text-left ml-4">This Friday</p>
         </div>
-        <button class="rounded-full b-clear transition h-12 w-12 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-20 dark:hover:bg-opacity-20">
-            <Icon scale=1.5rem rounded={true} icon=more_vert/>
+        <button class="rounded-full b-clear transition h-8 w-8 mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
+            <Icon scale=1.25rem rounded={true} icon=more_vert/>
         </button>
     </button>
 </div>

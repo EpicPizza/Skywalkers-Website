@@ -21,5 +21,5 @@ export async function load({cookies, request, locals}) {
         user = undefined;
     }
 
-    return { mode: mode, preload: user };
+    return { mode: mode, team: locals.team, preload: user };
 }

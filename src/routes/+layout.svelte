@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onDestroy, onMount } from "svelte";
+
     import "../app.css";
-    import { mode, navmenu } from '$lib/stores';
+    import { mode, navmenu, team } from '$lib/stores';
     import Nav from '$lib/Nav/Nav.svelte'
     import Menu from "$lib/Nav/Menu.svelte";
     import { client } from "$lib/Firebase/firebase";

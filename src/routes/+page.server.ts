@@ -9,7 +9,6 @@ export async function load({cookies, request, locals, url}) {
     }
 
     return { 
-        team: locals.team,
         errors: {
             signedout: url.searchParams.get("signin") === 'true' ? true : false,
             verified: url.searchParams.get("alrverify") === 'true' ? true : false,
