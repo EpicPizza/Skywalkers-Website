@@ -6,13 +6,13 @@ import safeCompare from 'safe-compare';
 export async function load({ locals }) {
     if(locals.user == undefined) throw redirect(307, "/?signin=true");
 
-    if(locals.user.customClaims != undefined && locals.user.customClaims['team'] == true) {
+    if(locals.team) {
         throw redirect(307, "/?alrverify=true");
     }
 
     const db = firebaseAdmin.getFirestore();
 
-    const users = await db.collection('users').listDocuments();
+    const users = await db.collection('verify').listDocuments();
 
     let found: false | string = false;
     for(let i = 0; i < users.length; i++) {
@@ -20,7 +20,7 @@ export async function load({ locals }) {
             let data = (await users[i].get()).data();
             console.log("Found", data);
             if(data != undefined) {
-                found = data.verify;
+                found = data.code;
             };
         }
     }

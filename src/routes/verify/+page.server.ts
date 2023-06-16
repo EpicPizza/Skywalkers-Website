@@ -1,11 +1,11 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { late, z } from "zod";
-import { message, setError, superValidate } from 'sveltekit-superforms/server';
+import { z } from "zod";
+import { message, superValidate } from 'sveltekit-superforms/server';
 import { firebaseAdmin } from "$lib/Firebase/firebase.server.js";
 import crypto from 'crypto';
 import { Buffer } from 'node:buffer';
-import { navigating } from '$app/stores'
 import safeCompare from "safe-compare";
+import type { Firestore } from "firebase-admin/firestore";
 
 const StepOne = z.object({
     member_id: z.string({ required_error: "Personal code is empty", invalid_type_error: "Personal code must be a number" }).length(6, { message : "Personal code must be 6 numbers long" }).regex(/^[0-9]*$/, { message: "Personal code must be a number."}),
@@ -17,13 +17,13 @@ export async function load(event) {
         throw redirect(307, "/?signin=true");
     }
 
-    if(event.locals.user.customClaims != undefined && event.locals.user.customClaims['team'] == true) {
+    if(event.locals.team) {
         throw redirect(307, "/?alrverify=true");
     }
 
-    const db = firebaseAdmin.getFirestore();
+    const db: Firestore = firebaseAdmin.getFirestore();
 
-    const users = await db.collection('users').listDocuments();
+    const users = await db.collection('verify').listDocuments();
 
     let found: false | string = false;
     for(let i = 0; i < users.length; i++) {
@@ -31,7 +31,7 @@ export async function load(event) {
             let data = (await users[i].get()).data();
             console.log("Found", data);
             if(data != undefined) {
-                found = data.verify;
+                found = data.code;
             };
         }
     }
@@ -60,7 +60,7 @@ export const actions = {
     default: async ({ request, locals }) => {
         if(locals.user == undefined) { throw redirect(307, "/?signin=true"); }
 
-        if(locals.user.customClaims != undefined && locals.user.customClaims['team'] == true) {
+        if(locals.team) {
             throw redirect(307, "/?alrverify=true");
         }
 
@@ -86,11 +86,8 @@ export const actions = {
                         found = true;
                         console.log("Found", form.data.member_id.toString() + "-" + form.data.team_id.toString())
 
-                        await db.collection('users').doc(locals.user.uid).set({
-                            verify: form.data.member_id + "-" + form.data.team_id,
-                            photoURL: locals.user.photoURL,
-                            displayName: locals.user.displayName,
-                            email: locals.user.email,
+                        await db.collection('verify').doc(locals.user.uid).set({
+                            code: form.data.member_id + "-" + form.data.team_id,
                         })
 
                         throw redirect(307, "/verify/confirm");

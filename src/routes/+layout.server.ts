@@ -1,7 +1,3 @@
-import { getFirestore, Timestamp, FieldValue, Firestore } from 'firebase-admin/firestore';
-import { firebaseAdmin } from '$lib/Firebase/firebase.server';
-import { redirect } from '@sveltejs/kit';
-
 export const ssr = true;
 
 export async function load({cookies, request, locals}) {
@@ -15,11 +11,13 @@ export async function load({cookies, request, locals}) {
             displayName: locals.user.displayName,
             email: locals.user.email,
             uid: locals.user.uid,
+            team: locals.firestoreUser == undefined ? undefined : locals.firestoreUser.team,
+            role: locals.firestoreUser == undefined ? undefined : locals.firestoreUser.role,
             preload: true, //only exists for sake of comparing to real user object
         };
     } else {
         user = undefined;
     }
 
-    return { mode: mode, team: locals.team, preload: user };
+    return { mode: mode, preload: user, team: locals.team }; //do not use any of these directly, this layout load consistenly only runs on initial page load, instead used associated stores
 }

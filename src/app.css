@@ -2,24 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+    Hours wasted on making less than 300px screens work: 2hrs
+*/
+
 html {
     font-family: 'Nunito', sans-serif;
     min-width: 300px;
 }
-button:disabled {
+
+.b:disabled {
     @apply opacity-80;
 }
 
-button {
-    @apply transition-colors px-2 py-1 rounded-md border-[1px] font-medium dark:text-zinc-200 text-zinc-700 border-gray-300 dark:border-zinc-700
-}
-
 .b-menu {
-    @apply p-2 py-1 transition bg-black dark:bg-white bg-opacity-0 hover:bg-opacity-10 dark:bg-opacity-0 dark:hover:bg-opacity-10 cursor-pointer
+    @apply w-full b p-2 py-1 transition bg-black dark:bg-white bg-opacity-0 hover:bg-opacity-10 dark:bg-opacity-0 dark:hover:bg-opacity-10 cursor-pointer px-2 dark:text-zinc-200 text-zinc-700 border-gray-300 dark:border-zinc-700;
 }
 
 .b-blue {
-    @apply text-white bg-blue-600 hover:bg-opacity-90 disabled:bg-opacity-80 border-none;
+    @apply text-white dark:text-white bg-blue-600 hover:bg-opacity-90 disabled:bg-opacity-80 border-none  transition-colors px-2 py-1 rounded-md font-medium border-gray-300 dark:border-zinc-700;
+}
+
+.b-green {
+    @apply text-white dark:text-white bg-green-600 hover:bg-opacity-90 disabled:bg-opacity-80 border-none  transition-colors px-2 py-1 rounded-md font-medium border-gray-300 dark:border-zinc-700;
 }
 
 .b-clear {
@@ -27,15 +32,15 @@ button {
 }
 
 .b-bold {
-    @apply text-zinc-700 border-zinc-700 hover:bg-zinc-700 disabled:bg-white disabled:text-zinc-700 hover:text-white dark:text-zinc-200 dark:border-zinc-200 dark:hover:bg-zinc-200 dark:disabled:bg-inherit dark:hover:text-black dark:disabled:text-zinc-200
+    @apply b text-zinc-700 border-zinc-700 hover:bg-zinc-700 disabled:bg-white disabled:text-zinc-700 hover:text-white dark:text-zinc-200 dark:border-zinc-200 dark:hover:bg-zinc-200 dark:disabled:bg-inherit dark:hover:text-black dark:disabled:text-zinc-200  transition-colors px-2 py-1 rounded-md border-[1px] font-medium;
 }
 
 .b-default {
-    @apply text-zinc-400 border-zinc-200 hover:bg-zinc-200 disabled:bg-white disabled:text-zinc-200 hover:text-zinc-400 dark:text-zinc-400 dark:border-zinc-700 dark:hover:bg-zinc-700 dark:disabled:bg-inherit dark:disabled:text-zinc-700
+    @apply b text-zinc-400 border-zinc-200 hover:bg-zinc-200 disabled:bg-white disabled:text-zinc-200 hover:text-zinc-400 dark:text-zinc-400 dark:border-zinc-700 dark:hover:bg-zinc-700 dark:disabled:bg-inherit dark:disabled:text-zinc-700 transition-colors px-2 py-1 rounded-md border-[1px] font-medium;
 }
 
 .tooltip {
-    @apply hover:after:bg-black hover:after:p-1 hover:after:rounded-md hover:after:text-sm hover:after:text-white;
+    @apply b hover:after:bg-black hover:after:p-1 hover:after:rounded-md hover:after:text-sm hover:after:text-white;
 }
 
 .material-symbols-outlined {

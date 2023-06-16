@@ -10,7 +10,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@rgossiaux/svelte-headlessui": "^1.0.2",
+		"@rgossiaux/svelte-headlessui": "^2.0.0",
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.20.1",
 		"autoprefixer": "^10.4.14",
@@ -27,8 +27,13 @@
 	"type": "module",
 	"dependencies": {
 		"@types/safe-compare": "^1.1.0",
+		"date-and-time": "^3.0.1",
 		"firebase": "^9.19.1",
 		"firebase-admin": "^11.4.1",
-		"safe-compare": "^1.1.4"
+		"javascript-time-ago": "^2.5.9",
+		"js-search": "^2.0.1",
+		"relative-time-format": "^1.1.6",
+		"safe-compare": "^1.1.4",
+		"svelte-portal": "^2.2.0"
 	}
 }

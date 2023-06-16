@@ -1,19 +1,34 @@
 import type { User } from "firebase/auth";
-import { writable, type Readable, type Writable } from "svelte/store";
+import { writable, type Readable, type Writable, type Unsubscriber } from "svelte/store";
 import { get } from 'svelte/store';
+import type { firebaseClient } from '$lib/Firebase/firebase';
+import type { DocumentReference } from "firebase/firestore";
 
 export const mode = createMode();
+export const verified = createVerified();
 
 export const navmenu = writable(false);
 export const scroll = writable<boolean>(true);
 export const navmode = writable<boolean>(); //false - reduced, true - full
 export const localLoading = writable<boolean>(); //on same page loading signals
 export const loading = writable<boolean>(); //on navigation loading
-export const team = writable<boolean>(false);
+export const dialogOpen = writable<boolean>();
 
 interface Warning {
     color: 'red' | 'yellow' | 'aqua' | 'green' | 'default',
     message: string,
+}
+
+export interface Meeting {
+    lead: DocumentReference,
+    location: string,
+    mentor: DocumentReference,
+    name: string,
+    synopsis: DocumentReference,
+    when_end: Date,
+    when_start: Date, 
+    thumbnail: string,
+    id: string,
 }
 
 export const warning = writable<Warning | undefined>(undefined);
@@ -97,6 +112,8 @@ function createMode() {
 
     const updateScheme = (theme: string) => {
         document.documentElement.style.colorScheme = theme;
+        document.body.classList.remove(theme == 'dark' ? 'light' : 'dark');
+        document.body.classList.add(theme)
     }
 
     const toggle = () => {
@@ -132,11 +149,41 @@ function createMode() {
     }
 }
 
-    interface Link {
-        href: string,
-        display: string,
-        protected: boolean,
+function createVerified() {
+    const {subscribe, set, update} = writable<boolean>();
+    let unsubscribe: Unsubscriber | undefined = undefined;
+
+    const serverInit = (value: boolean) => {
+        set(value);
     }
+
+    const clientInit = (client: ReturnType<typeof firebaseClient>) => {
+        if(unsubscribe != undefined) { //just for development weirdness
+            unsubscribe();
+            unsubscribe = undefined;
+        }
+
+        unsubscribe = client.subscribe((value) => {
+            if(value == undefined || value.team == undefined) {
+                set(false);
+            } else {
+                set(true);
+            }
+        })
+    }
+
+    return {
+        subscribe: subscribe,
+        clientInit: clientInit,
+        serverInit: serverInit,
+    }
+}
+
+interface Link {
+    href: string,
+    display: string,
+    protected: boolean,
+}
 
 export const navLinks: Writable<Link[]> = writable([
     {
@@ -165,3 +212,22 @@ export const navLinks: Writable<Link[]> = writable([
         protected: true,
     }
 ]);
+
+//https://svelte.dev/repl/0ace7a508bd843b798ae599940a91783?version=3.16.7
+export function clickOutside(node: HTMLElement) {
+    const handleClick = (event: any) => {
+        if (node && !node.contains(event.target) && !event.defaultPrevented) {
+            node.dispatchEvent(
+                new CustomEvent('click_outside', node as any)
+            )
+        }
+    }
+
+    document.addEventListener('click', handleClick, true);
+
+    return {
+        destroy() {
+            document.removeEventListener('click', handleClick, true);
+        }
+    }
+}

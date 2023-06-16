@@ -1,11 +1,13 @@
 import type { UserRecord } from 'firebase-admin/auth';
+import type { FirestoreUser } from '$lib/Firebase/firebase';
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			user: UserRecord | null
+			user: UserRecord | undefined
+			firestoreUser: FirestoreUser | undefined,
 			team: boolean,
 		}
 		// interface PageData {}

@@ -5,15 +5,17 @@ import { DocumentReference } from "firebase/firestore";
 import safeCompare from "safe-compare";
 
 export const load = async ({ locals }) => {
-    if(locals.user == undefined) throw redirect(307, "/?signin=true");
+    if(locals.user == undefined) {
+        throw redirect(307, "/?signin=true");
+    }
 
-    if(locals.user.customClaims != undefined && locals.user.customClaims['team'] == true) {
+    if(locals.team) {
         throw redirect(307, "/?alrverify=true");
     }
 
     const db = firebaseAdmin.getFirestore();
 
-    const users = await db.collection('users').listDocuments();
+    const users = await db.collection('verify').listDocuments();
 
     let ref;
 
@@ -24,7 +26,7 @@ export const load = async ({ locals }) => {
             console.log("Found", data);
             if(data != undefined) {
                 ref = users[i];
-                found = data.verify;
+                found = data.code;
             };
         }
     }
@@ -32,13 +34,17 @@ export const load = async ({ locals }) => {
     if(found == false) {
         throw redirect(307, "/verify?invalid=true");
     } else {
-        const members = (await db.collection('teams').doc(found.split("-")[1]).get()).data() as Object;
+        const members = (await db.collection('teams').doc(found.split("-")[1]).get()).data() as any;
 
         const entries = Object.keys(members);
 
+        let role;
         let foundMember: boolean = false;
         for(let i = 0; i < entries.length; i++) {
             if(safeCompare(found.split("-")[0], entries[i])) {
+
+                role = members[found.split("-")[0] as any];
+
                 await db.collection('teams').doc(found.split("-")[1]).update({
                     [found.split("-")[0]]: FieldValue.delete(),
                 });
@@ -48,21 +54,34 @@ export const load = async ({ locals }) => {
         }
 
         if(foundMember) {
-            await firebaseAdmin.getAuth().setCustomUserClaims(locals.user.uid, { team: true });
-
-            const users = await (db.collection('users').where('verify', '==', found).get())
+            const users = await (db.collection('verify').where('code', '==', found).get())
 
             if(!users.empty) {
                 users.forEach(async (doc) => {
-                    if(doc.id != locals.user?.uid) {
+                    if(locals.user != undefined && doc.id != locals.user.uid) {
                         await doc.ref.delete();
                     }
                 })
             }
 
+            if(role == undefined) {
+                throw redirect(307, "/verify?invalid=true");
+            }
+
+            db.collection('users').doc(locals.user.uid).set({
+                displayName: locals.user.displayName,
+                photoURL: locals.user.photoURL,
+                team: found.split("-")[1],
+                role: role,
+            })
+
             throw redirect(307, "/");
         } else {
-            await ref?.delete();
+            if(ref == undefined) {
+                throw redirect(307, "/verify?invalid=true");
+            }
+
+            await ref.delete();
             throw redirect(307, "/verify?invalid=true");
         }
     }

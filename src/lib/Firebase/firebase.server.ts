@@ -83,8 +83,8 @@ export function verifySession(session: string | undefined) {
     })
 }
 
-export function getUser(session: string): Promise<UserRecord | null> {
-    return new Promise<UserRecord | null>((resolve) => {
+export function getUser(session: string): Promise<UserRecord | undefined> {
+    return new Promise<UserRecord | undefined>((resolve) => {
         firebaseAdmin.getAuth()
             .verifySessionCookie(session, true)
                 .then((decodedToken) => {
@@ -92,14 +92,14 @@ export function getUser(session: string): Promise<UserRecord | null> {
                     return;
                 })
                 .catch((error) => {
-                    resolve(null);
+                    resolve(undefined);
                     return;
                 })
     })
 }
 
-export function getToken(session: string): Promise<DecodedIdToken | null> {
-    return new Promise<DecodedIdToken | null>((resolve) => {
+export function getToken(session: string): Promise<DecodedIdToken | undefined> {
+    return new Promise<DecodedIdToken | undefined>((resolve) => {
         firebaseAdmin.getAuth()
             .verifySessionCookie(session, true)
                 .then((decodedToken) => {
@@ -107,7 +107,7 @@ export function getToken(session: string): Promise<DecodedIdToken | null> {
                     return;
                 })
                 .catch((error) => {
-                    resolve(null);
+                    resolve(undefined);
                     return;
                 })
     })

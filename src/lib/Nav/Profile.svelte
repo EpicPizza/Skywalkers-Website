@@ -17,7 +17,7 @@
         <MenuButton class="b-clear flex flex-row-reverse">
             <img referrerpolicy="no-referrer" alt="profile" src="{$client.photoURL}" class="h-10 w-10 rounded-full">
         </MenuButton>
-        <MenuItems class="bg-white absolute dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-shadow-light dark:shadow-shadow-dark shadow-xl translate-y-2 {$navmode == true ? 'right-2' : 'right-0'} box-border border-[1px] rounded-lg overflow-y-auto flex-col flex p-2 max-w-none">
+        <MenuItems class="bg-white absolute dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-shadow-light dark:shadow-shadow-dark shadow-lg translate-y-2 {$navmode == true ? 'right-2' : 'right-0'} box-border border-[1px] rounded-lg overflow-y-auto flex-col flex p-2 max-w-none">
             <MenuItem disabled href="/settings" class="p-2 py-1 rounded-t-md rounded-sm cursor-default">
                 <div class="flex flex-row items-center">
                     <img referrerpolicy="no-referrer" alt="profile" src="{$client.photoURL}" class="h-14 w-14 rounded-full">

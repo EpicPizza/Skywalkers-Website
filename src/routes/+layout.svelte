@@ -1,21 +1,22 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
-
+    import { onMount } from "svelte";
     import "../app.css";
-    import { mode, navmenu, team } from '$lib/stores';
+    import { verified, mode } from '$lib/stores';
     import Nav from '$lib/Nav/Nav.svelte'
-    import Menu from "$lib/Nav/Menu.svelte";
     import { client } from "$lib/Firebase/firebase";
     import Warning from '$lib/Builders/Warning.svelte';
+    import Footer from "$lib/Footer/Footer.svelte";
 
     export let data;
 
     mode.serverInit(data.mode);
     client.serverInit(data.preload);
+    verified.serverInit(data.team);
 
     onMount(() => {
         mode.clientInit();
         client.clientInit();
+        verified.clientInit(client);
 
         console.log("\n\n███████╗██╗  ██╗██╗   ██╗██╗    ██╗ █████╗ ██╗     ██╗  ██╗███████╗██████╗ ███████╗\n██╔════╝██║ ██╔╝╚██╗ ██╔╝██║    ██║██╔══██╗██║     ██║ ██╔╝██╔════╝██╔══██╗██╔════╝\n███████╗█████╔╝  ╚████╔╝ ██║ █╗ ██║███████║██║     █████╔╝ █████╗  ██████╔╝███████╗\n╚════██║██╔═██╗   ╚██╔╝  ██║███╗██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗╚════██║\n███████║██║  ██╗   ██║   ╚███╔███╔╝██║  ██║███████╗██║  ██╗███████╗██║  ██║███████║\n╚══════╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝\n\n");
     })
@@ -26,11 +27,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,700,0,0" />
 </svelte:head>
 
-<div class="{$mode}">
-  <div class="dark:bg-zinc-800">
-    <Nav></Nav>
-    <slot></slot>
-  </div>
-  <Warning></Warning>
-  <!--<Profile></Profile>-->
+<div class="dark:bg-zinc-800">
+  <Nav></Nav>
+  <slot></slot>
 </div>
+<Warning></Warning>

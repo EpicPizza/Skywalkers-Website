@@ -1,5 +1,5 @@
 <script lang=ts>
-    import { navLinks, navmenu, navmode, team } from "$lib/stores";
+    import { navLinks, navmenu, navmode, verified } from "$lib/stores";
     import { onDestroy } from "svelte";
     import ThemeSwitcher from "./ThemeSwitcher.svelte";
     import { browser } from '$app/environment'; 
@@ -34,19 +34,17 @@
     });
 
     let width: number;
-
-    $: console.log("Team", $team);
 </script>
 
 <svelte:window on:keydown={keypress} bind:innerWidth={width}></svelte:window>
 
 {#if $navmenu}
-    <div transition:fly="{{ opacity: 1, duration: 300, easing: quintOut, x: -width}}" class="h-[calc(100dvh-4rem)] bg-slate-100 dark:bg-zinc-900 600 min-w-[300px] w-full bottom-0 left-0 flex flex-col items-center justify-between p-4 z-0">
+    <div transition:fly="{{ opacity: 1, duration: 300, easing: quintOut, x: -width}}" class="h-[calc(100dvh-4rem)] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-full left-0 flex flex-col items-center justify-between p-4">
         <div class="w-full overflow-scroll">
             <div class="w-full">
                 <hr>
                 {#each $navLinks as link}
-                    {#if false}
+                    {#if link.protected && $verified === false}
                         <!-- svelte-ignore a11y-missing-attribute -->
                         <a class="opacity-50 hover:bg-opacity-0 dark:hover:bg-opacity-0 w-full p-4 flex flex-col items-center cursor-not-allowed">{link.display}</a>
                     {:else} 

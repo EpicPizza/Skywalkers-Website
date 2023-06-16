@@ -2,8 +2,8 @@ import { goto, invalidateAll } from "$app/navigation";
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { type Auth, getAuth as getFirebaseAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, browserLocalPersistence, initializeAuth, browserPopupRedirectResolver, type User, signInWithRedirect, signInWithPopup } from "firebase/auth";
 import { get, writable, type Writable } from "svelte/store";
-import { getFirestore as getFirebaseFirestore, type Firestore } from "firebase/firestore";
-import { loading } from "$lib/stores";
+import { getFirestore as getFirebaseFirestore, type Firestore, type Unsubscribe, doc, getDoc, onSnapshot } from "firebase/firestore";
+import { loading, verified } from "$lib/stores";
 import { navigating } from "$app/stores";
 
 export const client = firebaseClient();
@@ -14,15 +14,38 @@ interface Preload {
     displayName: string | undefined,
     uid: string,
     preload: boolean,
+    team: string | undefined,
+    role: string | undefined,
 }
 
-function firebaseClient() {
+export interface FirestoreUser {
+    displayName: string,
+    photoURL: string,
+    role: string,
+    team: string,
+}
+
+export interface SecondaryUser extends FirestoreUser {
+    id: string,
+}
+
+export interface UndefinedFirestoreUser {
+    role: undefined,
+    team: undefined,
+}
+
+type VerifiedUser = FirestoreUser & User;
+type NonverifiedUser = UndefinedFirestoreUser & User;
+
+export function firebaseClient() {
     let app: FirebaseApp | undefined = undefined;
     let auth: Auth | undefined = undefined;
-    let user: Writable<User | Preload | undefined> = writable(undefined);
+    let user: Writable<NonverifiedUser | Preload | VerifiedUser | undefined> = writable(undefined);
     let provider: GoogleAuthProvider | undefined = undefined;
     let firestore: Firestore | undefined = undefined;
     let redirect: string | undefined = undefined;
+    let unsubscribe: Unsubscribe | undefined = undefined;
+    let cachedUsers: Map<string, SecondaryUser> = new Map();
 
     const getApp = (): FirebaseApp => {
         if(app == undefined) {
@@ -76,9 +99,6 @@ function firebaseClient() {
 
     const clientInit = () => {
         onAuthStateChanged(getAuth(), async (currentUser) => {
-            console.log(currentUser);
-            console.log(get(user));
-
             if(currentUser == null && typeof get(user) == 'object') {
                 user.set(undefined);
 
@@ -120,12 +140,25 @@ function firebaseClient() {
                     }
                 });
 
-                user.set(currentUser);
+                const firestoreUser = await getFirestoreUser(currentUser.uid);
+
+                if(firestoreUser == undefined) {
+                    user.set({
+                        ...currentUser,
+                        role: undefined,
+                        team: undefined
+                    });
+                } else {
+                    user.set({
+                        ...currentUser,
+                        ...firestoreUser,
+                    })
+                }
 
                 if(redirect != undefined) {
-                    await goto(redirect);
-
-                    await invalidateAll();
+                    await goto(redirect, {
+                        invalidateAll: true
+                    });
 
                     redirect = undefined;
                 } else {
@@ -133,25 +166,57 @@ function firebaseClient() {
                 }
                 loading.set(false);
             } else if(currentUser != null) {
-                loading.set(false);
+                const firestoreUser = await getFirestoreUser(currentUser.uid);
 
-                user.set(currentUser);
+                if(firestoreUser == undefined) {
+                    user.set({
+                        ...currentUser,
+                        role: undefined,
+                        team: undefined
+                    });
+                } else {
+                    user.set({
+                        ...currentUser,
+                        ...firestoreUser,
+                    })
+                }
+
+                loading.set(false);
             }
         })
     }
 
-    const signIn = async () => {
-        /*const fetched = await fetch('/session/logout', {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/json',
+    const getFirestoreUser = async (id: string): Promise<FirestoreUser | undefined> => {
+        const db = getFirestore();
+
+        const userRef = doc(db, "users", id);
+        const userData = (await getDoc(userRef)).data();
+
+        if(unsubscribe != undefined) {
+            unsubscribe();
+        }
+
+        unsubscribe = onSnapshot(userRef, (snapshot) => {
+            if(snapshot.data() == undefined) { //means user was unverified, easiest way to handle unverfication is just to signout :/
+                if(get(verified) == true) {
+                    signOut();
+                }
+            } else {
+                const currentUser = get(user);
+
+                if(!(currentUser == undefined || 'prelaod' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
+                    user.set({
+                        ...currentUser,
+                        ...snapshot.data() as FirestoreUser,
+                    })
+                }
             }
-        });
+        })
 
-        signOut();
+        return userData as FirestoreUser | undefined;
+    }
 
-        user.set(undefined);*/
-
+    const signIn = async () => {
         getAuth().signOut();
         
         signInWithPopup(getAuth(), getProvider())
@@ -189,6 +254,45 @@ function firebaseClient() {
         getAuth().signOut();
     }
 
+    const getUser = async (id: string): Promise<SecondaryUser | undefined> => {
+        const cache = cachedUsers.get(id);
+
+        if(cache != undefined) {
+            return cache;
+        } else {
+            let currentUser = get(user);
+            if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) {
+                currentUser = await new Promise<VerifiedUser>((resolve) => {
+                    user.subscribe((value) => {
+                        if(value == undefined || 'preload' in value || value.team == undefined) return;
+
+                        resolve(value);
+                    })
+                })
+            }
+
+            const db = getFirestore();
+
+            const requestedUser = (await getDoc(doc(db, "users", id))).data();
+
+            if(requestedUser == undefined) return undefined;
+
+            return {
+                ... requestedUser,
+                id: id
+            } as SecondaryUser;
+        }
+    }
+
+    const cacheUser = (cachingUser: SecondaryUser) => {
+        if(cachedUsers.get(cachingUser.id) == undefined) {
+            cachedUsers.set(cachingUser.id, cachingUser);
+        }
+        console.log("Cached Users", cachedUsers);
+    }
+
+    $: console.log("Cached Users", cachedUsers);
+
     return {
         subscribe: user.subscribe,
         set: user.set,
@@ -199,5 +303,9 @@ function firebaseClient() {
         reset: reset,
         serverInit: serverInit,
         setRedirect: (value: string) => { redirect = value; },
+        getFirestore: getFirestore,
+        getApp: getApp,
+        cacheUser: cacheUser,
+        getUser: getUser,
     }
 }
