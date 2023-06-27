@@ -38,6 +38,8 @@ export const handle = (async ({ event, resolve}) => {
 	const response = await resolve(event, {
         transformPageChunk: ({ html }) => html.replaceAll('%theme%', scheme),
     });
+    
+    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
     return response;
 }) satisfies Handle;

@@ -75,7 +75,7 @@ export const load = async ({ locals }) => {
                 role: role,
             })
 
-            throw redirect(307, "/");
+            throw redirect(307, "/?invalidateAll=true");
         } else {
             if(ref == undefined) {
                 throw redirect(307, "/verify?invalid=true");

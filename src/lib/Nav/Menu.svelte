@@ -40,7 +40,7 @@
 
 {#if $navmenu}
     <div transition:fly="{{ opacity: 1, duration: 300, easing: quintOut, x: -width}}" class="h-[calc(100dvh-4rem)] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-full left-0 flex flex-col items-center justify-between p-4">
-        <div class="w-full overflow-scroll">
+        <div class="w-full overflow-auto">
             <div class="w-full">
                 <hr>
                 {#each $navLinks as link}

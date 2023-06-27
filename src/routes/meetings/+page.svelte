@@ -5,13 +5,19 @@
     import Time from "$lib/Builders/Time.svelte";
     import format from "date-and-time";
     import meridiem from 'date-and-time/plugin/meridiem';
+    import { add, remove } from "$lib/Meetings/signups.js";
+    import { invalidate } from "$app/navigation";
 
     format.plugin(meridiem);
 
     export let data;
 </script>
 
-<div class="min-h-[calc(100dvh-7rem)] w-full overflow-x-scroll">
+<svelte:head>
+    <title>Skywalkers | {data.completed ? "Completed" : "Active"} Meetings</title>
+</svelte:head>
+
+<div class="min-h-[calc(100dvh-7rem)] w-full overflow-x-auto">
     <div class="min-w-[640px]">
         <div class="p-4 pb-2">
             {#each data.meetings as meeting}
@@ -32,12 +38,27 @@
                         <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
                             <Icon scale=1.25rem rounded={true} icon=more_vert/>
                         </MenuButton>
-                        <MenuItems class="absolute right-6 bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark w-32">
+                        <MenuItems class="absolute right-6 bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
                             <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Edit
                             </MenuItem>
-                            <MenuItem on:click={(event) => { event.preventDefault(); event.stopPropagation(); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Sign up
+                            <MenuItem on:click={async (event) => { 
+                                event.preventDefault(); 
+                                event.stopPropagation(); 
+
+                                if(meeting.signedup) {
+                                    await remove(meeting.id);
+                                } else {
+                                    await add(meeting.id);
+                                }
+
+                                meeting.signedup = !meeting.signedup; //firebase handles update in background, not sure if i can rely on await...
+                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                {#if meeting.signedup}
+                                    Leave
+                                {:else}
+                                    Sign Up
+                                {/if}
                             </MenuItem>
                         </MenuItems>
                     </Menu>
@@ -49,14 +70,13 @@
             {/each}
         </div>
     </div>
+    {#if !data.completed}
+        <a href="/meetings/add" class="m-4 absolute items-center bottom-12 px-4 right-0 pr-5 py-3 bg-backgroud-light flex dark:bg-backgroud-dark border-[1px] border-border-light dark:border-border-dark rounded-full shadow-lg shadow-shadow-light dark:shadow-shadow-dark hover:brightness-[95%] transition w-fit">
+            <Icon class="mr-1" scale=2rem icon=add></Icon>
+            <p class="text-lg">Create Meeting</p>
+        </a>
+    {/if}
 </div>
-
-{#if !data.completed}
-    <a href="/meetings/add" class="m-4 absolute flex items-center bottom-12 right-0 px-4 pr-5 py-3 bg-backgroud-light dark:bg-backgroud-dark border-[1px] border-border-light dark:border-border-dark rounded-full shadow-lg shadow-shadow-light dark:shadow-shadow-dark hover:brightness-[95%] transition">
-        <Icon class="mr-1" scale=2rem icon=add></Icon>
-        <p class="text-lg">Create Meeting</p>
-    </a>
-{/if}
 
 <div class="h-12 sticky z-10 bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
     <a href=/meetings class="w-full text-center my-1.5 rounded-md bg-black dark:bg-white {data.completed ? "bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-opacity-20 dark:bg-opacity-20 cursor-not-allowed"} transition flex justify-around items-center">

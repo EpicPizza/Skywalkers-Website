@@ -16,17 +16,19 @@
     $: $dialogOpen = isOpen;
 
     let height: number;
+
+    export let initialFocus: HTMLElement;
 </script>
 
 <svelte:window bind:innerHeight={height}></svelte:window>
 
 {#if isOpen}
-    <div transition:fade use:portal class="fixed w-screen h-screen top-0 left-0 bg-black opacity-40 z-40"></div>
+    <div in:fade out:fade="{{ delay: 100 }}" use:portal class="fixed w-screen h-screen top-0 left-0 bg-black opacity-40 z-40"></div>
 {/if}
 
 {#if isOpen}
-    <Dialog open={isOpen} on:close={() => (isOpen = false)}>
-        <div transition:fly="{{ delay: 200, y: height }}" class="fixed w-[32rem] max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl z-40">
+    <Dialog open={isOpen} bind:initialFocus={initialFocus} on:close={() => (isOpen = false)}>
+        <div in:fly="{{ delay: 100, y: height }}" out:fly="{{ y: height }}" class="fixed w-[32rem] max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl z-40">
             <div class="h-full w-full relative">
                 <DialogTitle><slot name="title"></slot></DialogTitle>
         

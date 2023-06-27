@@ -45,10 +45,6 @@
     });
 </script>
 
-<svelte:head>
-    <title>Skywalkers | Verify</title>
-</svelte:head>
-
 <h1 class="text-3xl font-light">Verification:</h1>
 <p class="text-md mt-6">To access the team website, you need to verify that you are part of our team. Enter the codes sent to your email here:</p>
 <form method="POST" use:enhance>

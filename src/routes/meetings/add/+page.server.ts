@@ -20,7 +20,7 @@ export const actions = {
         if(!locals.team || locals.firestoreUser == undefined) throw redirect(307, "/verify");
 
         const form = await superValidate(request, meetingSchema);
-
+        
         console.log(form.data);
 
         if(!form.valid) {

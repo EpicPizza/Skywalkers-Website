@@ -6,7 +6,6 @@ export const POST = (async ({ request, locals, cookies }) => {
     const data = await request.json();
 
     if(data.search == false || data.search == undefined) {
-        console.log(data.range);
 
         var start = data.range * 100;
         var end = (data.range + 1) * 100;

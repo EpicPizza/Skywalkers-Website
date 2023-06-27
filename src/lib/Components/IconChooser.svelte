@@ -4,7 +4,7 @@
 
 <script lang=ts>
     import Dialog from '$lib/Builders/Dialog.svelte';
-    import Loading from '$lib/Builders/Loading.svelte';
+    import Loading from '$lib/Builders/Loading.svelte'
     import { onMount } from 'svelte';
     import { fly } from 'svelte/transition';
     import Icon from '$lib/Builders/Icon.svelte';
@@ -45,7 +45,6 @@
             let cancle = setInterval(() => {
                 if(container && scroll()) {
                     clearInterval(cancle);
-                    console.log("CHECKING");
                 }
             }, 100);
         } else {
@@ -74,8 +73,6 @@
 
             icons = icons.concat(recievedIcons);
 
-            console.log("Icons", icons);
-
             if(recievedIcons.length < 100) {
                 range = -1;
             } else {
@@ -100,18 +97,15 @@
 
     function handleClick() {
         open = !open;
-        console.log("clicked"); 
         let cancle = setInterval(() => {
             if(container && scroll()) {
                 clearInterval(cancle);
-                console.log("CHECKING");
             }
         }, 100);
     }
 
     async function getIcons(page: number): Promise<string[]> {
         let cache = cachedIcons.get(page);
-        console.log(cache);
         if(cache == undefined) {
             const result = await fetch("/api/icons", {
                 method: 'POST',
@@ -126,6 +120,8 @@
             let recievedIcons = (await result.json()).icons;
 
             cachedIcons.set(page, recievedIcons);
+
+            console.log("Fetched Icons (" + page + ")");
 
             return recievedIcons;
         } else {
@@ -143,7 +139,7 @@
                 },
                 body: JSON.stringify({
                     search: true,
-                    query: query
+                    query: query.toLowerCase()
                 }),
             });
 
@@ -151,11 +147,15 @@
 
             cachedIcons.set(query, recievedIcons);
 
+            console.log("Fetched Icons (" + query + ")"); 
+
             return recievedIcons;
         } else {
             return cache;
         }
     }
+
+    let initialFocus: HTMLElement;
 </script>
 
 <input type='text' bind:value name={name} class={style}/>
@@ -163,7 +163,7 @@
     <Icon scale=1.25rem icon=menu_open></Icon>
 </button>
 
-<Dialog bind:isOpen={open}>
+<Dialog bind:isOpen={open} bind:initialFocus>
     <h1 class="text-2xl" slot=title>Choose an Icon</h1>
 
     <div slot=description class="flex mt-4 mb-4">
@@ -171,7 +171,7 @@
         <button class="px-2 h-[2.125rem] ml-2 bg-blue-500 text-white dark:text-white rounded-md hover:opacity-95 transition" on:click={() => { filter(""); searching = "";}} id="iconsearchbutton">Clear</button>
     </div>
 
-    <div slot=content bind:this={container} on:scroll={scroll} class="h-[calc(100dvh-17rem)] /* <<< skull emoji */ overflow-scroll overflow-y-visible pb-2">
+    <div slot=content bind:this={container} on:scroll={scroll} class="h-[calc(100dvh-17rem)] /* <<< skull emoji */ overflow-auto overflow-y-visible pb-2">
         <div class="sticky top-0">
             <Line></Line>
         </div>
@@ -199,10 +199,10 @@
     <Line></Line>
 
     <div class="w-full flex flex-row-reverse mt-4">
-        <button on:click={() => {value = "icon:" + selected; console.log(value); open = false}} class="b-green ml-2">
+        <button on:click={() => {value = "icon:" + selected; open = false}} class="b-green ml-2">
             Select
         </button>
-        <button on:click={() => {open = false;}} class="b-default">
+        <button bind:this={initialFocus} on:click={() => {open = false;}} class="b-default">
             Cancel
         </button>
     </div>

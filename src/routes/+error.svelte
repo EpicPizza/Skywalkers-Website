@@ -4,7 +4,7 @@
     import SignIn from "$lib/Firebase/SignIn.svelte";
     import { page } from '$app/stores';
     import Link from "$lib/Builders/Link.svelte";
-    import Footer from "$lib/Footer/Footer.svelte";
+    import Footer from "$lib/Nav/Footer.svelte";
 </script>
 
 <Background>

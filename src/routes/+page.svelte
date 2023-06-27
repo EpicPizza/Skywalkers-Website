@@ -1,4 +1,5 @@
 <script lang=ts>
+    import { invalidateAll } from "$app/navigation";
     import Background from "$lib/Builders/Background.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Link from "$lib/Builders/Link.svelte";
@@ -6,8 +7,9 @@
     import Page from "$lib/Builders/Page.svelte";
     import SignIn from "$lib/Firebase/SignIn.svelte";
     import { client } from "$lib/Firebase/firebase";
-    import Footer from "$lib/Footer/Footer.svelte";
+    import Footer from "$lib/Nav/Footer.svelte";
     import { loading, mode, verified, warning } from "$lib/stores";
+    import { onMount } from "svelte";
 
     export let data;
 

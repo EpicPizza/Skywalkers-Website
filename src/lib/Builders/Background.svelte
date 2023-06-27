@@ -4,7 +4,7 @@
 
 </script>
 
-<div class="p-4 flex flex-col justify-around items-center h-[calc(100dvh-4rem)] w-full bg-white dark:bg-zinc-800 bg-opacity-70 {$mode == 'dark' ? "pattern_dark" : "pattern_light"}">
+<div class="p-4 flex flex-col justify-around items-center h-[calc(100svh-4rem)] w-full bg-white dark:bg-zinc-800 bg-opacity-70 {$mode == 'dark' ? "pattern_dark" : "pattern_light"}">
     <slot></slot>
 </div>
 

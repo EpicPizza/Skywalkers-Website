@@ -1,6 +1,5 @@
 import { DEV } from "$env/static/private";
-import { error, json, type RequestHandler } from "@sveltejs/kit";
-import { getAuth as adminAuth } from "firebase-admin/auth";
+import { json, type RequestHandler } from "@sveltejs/kit";
 
 export const POST = (async ({ request, cookies }) => {
     cookies.delete("session", {path: "/", sameSite: true});

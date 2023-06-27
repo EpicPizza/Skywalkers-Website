@@ -64,7 +64,7 @@
 </script>
 
 {#if popup}
-    <div out:fade class="absolute bottom-0 left-0 ml-2 mb-2 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-2xl overflow-auto">
+    <div out:fade class="fixed bottom-0 left-0 ml-2 mb-2 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-2xl overflow-auto z-50">
         <div class="relative flex items-center p-4">
             <p class="whitespace-nowrap">{message}</p>
             <button class="b-clear ml-4" on:click={() => {popup = false;}}>

@@ -18,6 +18,10 @@
     });
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Edit Meeting</title>
+</svelte:head>
+
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
     <div class="w-[36rem]">
         <div class="w-full flex justify-between">
@@ -37,35 +41,35 @@
         <Line class="mb-4"></Line>
         <h1 class="text-2xl">Edit Meeting:</h1>
         <form method="POST" use:enhance>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Name:</p>
                 <input name=name bind:value={$form.name} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Location:</p>
                 <input name=location bind:value={$form.location} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Starts:</p>
                 <TimeInput name=starts bind:date={$form.starts} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Ends:</p>
                 <TimeInput name=ends bind:date={$form.ends} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Thumbnail:</p>
                 <IconChooser name=thumbnail bind:value={$form.thumbnail} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></IconChooser>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Lead:</p>
                 <PersonChooser name=lead bind:value={$form.lead} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></PersonChooser>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Mentor:</p>
                 <PersonChooser name=mentor bind:value={$form.mentor} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></PersonChooser>
             </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[275px] max-w-[75%]">
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg">Synopsis:</p>
                 <PersonChooser name=synopsis bind:value={$form.synopsis} class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></PersonChooser>
             </div>

@@ -33,7 +33,7 @@ export async function load({ params, locals }) {
         id: params.slug as string,
     }
 
-    if(meeting.lead.team != locals.firestoreUser.team || meeting.synopsis.team != locals.firestoreUser.team || meeting.mentor.team != locals.firestoreUser.team) throw error(500, "Meeting Requested Inaccessible Resource");
+    if((meeting.lead != undefined && meeting.lead.team != locals.firestoreUser.team) || (meeting.synopsis != undefined && meeting.synopsis.team != locals.firestoreUser.team) || (meeting.mentor != undefined && meeting.mentor.team != locals.firestoreUser.team)) throw error(500, "Meeting Requested Inaccessible Resource");
 
     const form = await superValidate(meetingSchema);
 

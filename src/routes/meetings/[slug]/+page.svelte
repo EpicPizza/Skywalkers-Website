@@ -1,13 +1,16 @@
 <script lang=ts>
     import Icon from '$lib/Builders/Icon.svelte';
-    import { client, type FirestoreUser } from '$lib/Firebase/firebase.js';
+    import Line from '$lib/Builders/Line.svelte';
+    import MiniProfile from '$lib/Components/MiniProfile.svelte';
+    import { client, type FirestoreUser, type SecondaryUser } from '$lib/Firebase/firebase.js';
     import { warning } from '$lib/stores.js';
-    import { error } from '@sveltejs/kit';
     import format from 'date-and-time';
     import meridiem from 'date-and-time/plugin/meridiem';
-    import { doc, getDoc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
+    import { doc, DocumentReference, getDoc, onSnapshot, runTransaction, type Unsubscribe } from 'firebase/firestore';
     import { onDestroy, onMount } from 'svelte';
     import type { Unsubscriber } from 'svelte/store';
+    import { current } from 'tailwindcss/colors.js';
+    import { add, remove } from '$lib/Meetings/signups';
 
     format.plugin(meridiem);
 
@@ -29,25 +32,37 @@
     }
 
     onMount(() => {
-        unsubscribe = client.subscribe((user) => {
+        unsubscribe = client.subscribe(async (user) => {
             if(user == undefined || 'preload' in user || user.team == undefined) return;
 
             const ref = doc(client.getFirestore(), "teams", user.team, "meetings", data.meeting.id);
 
             firestoreUnsubcribe = onSnapshot(ref, async (value) => {
                 let currentMeeting = value.data();
-                if(currentMeeting == undefined) throw Error("Meeting Not Found");
+                if(currentMeeting == undefined) throw new Error("Meeting Not Found");
+
+                let signups = new Array<SecondaryUser>();
+
+                for(let i = 0; i < currentMeeting.signups.length; i++) {
+                    const user = await client.getUser((currentMeeting.signups as DocumentReference[])[i].id); //function checks cache then server, so if its undefined, it means it couldn't find it in either
+
+                    if(user != undefined) {
+                        signups.push(user);
+                    }
+                }
+
                 data.meeting = {
                     name: currentMeeting.name as string,
-                    lead: (await getDoc(currentMeeting.lead)).data() as FirestoreUser,
-                    synopsis: (await getDoc(currentMeeting.synopsis)).data() as FirestoreUser,
-                    mentor: (await getDoc(currentMeeting.mentor)).data() as FirestoreUser,
+                    lead: await client.getUser(currentMeeting.lead.id) as SecondaryUser,
+                    synopsis:  await client.getUser(currentMeeting.synopsis.id) as SecondaryUser,
+                    mentor:  await client.getUser(currentMeeting.mentor.id) as SecondaryUser,
                     location: currentMeeting.location as string,
                     when_start: currentMeeting.when_start.toDate() as Date,
                     when_end: currentMeeting.when_end.toDate() as Date,
                     thumbnail: currentMeeting.thumbnail as string,
                     completed: currentMeeting.completed as boolean,
                     id: data.meeting.id,
+                    signups: signups,
                 }
             })
         })
@@ -61,7 +76,23 @@
             firestoreUnsubcribe();
         } 
     })
+
+    $: signedup = checkSignedUp(data.meeting.signups);
+
+    function checkSignedUp(value: SecondaryUser[]) {
+        for(let i = 0; i < value.length; i++) {
+            if($client != undefined && value[i].id == $client.uid) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 </script>
+
+<svelte:head>
+    <title>Skywalkers | Meeting Listing</title>
+</svelte:head>
 
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
     <div class="w-[36rem]">
@@ -103,35 +134,47 @@
                     <Icon scale=1.75rem icon=star></Icon>
                 </div>
                 <span class="text-lg">Lead:</span>
-                <div class="flex items-center bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-4">
-                    <img referrerpolicy="no-referrer" class="inline-block h-7 w-7 rounded-full" alt="{data.meeting.lead.displayName} Profile" src={data.meeting.lead.photoURL}>
-                    <span class="text-lg ml-2">{data.meeting.lead.displayName}</span>
-                </div>
+                <MiniProfile user={data.meeting.lead}></MiniProfile>
             </div>
             <div class="mt-4 flex gap-2 items-center">
                 <Icon scale=1.75rem icon=assignment></Icon>
                 <span class="text-lg">Synopsis:</span>
-                <div class="flex items-center bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-4">
-                    <img referrerpolicy="no-referrer" class="inline-block h-7 w-7 rounded-full" alt="{data.meeting.synopsis.displayName} Profile" src={data.meeting.synopsis.photoURL}>
-                    <span class="text-lg ml-2">{data.meeting.synopsis.displayName}</span>
-                </div>
+                <MiniProfile user={data.meeting.synopsis}></MiniProfile>
             </div>
             <div class="mt-4 flex gap-2 items-center">
                 <Icon scale=1.75rem icon=engineering></Icon>
                 <span class="text-lg">Mentor:</span>
-                <div class="flex items-center bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-4">
-                    <img referrerpolicy="no-referrer"  class="inline-block h-7 w-7 rounded-full" alt="{data.meeting.mentor.displayName} Profile" src={data.meeting.mentor.photoURL}>
-                    <span class="text-lg ml-2">{data.meeting.mentor.displayName}</span>
-                </div>
+                <MiniProfile user={data.meeting.mentor}></MiniProfile>
             </div>
-            <div class="mt-4 flex gap-2 items-center">
+            <div class="mt-4 flex gap-2 items-center mb-6">
                 <Icon class="-translate-y-[1px]" scale=1.75rem icon=alarm></Icon>
                 <span class="text-lg">Completed:</span>
                 <div class="{data.meeting.completed ? 'bg-green-500' : 'bg-red-500'} rounded-full h-8 w-8 flex justify-around items-center">
                     <Icon scale=1.75rem class="text-backgroud-light dark:text-backgroud-dark" icon={data.meeting.completed ? 'check' : 'close'}></Icon>   
                 </div>
             </div>
-            
+            <div class="p-4 pb-2 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-xl ml-1">Sign Up List:</h1>
+                    {#if signedup}
+                        <button class="b-default" on:click={() => { remove(data.meeting.id) }}>Leave</button>
+                    {:else}
+                        <button class="b-green" on:click={() => { add(data.meeting.id) }}>Sign Up</button>
+                    {/if}
+                </div>
+                {#each data.meeting.signups as user}
+                    {#if user != undefined}
+                        <div class="flex items-center my-3">
+                            <img referrerpolicy="no-referrer" alt="{user.displayName}'s Profile Picture" src="{user.photoURL}" class="h-8 w-8 rounded-full ml-1 mr-2"/>
+                            <h1>{user.displayName}</h1>
+                        </div>
+                    {/if}
+                {:else}
+                    <div class="w-full h-11 items-center flex justify-around">
+                        <h1 class="-translate-y-1">No one has signed up.</h1>
+                    </div>
+                {/each}
+            </div>
         </div>
     </div>
 </div>

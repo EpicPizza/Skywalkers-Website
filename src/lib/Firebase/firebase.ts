@@ -45,7 +45,7 @@ export function firebaseClient() {
     let firestore: Firestore | undefined = undefined;
     let redirect: string | undefined = undefined;
     let unsubscribe: Unsubscribe | undefined = undefined;
-    let cachedUsers: Map<string, SecondaryUser> = new Map();
+    let cachedUsers: Map<string, SecondaryUser | { team: undefined }> = new Map();
 
     const getApp = (): FirebaseApp => {
         if(app == undefined) {
@@ -99,7 +99,7 @@ export function firebaseClient() {
 
     const clientInit = () => {
         onAuthStateChanged(getAuth(), async (currentUser) => {
-            if(currentUser == null && typeof get(user) == 'object') {
+            if(currentUser == null && get(user) != undefined && !('preload' in (get(user) as any))) {
                 user.set(undefined);
 
                 if(redirect != undefined) {
@@ -116,7 +116,7 @@ export function firebaseClient() {
                 }
                 
                 return;
-            } else if(currentUser == null && typeof get(user) == 'string') {
+            } else if(currentUser == null && get(user) != undefined && 'preload' in (get(user) as any)) {
                 const fetched = await fetch('/session/logout', {
                     method: 'POST',
                     headers: {
@@ -139,6 +139,11 @@ export function firebaseClient() {
                         Authorization: `Bearer ${token}`
                     }
                 });
+
+                if(result.status == 401) {
+                    signOut();
+                    return;
+                }
 
                 const firestoreUser = await getFirestoreUser(currentUser.uid);
 
@@ -190,7 +195,14 @@ export function firebaseClient() {
         const db = getFirestore();
 
         const userRef = doc(db, "users", id);
-        const userData = (await getDoc(userRef)).data();
+        let userData;
+        try {
+            userData = (await getDoc(userRef)).data();
+        } catch(e) {
+            console.log(e);
+            userData == undefined;
+            return;
+        }
 
         if(unsubscribe != undefined) {
             unsubscribe();
@@ -218,18 +230,12 @@ export function firebaseClient() {
 
     const signIn = async () => {
         getAuth().signOut();
-        
-        signInWithPopup(getAuth(), getProvider())
+    
+
+        signInWithRedirect(getAuth(), getProvider())
             .catch((error) => {
-                if(error.code == "POPUP_BLOCKED" || error.message.includes("auth/popup-blocked")) {
-                    signInWithRedirect(getAuth(), getProvider())
-                        .catch((error) => {
-                            console.log(error);
-                        });
-                } else {
-                    console.log(error);
-                }
-            })
+                console.log(error);
+            });
     }
 
     const signOut = async () => {
@@ -258,7 +264,11 @@ export function firebaseClient() {
         const cache = cachedUsers.get(id);
 
         if(cache != undefined) {
-            return cache;
+            if(cache.team == undefined) {
+                return undefined;
+            } else {
+                return cache;
+            }
         } else {
             let currentUser = get(user);
             if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) {
@@ -273,9 +283,26 @@ export function firebaseClient() {
 
             const db = getFirestore();
 
-            const requestedUser = (await getDoc(doc(db, "users", id))).data();
+            const ref = doc(db, "users", id);
+
+            let requestedUser;
+            try {
+                requestedUser = (await getDoc(ref)).data();
+            } catch(e: any) {
+                if(e.message == "Missing or insufficient permissions.") {
+                    cacheUser(id, { team: undefined });
+                } else {
+                    console.error(e);
+                }
+                return undefined;
+            }
 
             if(requestedUser == undefined) return undefined;
+            
+            cacheUser(id, {
+                ... requestedUser,
+                id: id
+            } as SecondaryUser);
 
             return {
                 ... requestedUser,
@@ -284,14 +311,11 @@ export function firebaseClient() {
         }
     }
 
-    const cacheUser = (cachingUser: SecondaryUser) => {
-        if(cachedUsers.get(cachingUser.id) == undefined) {
-            cachedUsers.set(cachingUser.id, cachingUser);
+    const cacheUser = (id: string, cachingUser: SecondaryUser | { team: undefined }) => {
+        if(cachedUsers.get(id) == undefined) {
+            cachedUsers.set(id, cachingUser);
         }
-        console.log("Cached Users", cachedUsers);
     }
-
-    $: console.log("Cached Users", cachedUsers);
 
     return {
         subscribe: user.subscribe,

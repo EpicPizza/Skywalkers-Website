@@ -1,3 +1,20 @@
+<script lang=ts context=module>
+    interface Cache {
+        users: SecondaryUser[] | Promise<SecondaryUser[]>,
+        cached: Date,
+    }
+
+    interface UndefinedCache {
+        users: undefined,
+        cached: undefined,
+    }
+
+    let cache: Cache | UndefinedCache = {
+        users: undefined,
+        cached: undefined,
+    }
+</script>
+
 <script lang=ts>
     import Dialog from "$lib/Builders/Dialog.svelte";
     import Icon from "$lib/Builders/Icon.svelte";
@@ -17,9 +34,11 @@
     let search: string = "";
     let selected: SecondaryUser | undefined;
 
+    let unsubscribe: Unsubscriber;
+    let users = new Array<SecondaryUser>();
+
     function handleClick() {
         open = !open;
-        console.log("clicked");
         selected = undefined;
 
         for(let i = 0; i < users.length; i++) {
@@ -27,58 +46,39 @@
                 selected = users[i];
             }  
         }
-
-        console.log(selected);
     }
 
-    let unsubscribe: Unsubscriber;
+    onMount(async () => {
+        if(cache.users != undefined && (new Date().valueOf() - cache.cached.valueOf()) < 1000 * 60 * 15) {
+            users = await cache.users;
+        } else {
+            cache.cached = new Date();
+            cache.users = new Promise((resolve) => {
+                unsubscribe = client.subscribe(async (user) => {
+                    if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
 
-    let users = new Array<SecondaryUser>();
+                    let res = await fetch("/api/users/list", {
+                        method: 'POST',
+                    })
 
-    onMount(() => {
-        unsubscribe = client.subscribe(async (user) => {
-            if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
+                    let data = await res.json();
 
-            let res = await fetch("/api/users/list", {
-                method: 'POST',
-            })
+                    cache.users = data.users == undefined ? [] : data.users;
 
-            let data = await res.json();
+                    users = data.users == undefined ? [] : data.users;
 
-            console.log(data);
+                    resolve(users);
 
-            users = data.users == undefined ? [] : data.users;
+                    data.users.forEach((secondaryUser: SecondaryUser) => {
+                        client.cacheUser(secondaryUser.id, secondaryUser);
+                    });
 
-            data.users.forEach((secondaryUser: SecondaryUser) => {
-                client.cacheUser(secondaryUser);
+                    console.log("Fetched User List");
+
+                    //TODO: pagination
+                })
             });
-
-            //const db = client.getFirestore(); 
-
-            //TODO: pagination
-
-            //const userDocs = query(collection(db, "users"), where("team", "==", user.team));
-
-            //console.log(userDocs);
-
-            /*let newUsers = new Array<SecondaryUser>();
-
-            userDocs.forEach((snapshot) => {
-                newUsers.push({
-                    id: snapshot.id,
-                    displayName: snapshot.data().displayName,
-                    photoURL: snapshot.data().photoURL,
-                    team: snapshot.data().team,
-                    role: snapshot.data().role,
-                })   
-
-                if(snapshot.id == value) {
-                    selected = newUsers[newUsers.length - 1];
-                }  
-            })
-
-            users = newUsers;*/
-        })
+        }
     })
 
     onDestroy(() => {
@@ -86,6 +86,8 @@
             unsubscribe();
         }
     })
+
+    let initialFocus: HTMLElement;
 </script>
 
 <input autocomplete="off" type='text' bind:value name={name} class={style}/>
@@ -93,7 +95,7 @@
     <Icon scale=1.25rem icon=person></Icon>
 </button>
 
-<Dialog bind:isOpen={open}>
+<Dialog bind:isOpen={open} bind:initialFocus>
     <h1 class="text-2xl" slot=title>Choose a Person</h1>
 
     <div slot=description class="mt-4">
@@ -104,9 +106,9 @@
         <Line></Line>
     </div>
 
-    <div slot="content" class="pb-2 overflow-scroll h-[calc(100dvh-17rem)] /* <<< skull emoji */">
+    <div slot="content" class="pb-2 overflow-auto h-[calc(100dvh-17rem)] /* <<< skull emoji */">
         {#each users as user}
-            {#if search == "" || user.displayName.includes(search)}
+            {#if search == "" || user.displayName.toLowerCase().includes(search.toLowerCase())}
                 <button on:click={() => {selected = user;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && selected.id == user.id ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && selected.id == user.id  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} hover:bg-opacity-20 dark:hover:bg-opacity-20 w-full transition rounded-lg">
                     <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
                     <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
@@ -126,7 +128,7 @@
 
     <div class="w-full flex flex-row-reverse justify-between items-center mt-4">
         <div>
-            <button on:click={() => {open = false;}} class="b-default">
+            <button bind:this={initialFocus} on:click={() => {open = false;}} class="b-default">
                 Cancel
             </button>
             <button disabled={selected == undefined} on:click={() => {if(selected != undefined) { open = false; value = selected.id; }}} class="b-green ml-2 disabled:opacity-50">

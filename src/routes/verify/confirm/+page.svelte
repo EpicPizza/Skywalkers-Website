@@ -16,10 +16,6 @@
     })
 </script>
 
-<svelte:head>
-    <title>Skywalkers | Verify</title>
-</svelte:head>
-
 {#if $loading || $client == undefined}
     <Loading></Loading>
 {:else}

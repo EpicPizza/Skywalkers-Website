@@ -5,7 +5,6 @@
     import Nav from '$lib/Nav/Nav.svelte'
     import { client } from "$lib/Firebase/firebase";
     import Warning from '$lib/Builders/Warning.svelte';
-    import Footer from "$lib/Footer/Footer.svelte";
 
     export let data;
 
@@ -19,6 +18,7 @@
         verified.clientInit(client);
 
         console.log("\n\n███████╗██╗  ██╗██╗   ██╗██╗    ██╗ █████╗ ██╗     ██╗  ██╗███████╗██████╗ ███████╗\n██╔════╝██║ ██╔╝╚██╗ ██╔╝██║    ██║██╔══██╗██║     ██║ ██╔╝██╔════╝██╔══██╗██╔════╝\n███████╗█████╔╝  ╚████╔╝ ██║ █╗ ██║███████║██║     █████╔╝ █████╗  ██████╔╝███████╗\n╚════██║██╔═██╗   ╚██╔╝  ██║███╗██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗╚════██║\n███████║██║  ██╗   ██║   ╚███╔███╔╝██║  ██║███████╗██║  ██╗███████╗██║  ██║███████║\n╚══════╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝\n\n");
+        console.warn("Do not enter or share anything here or your account could be compromised.");
     })
 </script>
 

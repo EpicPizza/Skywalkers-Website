@@ -6,7 +6,7 @@
 </script>
 
 <Logo/>
-<div class="flex flex-row ml-2 grow-[1] text-lg font-normal overflow-scroll">
+<div class="flex flex-row ml-2 grow-[1] text-lg font-normal overflow-auto">
     {#each $navLinks as link}
         {#if link.protected && $verified === false}
             <!-- svelte-ignore a11y-missing-attribute -->

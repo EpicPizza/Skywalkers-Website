@@ -15,7 +15,6 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
 
     var recent = await checkRecent(encodedToken);
 
-
     if(!recent) {
         throw error(401, "UNAUTHORIZED REQUEST");
     }
@@ -32,12 +31,14 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
                         cookies.set("session", sessionCookie, options)
                         console.log(sessionCookie);
                         resolve(json({'Authorization': 'Success'}));
-                    },
+                    },  
                     (error) => {
                         console.log(error);
                         resolve("failed");
                     }
-                )
+                ).catch((e) => {
+                    console.log(e);
+                })
     })
 
     if(success == "failed") {
