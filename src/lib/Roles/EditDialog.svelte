@@ -5,7 +5,7 @@
     import Line from "$lib/Builders/Line.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
     import { superForm } from "sveltekit-superforms/client";
-    import type { SuperValidated } from "sveltekit-superforms/index";
+    import type { SuperValidated } from "sveltekit-superforms";
     import type { Role } from "./role";
 
     export let open: boolean = false;

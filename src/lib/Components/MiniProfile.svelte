@@ -10,7 +10,7 @@
         <span class="text-lg ml-2 lg:text-xl">{user.displayName}{user.pronouns ? " (" + user.pronouns + ")" : ""}</span>
     </div>
 {:else}
-    <div class="flex items-center w-fit bg-zinc-200 dark:bg-zinc-600 rounded-full px-4 h-9">
-        <span class="text-lg">User Not Found</span>
+    <div class="flex items-center w-fit bg-zinc-200 dark:bg-zinc-600 rounded-full px-4 h-9 lg:h-11">
+        <span class="text-lg lg:text-xl">User Not Found</span>
     </div>
 {/if}

@@ -21,13 +21,11 @@ import Icon from "$lib/Builders/Icon.svelte";
 </script>
 
 {#if $user == undefined}
-    {#key $navigating}
-        {#if browser && window.location.pathname == "/"}
-            <button disabled class="b-bold whitespace-nowrap">Signed Out</button>
-        {:else}
-            <a href="/" class="b-bold whitespace-nowrap">Signed Out</a>
-        {/if}
-    {/key}
+    {#if !$page.url.pathname.includes("/help")}
+        <button disabled class="b-bold whitespace-nowrap">Signed Out</button>
+    {:else}
+        <a href="/" class="b-bold whitespace-nowrap">Signed Out</a>
+    {/if}
 {:else if typeof $user == 'object'}
     <Menu class="h-auto">
         <MenuButton class="flex flex-row-reverse">

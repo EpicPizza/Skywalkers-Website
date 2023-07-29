@@ -118,4 +118,3 @@
         <button on:click={handleDelete} disabled={selected.length == 0} class="b-primary disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>
     </div>
 </div>
-
