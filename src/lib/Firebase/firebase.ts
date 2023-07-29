@@ -421,6 +421,8 @@ export function firebaseClient() {
             unsubscribeUser = user.subscribe((currentUser) => {
                 if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) return;
 
+                if(unsubscribe) unsubscribe();
+
                 unsubscribe = onSnapshot(docRef, (snapshot) => {
                     set((snapshot.data() as T) ?? undefined);
                 });

@@ -8,7 +8,8 @@
     import { doc, documentId, DocumentReference, onSnapshot, type Unsubscribe } from 'firebase/firestore';
     import { onDestroy, onMount, getContext } from 'svelte';
     import type { Unsubscriber, Writable } from 'svelte/store';
-    import { add, remove } from '$lib/Meetings/meetings.js';
+    import { add, deleteMeeting, remove } from "$lib/Meetings/meetings.js";
+    import { goto } from '$app/navigation';
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
 
@@ -34,7 +35,14 @@
 
     onMount(() => {
         if($client == undefined || $client.team == undefined) return;
-        unsubscribe = client.doc<any>(doc(client.getFirestore(), "teams", $client.team, "meetings", data.meeting.id)).subscribe(async (value) => {
+        unsubscribe = client.doc<any>(doc(client.getFirestore(), "teams", $client.team, "meetings", data.meeting.id), "loading").subscribe(async (value) => {
+            if(value == "loading") return;
+
+            if(value == undefined) {
+                goto("/meetings" + (data.meeting.completed ? "?completed=true&deleted=true" : "?deleted=true"));
+                return;
+            }
+
             let currentMeeting = value;
             if(currentMeeting == undefined) return;
 
@@ -106,9 +114,9 @@
                 <p>Back</p>
             </a>
             {#if data.meeting.completed === false}
-                <a href="/meetings/{data.meeting.id}/edit" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
-                    <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=edit></Icon>
-                    <p>Edit</p>
+                <a href="/meetings/{data.meeting.id}/complete" class="flex gap-1 p-1 mb-2 pl-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
+                    <p>Complete</p>
+                    <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=double_arrow></Icon>
                 </a>
             {:else}
                 <a href="/synopsis/{data.meeting.id}" class="flex gap-1 p-1 mb-2 pl-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
@@ -169,20 +177,20 @@
                     <Icon scale={0}  class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem] text-backgroud-light dark:text-backgroud-dark" icon={data.meeting.completed ? 'check' : 'close'}></Icon>   
                 </div>
             </div>
-            <div class="p-4 lg:p-6 pb-2 lg:pb-4 bg-secondary-light dark:bg-secondary-dark text-secondary-text-light dark:text-secondary-text-dark rounded-2xl">
+            <div class="p-4 lg:p-6 pb-2 lg:pb-4 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
                 <div class="flex items-center justify-between mb-4">
                     <h1 class="text-xl lg:text-2xl ml-1">Sign Up List:</h1>
                     {#if signedup}
-                        <button class="b-primary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
+                        <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
                     {:else}
-                        <button class="b-accent lg:text-lg" on:click={() => { add(data.meeting.id, client ) }}>Sign Up</button>
+                        <button class="b-primary lg:text-lg" on:click={() => { add(data.meeting.id, client ) }}>Sign Up</button>
                     {/if}
                 </div>
                 {#each data.meeting.signups as user}
                     {#if user != undefined}
                         <div class="flex items-center mb-3">
                             <img referrerpolicy="no-referrer" alt="{user.displayName}'s Profile Picture" src="{user.photoURL}" class="h-8 w-8 lg:h-9 lg:w-9 rounded-full ml-1 mr-2"/>
-                            <h1 class="lg:text-lg">{user.displayName}</h1>
+                            <h1 class="lg:text-lg">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
                         </div>
                     {/if}
                 {:else}
@@ -190,6 +198,11 @@
                         <h1 class="-translate-y-1 lg:text-lg">No one has signed up.</h1>
                     </div>
                 {/each}
+            </div>
+            <div class="pt-4 flex flex-row-reverse gap-2">
+                <button on:click={ async () => { await deleteMeeting(data.meeting.id, client); }} class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=delete/><span>Delete</span></button>
+                <a href="/meetings/{data.meeting.id}/duplicate" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=content_copy/><span>Duplicate</span></a>
+                <a href="/meetings/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
             </div>
         </div>
     </div>

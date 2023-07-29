@@ -11,14 +11,22 @@
     import { collection, limit, orderBy, query, where, type Unsubscribe, onSnapshot, Query } from "firebase/firestore";
     import { flip } from "svelte/animate";
     import type { DocumentData } from "firebase-admin/firestore";
+    import type { Warning } from "$lib/stores.js";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
-
     let bottom = getContext('bottom') as Writable<boolean>;
+    let warning = getContext('warning') as Writable<Warning | undefined>;
 
     format.plugin(meridiem);
 
     export let data;
+
+    if(data.deleted) {
+        warning.set({
+            message: "Meeting Deleted",
+            color: 'red'
+        })
+    }
 
     let unsubscribeClient: Unsubscriber | undefined = undefined;
     let unsubscribeFirestore: Unsubscribe | undefined = undefined;
@@ -35,31 +43,34 @@
 
     let reachedEnd = false;
 
-    $: {
-        if($bottom == true && returned == true && data.loading == false) {
+    function loadNext() {
+        if(unsubscribeClient) unsubscribeClient();
+
+        unsubscribeClient = client.subscribe((user) => {
+            if(user == undefined || 'preload' in user || user.team == undefined) return;
+
+            const db = client.getFirestore();
+            
+            number += 25;
+
+            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+
+            startListener(ref);
+        });
+    }
+
+    let unsubscribeBottom: Unsubscriber | undefined = bottom.subscribe((isBottom) => {
+        if(isBottom == true && returned == true && data.loading == false) {
             returned = false;
 
-            if(unsubscribeClient) unsubscribeClient();
-
-            unsubscribeClient = client.subscribe((user) => {
-                if(user == undefined || 'preload' in user || user.team == undefined) return;
-
-                const db = client.getFirestore();
-                
-                number += 25;
-
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
-
-                startListener(ref);
-            })
+            loadNext();
         }
-    }
 
-    $: {
-        if($bottom == false && data.loading == false) {
+        if(isBottom == false && data.loading == false) {
+            console.log("returned");
             returned = true;
         }
-    }
+    });
 
     onMount(() => {
         if(unsubscribeClient) unsubscribeClient();
@@ -78,6 +89,7 @@
     onDestroy(() => {
         if(unsubscribeClient) unsubscribeClient();
         if(unsubscribeFirestore) unsubscribeFirestore();
+        if(unsubscribeBottom) unsubscribeBottom();
     })
 
     function startListener(ref: Query<DocumentData>) {
@@ -138,11 +150,13 @@
     function changeOrder(newOrder: "Upcoming" | "Recent") {
         if(unsubscribeClient) unsubscribeClient();
 
+        data.loading = true;
+
         unsubscribeClient = client.subscribe((user) => {
             if(user == undefined || 'preload' in user || user.team == undefined) return;
 
             lastFetched = 0;
-            number = 0;
+            number = 50;
             reachedEnd = false;
 
             const db = client.getFirestore();
@@ -167,8 +181,8 @@
 </svelte:head>
 
 <div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 pb-[4.5rem] lg:pb-16 overflow-x-auto">
-    <div class="p-4 pb-4 flex justify-between items-center">
-        <p>Showing {lastFetched} Meeting{lastFetched == 1 ? "" : "s"}</p>
+    <div class="p-4 pb-0 flex justify-between items-center">
+        <p class="ml-1">Showing {lastFetched} {order} Meeting{lastFetched == 1 ? "" : "s"}</p>
         <div class="flex gap-2">
             <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
             <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
@@ -240,6 +254,11 @@
                     </div>
                 {/if}
             {/each}
+            {#if data.meetings.length != 0 && !reachedEnd}
+                <div class="flex p-4 pt-0 justify-around -mb-[52px]">
+                    <button class="b-primary" on:click={loadNext}>Load More Meetings</button>
+                </div>
+            {/if}
         </div>
     </div>
 </div>
@@ -251,7 +270,7 @@
     </a>
 {/if}
 
-<div class="h-12 lg:h-14 sticky z-10 bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
+<div class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
     <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
         Active
     </svelte:element>

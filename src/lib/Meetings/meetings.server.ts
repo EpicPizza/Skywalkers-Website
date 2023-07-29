@@ -14,6 +14,15 @@ export const meetingSchema = z.object({
     ends: z.date({ invalid_type_error: "Unknown end time.", required_error: "End time must be filled."}),
 })
 
+export const completeSchema = z.object({
+    id: z.string().min(1).max(100),
+    synopsis: z.string({ invalid_type_error: "Synopsis must be a string.", required_error: "A synopsis must be written."}).min(1, { message: "A synopsis must be written." }).max(10000, { message: "Ten thousand character max synopsis allowed."}),
+    hours: z.object({
+        time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be nonnegative." }).max(12, { message: "Max hours contributed is 12." }),
+        id: z.string().min(1).max(100),
+    })
+})
+
 export async function getUserList(db: Firestore) {
     const userDocs = (await db.collection('users').listDocuments());
 

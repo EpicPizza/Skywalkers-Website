@@ -49,33 +49,25 @@ export const actions = {
         
         const users= await getUserList(db);
 
-        console.log(form.data);
-        console.log("sues", (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)));
-        console.log("omg");
-        console.log("sues", (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis)));
-
         if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
             return message(form, 'User(s) not found.', {
                 status: 404
             });
         }
 
-        let res;
-        for(let i = 300; i < 1000; i++) {
-            res = await ref.add({
-                name: form.data.name + " " + i,
-                lead: db.collection('users').doc(form.data.lead),
-                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
-                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
-                location: form.data.location,
-                when_start: new Date(form.data.starts.valueOf() + (i * 1000 * 60 * 60 * 24)),
-                when_end: new Date(form.data.ends.valueOf() + (i * 1000 * 60 * 60 * 24)),
-                thumbnail: form.data.thumbnail,
-                completed: false,
-                signups: [],
-            })
-        }
-
+        const res = await ref.add({
+            name: form.data.name,
+            lead: db.collection('users').doc(form.data.lead),
+            synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
+            mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
+            location: form.data.location,
+            when_start: form.data.starts,
+            when_end: form.data.ends,
+            thumbnail: form.data.thumbnail,
+            completed: false,
+            signups: [],
+        })
+        
         throw redirect(307, "/meetings/" + res?.id + "?created=true");
     }
 }

@@ -52,7 +52,7 @@ export async function load({ params, locals }) {
 }
 
 export const actions = {
-    default: async ({ request, locals, params }) => {
+    default: async ({ request, locals, params, url }) => {
         if(locals.user == undefined) { throw error(403, 'Sign In Required'); }
 
         if(!locals.team || locals.firestoreUser == undefined) throw redirect(307, "/verify");
@@ -88,6 +88,10 @@ export const actions = {
             thumbnail: form.data.thumbnail,
         })
 
-        throw redirect(307, "/meetings/" + params.slug + "?edited=true");
+        if(url.searchParams.get('redirect') == 'completed') {
+            return message(form, "Meeting Edited");
+        } else {
+            throw redirect(307, "/meetings/" + params.slug + "?edited=true");
+        }
     }
 }

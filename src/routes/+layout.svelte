@@ -42,9 +42,7 @@
         client.clientInit(loading);
         verified.clientInit(client);
 
-        addEventListener("scroll", () => {
-          onScroll.update(update => !update);
-
+        const update = () => {
           let at = window.innerHeight + Math.round(window.scrollY);
           let height = document.body.offsetHeight;
 
@@ -57,6 +55,12 @@
               $bottom = false;
             }
           }
+        }
+
+        addEventListener("scroll", () => {
+          onScroll.update(update => !update);
+
+          update();
         }, true)
 
         console.log("\n\n███████╗██╗  ██╗██╗   ██╗██╗    ██╗ █████╗ ██╗     ██╗  ██╗███████╗██████╗ ███████╗\n██╔════╝██║ ██╔╝╚██╗ ██╔╝██║    ██║██╔══██╗██║     ██║ ██╔╝██╔════╝██╔══██╗██╔════╝\n███████╗█████╔╝  ╚████╔╝ ██║ █╗ ██║███████║██║     █████╔╝ █████╗  ██████╔╝███████╗\n╚════██║██╔═██╗   ╚██╔╝  ██║███╗██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗╚════██║\n███████║██║  ██╗   ██║   ╚███╔███╔╝██║  ██║███████╗██║  ██╗███████╗██║  ██║███████║\n╚══════╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝\n\n");

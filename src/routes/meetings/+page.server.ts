@@ -51,7 +51,7 @@ export async function load({ locals, url }) {
         }
     }*/
     
-    return { meetings: [] as Meeting[], loading: true, completed: url.searchParams.get("completed") === 'true' ? true : false };
+    return { meetings: [] as Meeting[], loading: true, completed: url.searchParams.get("completed") === 'true' ? true : false, deleted: url.searchParams.get("deleted") === 'true' ? true : false };
 }
 
 interface Meeting {

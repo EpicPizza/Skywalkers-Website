@@ -8,6 +8,8 @@
     import PersonChooser from "$lib/Components/PersonChooser.svelte";
     import { onMount } from "svelte";
     import { superForm } from "sveltekit-superforms/client";
+    import Error from "$lib/Builders/Error.svelte";
+    import { goto } from "$app/navigation";
 
     export let data;
     
@@ -16,6 +18,13 @@
         delayMs: 500,
         timeoutMs: 8000,
     });
+
+    $: {
+        if($message == 'Meeting Edited') {
+            history.back();
+            console.log("backkkkk");
+        }
+    }
 </script>
 
 <svelte:head>
@@ -73,27 +82,7 @@
                 <p class="text-lg lg:text-xl">Synopsis:</p>
                 <PersonChooser optional name=synopsis bind:value={$form.synopsis} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></PersonChooser>
             </div>
-            {#if $allErrors.length || $message}
-                <div class="w-full h-4"></div>
-            {/if}
-            {#if $allErrors.length}
-                <ul>
-                {#each $allErrors as error}
-                    <li>
-                        {#if Array.isArray(error.messages)}
-                            {#each error.messages as code_error}
-                                <p class="text-red-500 dark:text-red-500 font-bold">{code_error}</p>
-                            {/each}
-                        {:else}
-                            <p class="text-red-500 dark:text-red-500 font-bold">{error.messages}</p>
-                        {/if}
-                    </li>
-                {/each}
-                </ul>
-            {/if}
-            {#if $message}
-                <p class="text-red-500 dark:text-red-500 font-bold">{$message}</p>
-            {/if}
+            <Error {allErrors} {message} disallowMessage="Meeting Edited"></Error>
             <div class="flex items-center mt-6 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">
                     <Icon scale=1.25rem icon=save></Icon>
