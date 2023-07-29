@@ -19,20 +19,25 @@
     import Dialog from "$lib/Builders/Dialog.svelte";
     import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
-    import { client, type SecondaryUser } from "$lib/Firebase/firebase";
+    import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
     import type { Unsubscriber } from "svelte/store";
-    import { onDestroy, onMount } from "svelte";
+    import { getContext, onDestroy, onMount } from "svelte";
     import { collection, collectionGroup, getDocs, getDocsFromCache, getDocsFromServer, query, where } from "firebase/firestore";
     import Loading from "$lib/Builders/Loading.svelte";
+    import MiniProfile from "./MiniProfile.svelte";
 
-    export let value: string;
+    let client = getContext('client') as ReturnType<typeof firebaseClient>;
+
+    export let value: string | undefined;
     export let name: string;
+    export let optional = false;
     let style: string = "";
     export { style as class }
 
     let open: boolean = false;
     let search: string = "";
     let selected: SecondaryUser | undefined;
+    let current: SecondaryUser | undefined;
 
     let unsubscribe: Unsubscriber;
     let users = new Array<SecondaryUser>();
@@ -49,35 +54,85 @@
     }
 
     onMount(async () => {
+        //TODO: handle promise better, will bug if dialog gets opened too soon.
+
         if(cache.users != undefined && (new Date().valueOf() - cache.cached.valueOf()) < 1000 * 60 * 15) {
             users = await cache.users;
+
+            current = undefined;
+
+            for(let i = 0; i < users.length; i++) {
+                if(users[i].id == value) {
+                    current = users[i];
+                }  
+            }
+
+            if(current == undefined) {
+                current = {
+                    displayName: "User Not Found",
+                    pronouns: "",
+                    id: "",
+                    permissions: [],
+                    level: 0,
+                    photoURL: "",
+                    role: "",
+                    team: "",
+                    roles: [],
+                }
+            }
         } else {
-            cache.cached = new Date();
-            cache.users = new Promise((resolve) => {
-                unsubscribe = client.subscribe(async (user) => {
-                    if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
+            cache = {
+                cached: new Date(),
+                users: new Promise((resolve) => {
+                    unsubscribe = client.subscribe(async (user) => {
+                        if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
 
-                    let res = await fetch("/api/users/list", {
-                        method: 'POST',
+                        if(unsubscribe) {
+                            unsubscribe();
+                        }
+
+                        let res = await fetch("/api/users/list", {
+                            method: 'POST',
+                        })
+
+                        let data = await res.json();
+
+                        cache.users = data.users == undefined ? [] : data.users;
+
+                        users = data.users == undefined ? [] : data.users;
+
+                        resolve(users);
+
+                        data.users.forEach((secondaryUser: SecondaryUser) => {
+                            client.cacheUser(secondaryUser.id, secondaryUser);
+                        });
+
+                        current = undefined;
+
+                        for(let i = 0; i < users.length; i++) {
+                            if(data.users[i].id == value) {
+                                current = data.users[i];
+                            }  
+                        }
+
+                        if(current == undefined) {
+                            current = {
+                                displayName: "User Not Found",
+                                pronouns: "",
+                                id: "",
+                                permissions: [],
+                                level: 0,
+                                photoURL: "",
+                                role: "",
+                                team: "",
+                                roles: [],
+                            }
+                        }
+
+                        console.log("Fetched User List");
                     })
-
-                    let data = await res.json();
-
-                    cache.users = data.users == undefined ? [] : data.users;
-
-                    users = data.users == undefined ? [] : data.users;
-
-                    resolve(users);
-
-                    data.users.forEach((secondaryUser: SecondaryUser) => {
-                        client.cacheUser(secondaryUser.id, secondaryUser);
-                    });
-
-                    console.log("Fetched User List");
-
-                    //TODO: pagination
                 })
-            });
+            }
         }
     })
 
@@ -90,7 +145,19 @@
     let initialFocus: HTMLElement;
 </script>
 
-<input autocomplete="off" type='text' bind:value name={name} class={style}/>
+<input hidden autocomplete="off" type='text' bind:value name={name}/>
+<p class={style}>
+    {#if value == "" || value == undefined}
+        Choose a Member
+    {:else}
+        {#if current != undefined}
+            {current.displayName}{current.pronouns ? " (" + current.pronouns + ")" : ""}
+        {:else}
+            loading...
+        {/if}
+    {/if}
+</p>
+
 <button class="-ml-[1.5rem] -translate-x-[0.25rem]" on:click={(e) => { e.preventDefault(); handleClick(); }}>
     <Icon scale=1.25rem icon=person></Icon>
 </button>
@@ -107,12 +174,19 @@
     </div>
 
     <div slot="content" class="pb-2 overflow-auto h-[calc(100dvh-17rem)] /* <<< skull emoji */">
+        {#if optional}
+            {#key selected}
+                <button on:click={() => {selected = undefined;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-20' : 'bg-opacity-5'} {selected == undefined  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
+                    Leave Blank
+                </button>
+            {/key}
+        {/if}
         {#each users as user}
             {#if search == "" || user.displayName.toLowerCase().includes(search.toLowerCase())}
-                <button on:click={() => {selected = user;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && selected.id == user.id ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && selected.id == user.id  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} hover:bg-opacity-20 dark:hover:bg-opacity-20 w-full transition rounded-lg">
+                <button on:click={() => {selected = user;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && selected.id == user.id ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && selected.id == user.id  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
                     <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
                     <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
-                        <h1 class="text-left">{user.displayName}</h1>
+                        <h1 class="text-left">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
                         <h2 class="text-left text-sm opacity-80">{user.role.substring(0, 1).toUpperCase() + user.role.substring(1, user.role.length)} <span class="opacity-50">- {user.id}</span></h2>
                     </div>
                 </button>
@@ -131,14 +205,14 @@
             <button bind:this={initialFocus} on:click={() => {open = false;}} class="b-default">
                 Cancel
             </button>
-            <button disabled={selected == undefined} on:click={() => {if(selected != undefined) { open = false; value = selected.id; }}} class="b-green ml-2 disabled:opacity-50">
+            <button disabled={selected == undefined && !optional} on:click={() => {if(selected != undefined) { open = false; value = selected.id; current = selected; } else { open = false; value = ""; current = undefined; }}} class="b-green ml-1 disabled:opacity-50 disabled:cursor-not-allowed">
                 Select
             </button>
         </div>
         {#if selected != undefined}
             <div class="flex items-center bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-3">
                 <img referrerpolicy="no-referrer" class="inline-block h-[1.625rem] w-[1.625rem] rounded-full" alt="{selected.displayName} Profile" src={selected.photoURL}>
-                <span class="text-[1rem] ml-1.5">{selected.displayName}</span>
+                <span class="text-[1rem] ml-1.5">{selected.displayName}{selected.pronouns == "" ? "" : " (" + selected.pronouns + ")"}</span>
             </div>
         {/if}
     </div>

@@ -1,22 +1,35 @@
 <script lang="ts">
-    import { onDestroy } from "svelte";
-    import { mode } from "../stores";
+    import Tooltip from "$lib/Builders/Tooltip.svelte";
+    import type { createMode } from "$lib/stores";
+    import { getContext, onDestroy } from "svelte";
+    import type { Writable } from "svelte/store";
+    
+    let mode = getContext('mode') as ReturnType<typeof createMode>;
 
     let system: boolean;
 
     const unsubscribe = mode.subscribeSystem((value) => {
-    system = value;
+        system = value;
     });
 
     onDestroy(() => {
         unsubscribe();
     })
+
+    let navmode = getContext('navmode') as Writable<boolean>;
 </script>
 
-<div class="box-content border-[1px] dark:border-zinc-700 border-slate-300 p-[4px] dark:text-white bg-white dark:bg-zinc-800 rounded-full max-w-fit flex flex-row gap-[4px]">
-    <div class="flex flex-row gap-[4px] bg-slate-200 dark:bg-zinc-700 rounded-full">
-        <button on:click={() => { system ? mode.set('light') : ($mode == 'dark' ? mode.set('light') : mode.set('dark')) }} class="box-border border-none rounded-full w-8 h-8 {$mode == 'dark' ? "bg-slate-200 dark:bg-zinc-700" : "bg-slate-300 dark:bg-zinc-600"} flex items-center justify-around"><span class="material-symbols-outlined">light_mode</span></button>
-        <button on:click={() => { system ? mode.set('dark') : ($mode == 'light' ? mode.set('dark') : mode.set('light')) }} class="box-border border-none rounded-full w-8 h-8 {$mode == 'light' ? "bg-slate-200 dark:bg-zinc-700" : "bg-slate-300 dark:bg-zinc-600"} flex items-center justify-around"><span class="material-symbols-outlined">dark_mode</span></button>
+
+<div class="box-content border-[1px] dark:border-border-dark border-border-light p-[4px] dark:text-text-dark text-text-light bg-backgroud-light dark:bg-backgroud-dark rounded-full max-w-fit flex flex-row gap-[4px]">
+    <div class="flex flex-row gap-[4px] bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 rounded-full">
+        <Tooltip text="Light" bottom={$navmode}>
+            <button on:click={() => { mode.set('light') }} class="box-border border-none rounded-full w-8 h-8 bg-black dark:bg-white {$mode == 'dark' ? "bg-opacity-0 dark:bg-opacity-0" : "bg-opacity-10 dark:bg-opacity-10"} flex items-center justify-around"><span class="material-symbols-outlined">light_mode</span></button>
+        </Tooltip>
+        <Tooltip text="Dark" bottom={$navmode}>
+            <button on:click={() => { mode.set('dark') }} class="box-border border-none rounded-full w-8 h-8 bg-black dark:bg-white {$mode == 'light' ? "bg-opacity-0 dark:bg-opacity-0" : "bg-opacity-10 dark:bg-opacity-10"} flex items-center justify-around"><span class="material-symbols-outlined">dark_mode</span></button>
+        </Tooltip>
     </div>
-    <button  on:click={() => { system == false ? mode.reset() : mode.set(mode.getSystemTheme()) }} class="box-border border-none rounded-full w-8 h-8 {system ? 'bg-slate-300 dark:bg-zinc-600' : 'bg-slate-200 dark:bg-zinc-700'} flex items-center justify-around"><span class="material-symbols-outlined">settings_brightness</span></button>
+    <Tooltip text="System" bottom={$navmode}>
+        <button on:click={() => { mode.reset() }} class="box-border border-none rounded-full w-8 h-8 bg-black dark:bg-white {system ? "bg-opacity-20 dark:bg-opacity-20" : "bg-opacity-10 dark:bg-opacity-10"} flex items-center justify-around"><span class="material-symbols-outlined">settings_brightness</span></button>
+    </Tooltip>
 </div>

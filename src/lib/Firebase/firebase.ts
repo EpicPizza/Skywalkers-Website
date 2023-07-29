@@ -1,12 +1,13 @@
 import { goto, invalidateAll } from "$app/navigation";
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { type Auth, getAuth as getFirebaseAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, browserLocalPersistence, initializeAuth, browserPopupRedirectResolver, type User, signInWithRedirect, signInWithPopup } from "firebase/auth";
-import { get, writable, type Writable } from "svelte/store";
-import { getFirestore as getFirebaseFirestore, type Firestore, type Unsubscribe, doc, getDoc, onSnapshot } from "firebase/firestore";
-import { loading, verified } from "$lib/stores";
+import { get, writable, type Unsubscriber, type Writable } from "svelte/store";
+import { getFirestore as getFirebaseFirestore, type Firestore, type Unsubscribe, doc, getDoc, onSnapshot, DocumentReference } from "firebase/firestore";
+import { createVerified } from "$lib/stores";
 import { navigating } from "$app/stores";
-
-export const client = firebaseClient();
+import type { Role } from "$lib/Roles/role";
+import { getContext } from "svelte";
+import { browser } from "$app/environment";
 
 interface Preload {
     photoURL: string | undefined,
@@ -14,15 +15,23 @@ interface Preload {
     displayName: string | undefined,
     uid: string,
     preload: boolean,
+    pronouns: string | undefined,
     team: string | undefined,
     role: string | undefined,
+    permissions: string[] | undefined,
+    level: number | undefined,
+    roles: Role[] | undefined,
 }
 
 export interface FirestoreUser {
     displayName: string,
+    permissions: string[],
+    level: number;
     photoURL: string,
     role: string,
     team: string,
+    pronouns: string,
+    roles: Role[]
 }
 
 export interface SecondaryUser extends FirestoreUser {
@@ -32,9 +41,13 @@ export interface SecondaryUser extends FirestoreUser {
 export interface UndefinedFirestoreUser {
     role: undefined,
     team: undefined,
+    pronouns: undefined,
+    permissions: undefined,
+    level: undefined,
+    roles: undefined,
 }
 
-type VerifiedUser = FirestoreUser & User;
+export type VerifiedUser = FirestoreUser & User;
 type NonverifiedUser = UndefinedFirestoreUser & User;
 
 export function firebaseClient() {
@@ -43,9 +56,9 @@ export function firebaseClient() {
     let user: Writable<NonverifiedUser | Preload | VerifiedUser | undefined> = writable(undefined);
     let provider: GoogleAuthProvider | undefined = undefined;
     let firestore: Firestore | undefined = undefined;
-    let redirect: string | undefined = undefined;
     let unsubscribe: Unsubscribe | undefined = undefined;
     let cachedUsers: Map<string, SecondaryUser | { team: undefined }> = new Map();
+    let cachedRoles: Map<string, Role | { id: undefined } > = new Map();
 
     const getApp = (): FirebaseApp => {
         if(app == undefined) {
@@ -83,7 +96,7 @@ export function firebaseClient() {
 
     const getFirestore = (): Firestore => {
         if(firestore == undefined) {
-            firestore = getFirebaseFirestore();
+            firestore = getFirebaseFirestore(getApp());
         }
 
         return firestore;
@@ -97,27 +110,16 @@ export function firebaseClient() {
         }
     }
 
-    const clientInit = () => {
+    const clientInit = (loading: Writable<boolean>) => {
         onAuthStateChanged(getAuth(), async (currentUser) => {
             if(currentUser == null && get(user) != undefined && !('preload' in (get(user) as any))) {
                 user.set(undefined);
 
-                if(redirect != undefined) {
-                    console.log("REDIRECTING");
-                    console.log("/");
-
-                    await goto(redirect, {
-                        invalidateAll: true,
-                    });
-
-                    redirect = undefined;
-                } else {
-                    invalidateAll();
-                }
+                invalidateAll();
                 
                 return;
             } else if(currentUser == null && get(user) != undefined && 'preload' in (get(user) as any)) {
-                const fetched = await fetch('/session/logout', {
+                await fetch('/session/logout', {
                     method: 'POST',
                     headers: {
                         'content-type': 'application/json',
@@ -125,6 +127,8 @@ export function firebaseClient() {
                 });
 
                 user.set(undefined);
+
+                console.log("INVALIDATED");
 
                 invalidateAll();
             }
@@ -151,7 +155,11 @@ export function firebaseClient() {
                     user.set({
                         ...currentUser,
                         role: undefined,
-                        team: undefined
+                        team: undefined,
+                        pronouns: undefined,
+                        roles: undefined,
+                        level: undefined,
+                        permissions: undefined,
                     });
                 } else {
                     user.set({
@@ -160,15 +168,8 @@ export function firebaseClient() {
                     })
                 }
 
-                if(redirect != undefined) {
-                    await goto(redirect, {
-                        invalidateAll: true
-                    });
+                invalidateAll();
 
-                    redirect = undefined;
-                } else {
-                    invalidateAll();
-                }
                 loading.set(false);
             } else if(currentUser != null) {
                 const firestoreUser = await getFirestoreUser(currentUser.uid);
@@ -177,7 +178,11 @@ export function firebaseClient() {
                     user.set({
                         ...currentUser,
                         role: undefined,
-                        team: undefined
+                        team: undefined,
+                        pronouns: undefined,
+                        roles: undefined,
+                        level: undefined,
+                        permissions: undefined,
                     });
                 } else {
                     user.set({
@@ -208,24 +213,36 @@ export function firebaseClient() {
             unsubscribe();
         }
 
-        unsubscribe = onSnapshot(userRef, (snapshot) => {
+        unsubscribe = onSnapshot(userRef, async (snapshot) => {
             if(snapshot.data() == undefined) { //means user was unverified, easiest way to handle unverfication is just to signout :/
-                if(get(verified) == true) {
+                let currentUser = get(user);
+                if(currentUser != undefined && currentUser.team != undefined) {
                     signOut();
+                    console.log("SIGNED OUT");
                 }
             } else {
+                if(get(user)?.team == undefined) {
+                    invalidateAll();
+                }
+
                 const currentUser = get(user);
 
                 if(!(currentUser == undefined || 'prelaod' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
                     user.set({
                         ...currentUser,
-                        ...snapshot.data() as FirestoreUser,
+                        ...{
+                            ...snapshot.data(),
+                            roles: snapshot.data() ? await getSpecifiedRoles(snapshot.data()?.roles as DocumentReference[]) : [],
+                        } as FirestoreUser
                     })
                 }
             }
         })
 
-        return userData as FirestoreUser | undefined;
+        return userData ? {
+            ...userData,
+            roles: get(user) ? get(user)?.roles : [], //this gets run before user object is updated and getSpecifiedRoles waits until user object is updated, which causes website to get stuck in promise :/
+        } as FirestoreUser : undefined;
     }
 
     const signIn = async () => {
@@ -239,7 +256,7 @@ export function firebaseClient() {
     }
 
     const signOut = async () => {
-        const fetched = await fetch('/session/logout', {
+        await fetch('/session/logout', {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
@@ -250,7 +267,7 @@ export function firebaseClient() {
     }
 
     const reset = async () => {
-        const fetched = await fetch('/session/reset', {
+        await fetch('/session/reset', {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
@@ -301,11 +318,13 @@ export function firebaseClient() {
             
             cacheUser(id, {
                 ... requestedUser,
+                roles: await getSpecifiedRoles(requestedUser.roles as DocumentReference[]),
                 id: id
             } as SecondaryUser);
 
             return {
                 ... requestedUser,
+                roles: await getSpecifiedRoles(requestedUser.roles as DocumentReference[]),
                 id: id
             } as SecondaryUser;
         }
@@ -317,19 +336,123 @@ export function firebaseClient() {
         }
     }
 
+    const getRole = async (id: string): Promise<Role | undefined> => {
+        if(!browser) return;
+        if(id == "") return;
+
+        const cache = cachedRoles.get(id);
+
+        if(cache != undefined) {
+            if(cache.id == undefined) {
+                return undefined;
+            } else {
+                return cache;
+            }
+        } else {
+            let currentUser = get(user);
+
+            if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) {
+                currentUser = await new Promise<VerifiedUser>((resolve) => {
+                    user.subscribe((value) => {
+                        if(value == undefined || 'preload' in value || value.team == undefined) return;
+
+                        resolve(value);
+                    })
+                })
+            }
+
+            const db = getFirestore();
+
+            const ref = doc(db, "teams", currentUser.team, "roles", id);
+
+            let requestedRole;
+            try {
+                requestedRole = (await getDoc(ref)).data();
+            } catch(e: any) {
+                if(e.message == "Missing or insufficient permissions.") {
+                    cacheRole(id, { id: undefined });
+                } else {
+                    console.error(e);
+                }
+                return undefined;
+            }
+
+            if(requestedRole == undefined) return undefined;
+            
+            cacheRole(id, {
+                ... requestedRole,
+                members: [] as any,
+                id: id
+            } as Role);
+
+            return  {
+                ... requestedRole,
+                members: [] as any,
+                id: id
+            } as Role;
+        }
+    }
+
+    const cacheRole = (id: string, cachingRole: Role | { id: undefined }) => {
+        if(cachedRoles.get(id) == undefined) {
+            cachedRoles.set(id, cachingRole);
+        }
+    }
+
+    const getSpecifiedRoles = async (refs: DocumentReference[]) => {
+        const roles = new Array<Role>();
+
+        for(let i = 0; i < refs.length; i++) {
+            const role = await getRole(refs[i].id);
+    
+            if(role != undefined) {
+                roles.push(role);
+            }
+        }
+    
+        return roles;
+    }
+
+    const docStore = <T>( docRef: DocumentReference, initial: any = undefined) => {
+        let unsubscribe: Unsubscribe | undefined;
+        let unsubscribeUser: Unsubscriber | undefined;
+
+        const { subscribe } = writable<T | undefined>(initial, (set) => {
+            unsubscribeUser = user.subscribe((currentUser) => {
+                if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) return;
+
+                unsubscribe = onSnapshot(docRef, (snapshot) => {
+                    set((snapshot.data() as T) ?? undefined);
+                });
+            })
+
+            return () => {
+                if(unsubscribe) unsubscribe();
+                if(unsubscribeUser) unsubscribeUser();
+            }
+        })
+
+        return {
+            subscribe,
+            ref: docRef,
+            id: docRef.id,
+        }
+    }
+
     return {
         subscribe: user.subscribe,
         set: user.set,
+        doc: docStore,
         update: user.update,
         clientInit: clientInit,
         signIn: signIn,
         signOut: signOut,
         reset: reset,
         serverInit: serverInit,
-        setRedirect: (value: string) => { redirect = value; },
         getFirestore: getFirestore,
         getApp: getApp,
         cacheUser: cacheUser,
         getUser: getUser,
+        getRole: getRole,
     }
 }

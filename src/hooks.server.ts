@@ -1,5 +1,7 @@
 import { firebaseAdmin, getUser } from "$lib/Firebase/firebase.server";
+import { getSpecifiedRoles } from "$lib/Roles/role.server";
 import type { Handle, RequestHandler } from "@sveltejs/kit";
+import type { DocumentReference } from "firebase-admin/firestore";
 
 export const handle = (async ({ event, resolve}) => {
     console.log(event.route);
@@ -29,12 +31,18 @@ export const handle = (async ({ event, resolve}) => {
         if(firestoreUser == undefined) {
             event.locals.team = false;
             event.locals.firestoreUser = undefined;
+
+            const quaraantinedUser = (await db.collection('quarantine').doc(user.uid).get());
+            event.locals.kicked = quaraantinedUser.exists;
         } else {
             event.locals.team = true;
-            event.locals.firestoreUser = firestoreUser as any;
+            event.locals.firestoreUser = {
+                ...firestoreUser as any,
+                roles: await getSpecifiedRoles(firestoreUser.roles as DocumentReference[]),
+            };
+            event.locals.kicked = false;
         }
     }
-
 	const response = await resolve(event, {
         transformPageChunk: ({ html }) => html.replaceAll('%theme%', scheme),
     });

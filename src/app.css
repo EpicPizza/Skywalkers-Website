@@ -20,11 +20,27 @@ html {
 }
 
 .b-blue {
-    @apply text-white dark:text-white bg-[linear-gradient(110deg,#2563eb,45%,#3b82f6,55%,#2563eb)] bg-[length:200%_100%] border-blue-600 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium animate-background-shine;
+    @apply text-white dark:text-white bg-blue-600 border-blue-600 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
 }
 
 .b-green {
-    @apply text-white dark:text-white bg-[linear-gradient(110deg,#16a34a,45%,#22c55e,55%,#16a34a)] bg-[length:200%_100%] border-green-600 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium animate-background-shine;
+    @apply text-white dark:text-white bg-green-600 border-green-600 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
+}
+
+.b-red {
+    @apply text-white dark:text-white bg-red-500 border-red-500 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
+}
+
+.b-primary {
+    @apply text-primary-text-light dark:text-primary-text-dark bg-primary-light dark:bg-primary-dark border-primary-light dark:border-primary-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
+}
+
+.b-secondary {
+    @apply text-secondary-text-light dark:text-secondary-text-dark bg-secondary-light dark:bg-secondary-dark border-secondary-light dark:border-secondary-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
+}
+
+.b-accent {
+    @apply text-accent-text-light dark:text-accent-text-dark bg-accent-light dark:bg-accent-dark border-accent-light dark:border-accent-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium;
 }
 
 .b-clear {
@@ -36,7 +52,7 @@ html {
 }
 
 .b-default {
-    @apply b text-zinc-400 border-zinc-200 hover:bg-zinc-200 disabled:bg-white disabled:text-zinc-200 hover:text-zinc-400 dark:text-zinc-400 dark:border-zinc-700 dark:hover:bg-zinc-700 dark:disabled:bg-inherit dark:disabled:text-zinc-700 transition-colors px-2 py-1 rounded-md border-[1px] font-medium;
+    @apply b text-zinc-500 border-border-light hover:bg-border-light disabled:bg-white disabled:text-zinc-200 hover:text-zinc-500 dark:text-zinc-400 dark:border-zinc-700 dark:hover:bg-zinc-700 dark:disabled:bg-inherit dark:disabled:text-zinc-700 transition-colors px-2 py-1 rounded-md border-[1px] font-medium;
 }
 
 .tooltip {
@@ -59,6 +75,20 @@ html {
   'opsz' 40
 }
 
-h1, h2, h3, a, p {
-    @apply text-gray-700 dark:text-gray-200
+input {
+    @apply bg-zinc-200 dark:bg-zinc-700;
+}
+
+select {
+    @apply bg-zinc-200 dark:bg-zinc-700;
+}
+
+textarea {
+    @apply bg-zinc-200 dark:bg-zinc-700;
+}
+
+@layer utilities {
+    .inherit {
+        display: inherit;
+    }
 }

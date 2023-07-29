@@ -1,11 +1,16 @@
 <script lang=ts>
     import Loading from "$lib/Builders/Loading.svelte";
-    import { client } from "$lib/Firebase/firebase";
     import Icon from "$lib/Builders/Icon.svelte";
-    import { loading, localLoading } from '$lib/stores'
-    import { onDestroy } from "svelte";
+    import { onDestroy, getContext } from "svelte";
     import { redirect } from "@sveltejs/kit";
     import { goto } from "$app/navigation";
+    import type { firebaseClient } from "$lib/Firebase/firebase.js";
+    import type { Writable } from "svelte/store";
+
+    let client = getContext('client') as ReturnType<typeof firebaseClient>;
+
+    let localLoading = getContext('localLoading') as Writable<boolean>;
+    let loading = getContext('loading') as Writable<boolean>;
 
     let restart: HTMLButtonElement;
 
@@ -25,7 +30,7 @@
     <div class="flex justify-between mt-4 items-center">
         <div class="flex items-center">
             <a class="inline-block leading-6" href="/verify"><button class="b-default h-[2.125rem] flex flex-row items-center sm:gap-[0.125rem] after:content-[''] sm:after:content-['Back']"><Icon icon=arrow_back scale="1.3rem"></Icon></button></a>
-            <button bind:this={restart} class="b-default mr-2 ml-2" on:click={async () => { $loading = true; await goto("/"); client.setRedirect("/verify"); client.signIn(); }}>Restart</button>
+            <button bind:this={restart} class="b-default mr-2 ml-2" on:click={async () => { $loading = true; await goto("/verify?flow=true"); client.signIn(); }}>Restart</button>
         </div>
         <a data-sveltekit-preload-data=off href=/verify/finish><button on:click={() => { setTimeout(() => { $localLoading = true }, 500)}} class="b-blue flex flex-row items-center sm:gap-[0.125rem] before:content-[''] h-[2.125rem] sm:before:content-['Finish']"><Icon icon=arrow_forward scale="1.3rem"></Icon></button></a>
     </div>

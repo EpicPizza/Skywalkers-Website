@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { Buffer } from 'node:buffer';
 import safeCompare from "safe-compare";
 import type { Firestore } from "firebase-admin/firestore";
+import type { Code } from "$lib/Codes/codes"
 
 const StepOne = z.object({
     member_id: z.string({ required_error: "Personal code is empty", invalid_type_error: "Personal code must be a number" }).length(6, { message : "Personal code must be 6 numbers long" }).regex(/^[0-9]*$/, { message: "Personal code must be a number."}),
@@ -13,34 +14,38 @@ const StepOne = z.object({
 });
 
 export async function load(event) {
-    if(event.locals.user == undefined) {
-        throw redirect(307, "/?signin=true");
-    }
-
     if(event.locals.team) {
         throw redirect(307, "/?alrverify=true");
     }
 
-    const db: Firestore = firebaseAdmin.getFirestore();
-
-    const users = await db.collection('verify').listDocuments();
-
-    let found: false | string = false;
-    for(let i = 0; i < users.length; i++) {
-        if(safeCompare(event.locals.user.uid, users[i].id)) {
-            let data = (await users[i].get()).data();
-            console.log("Found", data);
-            if(data != undefined) {
-                found = data.code;
-            };
-        }
-    }
-
     const form = await superValidate(event, StepOne);
 
-    if(found != false) {
-        form.data.member_id = found.split("-")[0];
-        form.data.team_id = found.split("-")[1];
+    console.log(event.url.searchParams.get("flow"));
+
+    if(!(event.url.searchParams.get("flow") === 'true')) {
+        if(event.locals.user == undefined) {
+            throw redirect(307, "/?signin=true");
+        }
+
+        const db: Firestore = firebaseAdmin.getFirestore();
+
+        const users = await db.collection('verify').listDocuments();
+
+        let found: false | string = false;
+        for(let i = 0; i < users.length; i++) {
+            if(safeCompare(event.locals.user.uid, users[i].id)) {
+                let data = (await users[i].get()).data();
+                console.log("Found", data);
+                if(data != undefined) {
+                    found = data.code;
+                };
+            }
+        }
+
+        if(found != false) {
+            form.data.member_id = found.split("-")[0];
+            form.data.team_id = found.split("-")[1];
+        }
     }
 
     return {
@@ -77,12 +82,22 @@ export const actions = {
         let found = false;
         for(let i = 0; i < teams.length; i++) {
             if(crypto.timingSafeEqual(Buffer.from(teams[i].id), Buffer.from(form.data.team_id.toString()))) {
+                console.log("found team");
+
                 const members = (await db.collection('teams').doc(form.data.team_id.toString()).get()).data() as Object;
 
                 const codes = Object.keys(members);
 
+                const oldCodes = new Map<string, Code>(Object.entries(members));
+
                 for(let j = 0; j < codes.length; j++) {
-                    if(crypto.timingSafeEqual(Buffer.from(codes[j]), Buffer.from(form.data.member_id.toString()))) {
+                    let correct = crypto.timingSafeEqual(Buffer.from(codes[j]), Buffer.from(form.data.member_id.toString()));
+                    let anyone = safeCompare("anyone", oldCodes.get(codes[j])?.access as string) 
+                    let access = safeCompare(locals.user.email ?? "", oldCodes.get(codes[j])?.access as string);
+
+                    console.log("checking", correct, anyone, access);
+
+                    if(correct && (anyone || access)) {
                         found = true;
                         console.log("Found", form.data.member_id.toString() + "-" + form.data.team_id.toString())
 
@@ -98,8 +113,14 @@ export const actions = {
 
                 const codes = Object.keys(members);
 
+                const oldCodes = new Map<string, Code>(Object.entries(members));
+
                 for(let j = 0; j < codes.length; j++) {
-                    crypto.timingSafeEqual(Buffer.from(codes[j]), Buffer.from(form.data.member_id.toString()));
+                    let correct = crypto.timingSafeEqual(Buffer.from(codes[j]), Buffer.from(form.data.member_id.toString()));
+                    let anyone = safeCompare("anyone", oldCodes.get(codes[j])?.access as string) 
+                    let access = safeCompare(locals.user.email ?? "", oldCodes.get(codes[j])?.access as string);
+
+                    if(correct && (anyone || access)) {}
                 }
             }
         }

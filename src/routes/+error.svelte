@@ -8,7 +8,7 @@
 </script>
 
 <Background>
-    <Page>
+    <Page size="28rem">
         <h1 class="text-3xl text-center text-red-500 dark:text-red-500 font-bold">{$page.error?.message}</h1>
         {#if $page.error?.message == "Sign In Required"}
             <div class="mt-2">

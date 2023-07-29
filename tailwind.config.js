@@ -6,9 +6,12 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      "display": {
+        "inherit" : 'inherit',
+      },
       "animation": {
         "background-shine": 'background-shine 2s linear infinite',
-        "strobe": 'strobe 2s ease-in-out infinite delay-1000',
+        "strobe": 'strobe 2s ease-in-out infinite',
       },
       "keyframes": {
         'background-shine': {
@@ -21,6 +24,30 @@ export default {
         }
       },
       colors: {
+        'primary': {
+          light: '#394F7F',
+          dark: '#394F7F',
+          text: {
+            light: '#ffffff',
+            dark: '#ffffff'
+          }
+        },
+        'secondary': {
+          light: '#dae1f1',
+          dark: '#2B3141',
+          text: {
+            light: '#000000',
+            dark: '#ffffff'
+          }
+        },
+        'accent': {
+          light: '#4369bc',
+          dark: '#8ea5d7',
+          text: {
+            light: '#ffffff',
+            dark: '#000000'
+          }
+        },
         'backgroud': {
           light: colors.white,
           dark: colors.zinc[800]

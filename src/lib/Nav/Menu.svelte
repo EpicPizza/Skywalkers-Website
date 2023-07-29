@@ -1,10 +1,16 @@
 <script lang=ts>
-    import { navLinks, navmenu, navmode, verified } from "$lib/stores";
-    import { onDestroy } from "svelte";
+    import { createVerified, navLinks } from "$lib/stores";
+    import { getContext, onDestroy } from "svelte";
     import ThemeSwitcher from "./ThemeSwitcher.svelte";
     import { browser } from '$app/environment'; 
     import { fade, slide, fly } from "svelte/transition";
     import { quintOut } from 'svelte/easing';
+    import type { Writable } from "svelte/store";
+
+    let verified = getContext('verified') as ReturnType<typeof createVerified>;
+
+    let navmenu = getContext('navmenu') as Writable<boolean>;
+    let navmode = getContext('navmode') as Writable<boolean>;
 
     let unsubscribeMenu = navmenu.subscribe((value) => {
         if(browser) {

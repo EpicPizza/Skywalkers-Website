@@ -1,7 +1,7 @@
 import { PUBLIC_DEFAULT_USER } from '$env/static/public';
 import type { FirestoreUser } from '$lib/Firebase/firebase.js';
-import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
-import { getUserList, meetingSchema } from '$lib/meetings.server.js';
+import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
+import { getUserList, meetingSchema } from '$lib/Meetings/meetings.server.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
@@ -22,9 +22,9 @@ export async function load({ params, locals }) {
 
     const meeting = {
         name: data.name as string,
-        lead: (await data.lead.get()).data() as FirestoreUser,
-        synopsis: (await data.synopsis.get()).data() as FirestoreUser,
-        mentor: (await data.mentor.get()).data() as FirestoreUser,
+        lead: await seralizeFirestoreUser((await data.lead.get()).data()),
+        synopsis:  data.synopsis == null ? undefined : await seralizeFirestoreUser((await data.synopsis.get()).data()),
+        mentor: data.mentor == null ? undefined : await seralizeFirestoreUser((await data.mentor.get()).data()),
         location: data.location as string,
         when_start: data.when_start.toDate() as Date,
         when_end: data.when_end.toDate() as Date,
@@ -37,9 +37,11 @@ export async function load({ params, locals }) {
 
     const form = await superValidate(meetingSchema);
 
-    form.data.lead = (data.mentor as DocumentReference).id;
-    form.data.synopsis = (data.synopsis as DocumentReference).id;
-    form.data.mentor = (data.mentor as DocumentReference).id;
+    console.log(data);
+
+    form.data.lead = (data.lead as DocumentReference).id;
+    form.data.synopsis = data.synopsis == null ? "" : (data.synopsis as DocumentReference).id;
+    form.data.mentor = data.mentor == null ? "" : (data.mentor as DocumentReference).id;
     form.data.name = meeting.name;
     form.data.location = meeting.location;
     form.data.starts = meeting.when_start;
@@ -69,7 +71,7 @@ export const actions = {
         
         const users= await getUserList(db);
 
-        if(!users.includes(form.data.lead) || !users.includes(form.data.mentor) || !users.includes(form.data.synopsis)) {
+        if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
             return message(form, 'User(s) not found.', {
                 status: 404
             });
@@ -78,8 +80,8 @@ export const actions = {
         await ref.update({
             name: form.data.name,
             lead: db.collection('users').doc(form.data.lead),
-            synopsis: db.collection('users').doc(form.data.synopsis),
-            mentor: db.collection('users').doc(form.data.mentor),
+            synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
+            mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
             location: form.data.location,
             when_start: form.data.starts,
             when_end: form.data.ends,

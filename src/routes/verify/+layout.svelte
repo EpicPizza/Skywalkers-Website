@@ -8,7 +8,7 @@
 </svelte:head>
 
 <Background>
-    <Page>
+    <Page size="28rem">
         <slot></slot>
     </Page>
 </Background>

@@ -1,10 +1,10 @@
+import type { Code } from "$lib/Codes/codes";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { redirect, type RequestHandler } from "@sveltejs/kit";
+import { error, redirect, type RequestHandler } from "@sveltejs/kit";
 import { FieldValue } from "firebase-admin/firestore";
-import { DocumentReference } from "firebase/firestore";
 import safeCompare from "safe-compare";
 
-export const load = async ({ locals }) => {
+export const load = async ({ locals }) => { //TODO: secure possible exploit to verify multiple accounts with same code
     if(locals.user == undefined) {
         throw redirect(307, "/?signin=true");
     }
@@ -34,14 +34,22 @@ export const load = async ({ locals }) => {
     if(found == false) {
         throw redirect(307, "/verify?invalid=true");
     } else {
-        const members = (await db.collection('teams').doc(found.split("-")[1]).get()).data() as any;
+        const members = (await db.collection('teams').doc(found.split("-")[1]).get()).data();
+
+        if(members == undefined) throw redirect(307, "/verify?invalid=true");
 
         const entries = Object.keys(members);
+
+        const oldCodes = new Map<string, Code>(Object.entries(members));
 
         let role;
         let foundMember: boolean = false;
         for(let i = 0; i < entries.length; i++) {
-            if(safeCompare(found.split("-")[0], entries[i])) {
+            let correct = safeCompare(entries[i], found.split("-")[0]);
+            let anyone = safeCompare("anyone", oldCodes.get(entries[i])?.access as string) 
+            let access = safeCompare(locals.user.email ?? "", oldCodes.get(entries[i])?.access as string);
+
+            if(correct && (anyone || access)) {
 
                 role = members[found.split("-")[0] as any];
 
@@ -73,6 +81,9 @@ export const load = async ({ locals }) => {
                 photoURL: locals.user.photoURL,
                 team: found.split("-")[1],
                 role: role,
+                roles: [],
+                level: 0,
+                pronouns: "",
             })
 
             throw redirect(307, "/?invalidateAll=true");

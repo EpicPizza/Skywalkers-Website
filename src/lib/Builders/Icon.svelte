@@ -1,6 +1,6 @@
 <script lang="ts">
     export let icon: string;
-    export let scale: string = "1.5";
+    export let scale: string | 0 = "1.5rem";
     export let color: string = "inherit";
     export let style: string = "";
     export let rounded: boolean = false;
@@ -9,6 +9,6 @@
     export {classStyle as class};
 </script>
 
-<div style="width:{scale}; height:{scale};" class="flex justify-around items-center {classStyle}">
-    <span style="font-size:{scale}; color: {color}; {style}" class="material-symbols-{rounded ? "rounded" : "outlined"}">{icon}</span>
+<div style="{scale != 0 ? "width:" + scale + "; height:" + scale + ";" : ""}" class="flex justify-around items-center {classStyle}">
+    <span style="{scale != 0 ? "font-size: " + scale + ";" : "font-size: inherit;"} color: {color}; {style} " class="material-symbols-{rounded ? "rounded" : "outlined"}">{icon}</span>
 </div> 

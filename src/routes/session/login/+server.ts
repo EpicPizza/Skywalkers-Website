@@ -5,6 +5,8 @@ import { firebaseAdmin, getUser } from '$lib/Firebase/firebase.server';
 import { DEV } from '$env/static/private';
 
 export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
+    console.log("setting cookie");
+
     const encodedToken = request.headers.get('Authorization')?.split(' ')[1];
 
     if(encodedToken == undefined) {
@@ -12,8 +14,11 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
     }
 
     const expiresIn = 1000 * 60 * 60 * 24;
+    console.log(encodedToken);
 
     var recent = await checkRecent(encodedToken);
+
+    console.log(recent);
 
     if(!recent) {
         throw error(401, "UNAUTHORIZED REQUEST");
@@ -28,6 +33,7 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
                     (sessionCookie) => {
                         console.log("got cookie");
                         const options = { maxAge: expiresIn, httpOnly: true, secure: DEV == 'TRUE' ? false : true, path: "/", sameSite: true };
+                        console.log("actually setting cookie");
                         cookies.set("session", sessionCookie, options)
                         console.log(sessionCookie);
                         resolve(json({'Authorization': 'Success'}));
@@ -49,15 +55,11 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
 }) satisfies RequestHandler;
 
 async function checkRecent(idToken: string): Promise<Boolean> { //prevents using stolen token
-    return new Promise((resolve) => {
-        firebaseAdmin.getAuth()
-            .verifyIdToken(idToken)
-            .then((decodedIdToken) => {
-                if (new Date().getTime() / 1000 - decodedIdToken.auth_time < 5 * 60) {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            });
-    })
+    console.log("decoding");
+
+    const decodedIdToken = await firebaseAdmin.getAuth().verifyIdToken(idToken);
+
+    console.log("decoded");
+
+    return new Date().getTime() / 1000 - decodedIdToken.auth_time < 5 * 60
 }

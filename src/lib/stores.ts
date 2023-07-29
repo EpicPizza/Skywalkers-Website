@@ -4,17 +4,22 @@ import { get } from 'svelte/store';
 import type { firebaseClient } from '$lib/Firebase/firebase';
 import type { DocumentReference } from "firebase/firestore";
 
-export const mode = createMode();
-export const verified = createVerified();
+//here for reference, instead these stores are made with setContext in root layout (or said otherwise).
 
-export const navmenu = writable(false);
+//export const mode = createMode();
+//export const verified = createVerified();
+
+/*export const navmenu = writable(false);
 export const scroll = writable<boolean>(true);
 export const navmode = writable<boolean>(); //false - reduced, true - full
 export const localLoading = writable<boolean>(); //on same page loading signals
 export const loading = writable<boolean>(); //on navigation loading
 export const dialogOpen = writable<boolean>();
+export const previous = writable<string | undefined>(); //only used for knowing where to go back for updating profile for menu like expected behavior
+export const onScroll = writable<boolean>(false); //boolean signifies nothing, just changes when scroll happens
+export const warning = writable<Warning | undefined>(undefined);*/
 
-interface Warning {
+export interface Warning {
     color: 'red' | 'yellow' | 'aqua' | 'green' | 'default',
     message: string,
 }
@@ -31,9 +36,7 @@ export interface Meeting {
     id: string,
 }
 
-export const warning = writable<Warning | undefined>(undefined);
-
-function createMode() {
+export function createMode() {
     const { subscribe, set, update }: Writable<'dark' | 'light'> = writable('light');
     const system = writable(false);
     let last: undefined | string = undefined;
@@ -45,6 +48,7 @@ function createMode() {
     const setCookie = (theme: string) => {
         document.cookie = "theme=" + theme;
         last = theme;
+        localStorage.setItem('theme', theme);
     }
 
     const serverInit = (cookie: string | undefined) => {
@@ -88,26 +92,14 @@ function createMode() {
             }
         });
 
-        last = getCookie();
-
-        //ignore these 6 errors, intervals do not get cleared between preview reloads, so this is a way delete old intervals
-
-        if(window.interval != undefined) { clearInterval(window.interval); window.interval = undefined; }
-
-        window.interval = setInterval(() => {
-            let current = getCookie();
-            if(last != current) {
-                last = current;
-                let cookiecontext = serverInit(current);
-                updateScheme(cookiecontext == undefined ? getSystemTheme() : current?.endsWith('light') ? 'light' : 'dark');
+        addEventListener("storage", (event) => {
+            if(event.key == 'theme') {
+                let newTheme: string | null | undefined = event.newValue;
+                newTheme = newTheme ? newTheme : undefined;
+                serverInit(newTheme);
+                updateScheme(newTheme == undefined ? getSystemTheme() : newTheme?.endsWith('light') ? 'light' : 'dark');
             }
-        }, 1000);
-    }
-
-    const getCookie = () => {
-        if(Array.isArray(('; '+document.cookie).split(`; theme=`)) && ('; '+document.cookie).split(`; theme=`).pop() != undefined) {
-            return ('; '+document.cookie).split(`; theme=`).pop()?.split(';')[0] == '' ? undefined : ('; '+document.cookie).split(`; theme=`).pop()?.split(';')[0];
-        }
+        })
     }
 
     const updateScheme = (theme: string) => {
@@ -128,6 +120,7 @@ function createMode() {
         set(getSystemTheme());
         setCookie('system|' + getSystemTheme());
         system.set(true);
+        updateScheme(getSystemTheme());
     }
 
     const setTheme = (theme: 'light' | 'dark') => {
@@ -149,7 +142,7 @@ function createMode() {
     }
 }
 
-function createVerified() {
+export function createVerified() {
     const {subscribe, set, update} = writable<boolean>();
     let unsubscribe: Unsubscriber | undefined = undefined;
 
@@ -206,11 +199,6 @@ export const navLinks: Writable<Link[]> = writable([
         display: "Meetings",
         protected: true,
     },
-    {
-        href: "/reports",
-        display: "Reports",
-        protected: true,
-    }
 ]);
 
 //https://svelte.dev/repl/0ace7a508bd843b798ae599940a91783?version=3.16.7

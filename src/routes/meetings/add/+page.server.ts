@@ -1,5 +1,5 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { getUserList, meetingSchema } from "$lib/meetings.server";
+import { getUserList, meetingSchema } from "$lib/Meetings/meetings.server";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { message, superValidate } from "sveltekit-superforms/server";
 
@@ -9,6 +9,22 @@ export async function load({ params, locals }) {
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
     const form = await superValidate(meetingSchema);
+
+    //some sensible defaults
+
+    form.data.lead = locals.user.uid;
+
+    form.data.starts = new Date();
+    form.data.starts.setHours(17);
+    form.data.starts.setMinutes(0);
+    form.data.starts.setMilliseconds(0);
+
+    form.data.ends = new Date();
+    form.data.ends.setHours(20);
+    form.data.ends.setMinutes(0);
+    form.data.ends.setMilliseconds(0);
+
+    form.data.thumbnail = "icon:event";
 
     return { form: form };
 }
@@ -33,24 +49,33 @@ export const actions = {
         
         const users= await getUserList(db);
 
-        if(!users.includes(form.data.lead) || !users.includes(form.data.mentor) || !users.includes(form.data.synopsis)) {
+        console.log(form.data);
+        console.log("sues", (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)));
+        console.log("omg");
+        console.log("sues", (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis)));
+
+        if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
             return message(form, 'User(s) not found.', {
                 status: 404
             });
         }
 
-        const res = await ref.add({
-            name: form.data.name,
-            lead: db.collection('users').doc(form.data.lead),
-            synopsis: db.collection('users').doc(form.data.synopsis),
-            mentor: db.collection('users').doc(form.data.mentor),
-            location: form.data.location,
-            when_start: form.data.starts,
-            when_end: form.data.ends,
-            thumbnail: form.data.thumbnail,
-            completed: false,
-        })
+        let res;
+        for(let i = 300; i < 1000; i++) {
+            res = await ref.add({
+                name: form.data.name + " " + i,
+                lead: db.collection('users').doc(form.data.lead),
+                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
+                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
+                location: form.data.location,
+                when_start: new Date(form.data.starts.valueOf() + (i * 1000 * 60 * 60 * 24)),
+                when_end: new Date(form.data.ends.valueOf() + (i * 1000 * 60 * 60 * 24)),
+                thumbnail: form.data.thumbnail,
+                completed: false,
+                signups: [],
+            })
+        }
 
-        throw redirect(307, "/meetings/" + res.id + "?created=true");
+        throw redirect(307, "/meetings/" + res?.id + "?created=true");
     }
 }

@@ -1,12 +1,16 @@
 <script lang=ts>
     import Icon from "$lib/Builders/Icon.svelte";
-    import { mode, warning } from "$lib/stores";
-    import { get } from "svelte/store";
-    import { onMount } from "svelte";
+    import type { createMode, Warning } from "$lib/stores";
+    import { get, type Writable } from "svelte/store";
+    import { getContext, onMount } from "svelte";
     import colors, { current } from 'tailwindcss/colors'
     import { tweened } from 'svelte/motion';
     import { cubicOut } from "svelte/easing";
     import { fade } from "svelte/transition";
+
+    let mode = getContext('mode') as ReturnType<typeof createMode>
+
+    let warning = getContext('warning') as Writable<Warning | undefined>;
 
     let color: string;
     let message: string;

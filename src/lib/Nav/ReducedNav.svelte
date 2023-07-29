@@ -1,11 +1,12 @@
 <script lang=ts>
     import Icon from "$lib/Builders/Icon.svelte";
-    import { navmenu } from "$lib/stores";
-    import { onDestroy } from "svelte";
-    import { mount_component } from "svelte/internal";
+    import { getContext, onDestroy } from "svelte";
     import { onMount } from "svelte";
     import Profile from "./Profile.svelte";
     import { Menu } from "@rgossiaux/svelte-headlessui";
+    import type { Writable } from "svelte/store";
+
+    let navmenu = getContext('navmenu') as Writable<boolean>;
 
     onDestroy(() => {
         $navmenu = false;
@@ -22,7 +23,7 @@
 
 <div class="h-full w-full relative z-10">
     <div class="absolute flex flex-col justify-around h-full">
-        <button class="w-10 h-10 flex items-center justify-around" on:click={() => {navmenu.update((n) => { return !n })}}>
+        <button class="w-10 h-10 b-default flex items-center justify-around" on:click={() => {navmenu.update((n) => { return !n })}}>
             <Icon icon="menu" scale="1.75rem"/>
         </button>
     </div>

@@ -9,6 +9,7 @@ declare global {
 			user: UserRecord | undefined
 			firestoreUser: FirestoreUser | undefined,
 			team: boolean,
+			kicked: boolean,
 		}
 		// interface PageData {}
 		// interface Platform {}

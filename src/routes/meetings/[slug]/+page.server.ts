@@ -1,5 +1,6 @@
 import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
-import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
+import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
+import { getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 
@@ -22,16 +23,29 @@ export async function load({ params, locals, url }) {
         if(user != undefined) {
             signups.push({
                 ...user,
+                roles: await getSpecifiedRoles(user.roles),
                 id: data.signups[i].id,
             } as SecondaryUser);
         }
     }
 
+    let synopsis; 
+    if(data.synopsis != null) {
+        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data())
+    }
+
+    let mentor;
+    if(data.mentor != null) {
+        mentor = await seralizeFirestoreUser((await data.mentor.get()).data())
+    }
+
     const meeting = {
         name: data.name as string,
-        lead: (await data.lead.get()).data() as FirestoreUser,
-        synopsis: (await data.synopsis.get()).data() as FirestoreUser,
-        mentor: (await data.mentor.get()).data() as FirestoreUser,
+        lead: await seralizeFirestoreUser((await data.lead.get()).data()),
+        //@ts-ignore
+        synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis,
+        //@ts-ignore
+        mentor: data.mentor == null ? undefined : mentor == undefined ? "User Not Found" :  mentor,
         location: data.location as string,
         when_start: data.when_start.toDate() as Date,
         when_end: data.when_end.toDate() as Date,
@@ -41,7 +55,7 @@ export async function load({ params, locals, url }) {
         signups: signups
     }
 
-    if((meeting.lead != undefined && meeting.lead.team != locals.firestoreUser.team) || (meeting.synopsis != undefined && meeting.synopsis.team != locals.firestoreUser.team) || (meeting.mentor != undefined && meeting.mentor.team != locals.firestoreUser.team)) throw error(500, "Meeting Requested Inaccessible Resource");
+    if((meeting.lead != undefined && meeting.lead.team != locals.firestoreUser.team) || (typeof meeting.synopsis == 'object' && meeting.synopsis.team != locals.firestoreUser.team) || (typeof meeting.mentor == 'object' && meeting.mentor.team != locals.firestoreUser.team)) throw error(500, "Meeting Requested Inaccessible Resource");
 
     return { 
         meeting: meeting,

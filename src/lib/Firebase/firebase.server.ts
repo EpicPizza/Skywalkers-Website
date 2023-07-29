@@ -4,7 +4,9 @@ import FirebaseAdmin from 'firebase-admin';
 const firebaseAuth = FirebaseAdmin.auth;
 import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
 import { AuthCredential } from 'firebase/auth';
-import { type Firestore, getFirestore as getFirebaseFirestore } from 'firebase-admin/firestore';
+import { type Firestore, getFirestore as getFirebaseFirestore, DocumentReference } from 'firebase-admin/firestore';
+import { getSpecifiedRoles } from '$lib/Roles/role.server';
+import type { FirestoreUser } from './firebase';
 
 export let firebaseAdmin = getFirebaseAdmin();
 
@@ -63,6 +65,14 @@ function getFirebaseAdmin() {
     }
 }
 
+export async function seralizeFirestoreUser(user: any): Promise<FirestoreUser | undefined> {
+    if(user == undefined) return undefined;
+    return {
+        ...user,
+        roles: await getSpecifiedRoles(user.roles as DocumentReference[]),
+    }
+}
+
 export function verifySession(session: string | undefined) {
     return new Promise((resolve) => {
         if(session == undefined) {
@@ -83,19 +93,15 @@ export function verifySession(session: string | undefined) {
     })
 }
 
-export function getUser(session: string): Promise<UserRecord | undefined> {
-    return new Promise<UserRecord | undefined>((resolve) => {
-        firebaseAdmin.getAuth()
-            .verifySessionCookie(session, true)
-                .then((decodedToken) => {
-                    resolve(firebaseAdmin.getAuth().getUser(decodedToken.uid));
-                    return;
-                })
-                .catch((error) => {
-                    resolve(undefined);
-                    return;
-                })
-    })
+export async function getUser(session: string): Promise<UserRecord | undefined> {
+    try {
+        const decodedToken = await firebaseAdmin.getAuth().verifySessionCookie(session, true);
+        const user = await firebaseAdmin.getAuth().getUser(decodedToken.uid);
+        return user;
+    } catch(e) {
+        console.log(e);
+        return undefined; 
+    }
 }
 
 export function getToken(session: string): Promise<DecodedIdToken | undefined> {

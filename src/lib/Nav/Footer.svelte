@@ -1,7 +1,7 @@
-<script>
+<script lang=ts>
     import Link from "$lib/Builders/Link.svelte";
-
 </script>
+
 <div class="w-full bg-black p-8">
     <div class="flex">
         <img alt="logo" src="/favicon.webp" class="border-[1px] border-zinc-500 max-h-[4rem] max-w-[4rem] rounded-lg">
