@@ -1,0 +1,74 @@
+[debug] [2023-07-30T03:01:57.053Z] ----------------------------------------------------------------------
+[debug] [2023-07-30T03:01:57.054Z] Command:       /usr/local/bin/node /Users/alejandroestrella/Documents/ProjectFiles/SkywalkersWebsite/node_modules/.bin/firebase emulators:start
+[debug] [2023-07-30T03:01:57.054Z] CLI Version:   12.4.6
+[debug] [2023-07-30T03:01:57.054Z] Platform:      darwin
+[debug] [2023-07-30T03:01:57.054Z] Node Version:  v18.12.1
+[debug] [2023-07-30T03:01:57.055Z] Time:          Sat Jul 29 2023 20:01:57 GMT-0700 (Pacific Daylight Time)
+[debug] [2023-07-30T03:01:57.055Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-07-30T03:01:57.089Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-07-30T03:01:57.089Z] > authorizing via signed-in user (skywalkers.operations@gmail.com)
+[info] i  emulators: Starting emulators: hosting {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: hosting"}}
+[debug] [2023-07-30T03:01:57.255Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2023-07-30T03:01:57.256Z] assigned listening specs for emulators {"user":{"hosting":[{"address":"0.0.0.0","family":"IPv4","port":5173}],"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2023-07-30T03:01:57.264Z] [hub] writing locator at /var/folders/j4/_z_sxfsj50xfrdclvsf3t2w00000gn/T/hub-frc-skywalkers.json
+[debug] [2023-07-30T03:01:57.270Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers [none]
+[debug] [2023-07-30T03:01:57.770Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers 200
+[debug] [2023-07-30T03:01:57.770Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers {"projectId":"frc-skywalkers","projectNumber":"86129312478","displayName":"FRC Skywalkers","name":"projects/frc-skywalkers","resources":{"hostingSite":"frc-skywalkers"},"state":"ACTIVE","etag":"1_0f2f6003-ed25-4bc5-8ad8-df6cd7ac4d19"}
+[info] 
+   Thank you for trying our experimental support for SvelteKit on Firebase Hosting.
+   While this integration is maintained by Googlers it is not a supported Firebase product.
+   Issues filed on GitHub will be addressed on a best-effort basis by maintainers and other community members.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/frameworks-overview
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2023-07-30T03:02:04.230Z] [web frameworks] effective firebase.json:  {
+  "hosting": [
+    {
+      "source": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "frameworksBackend": {
+        "region": "us-west1"
+      },
+      "site": "frc-skywalkers",
+      "rewrites": [],
+      "redirects": [],
+      "headers": [],
+      "cleanUrls": true,
+      "public": "static",
+      "webFramework": "svelekit"
+    }
+  ]
+}
+[debug] [2023-07-30T03:02:04.231Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/frc-skywalkers/sites 
+[debug] [2023-07-30T03:02:04.851Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/frc-skywalkers/sites 200
+[debug] [2023-07-30T03:02:04.851Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/frc-skywalkers/sites {"sites":[{"name":"projects/frc-skywalkers/sites/frc-skywalkers","defaultUrl":"https://frc-skywalkers.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2023-07-30T03:02:04.851Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers/webApps/-/config [none]
+[debug] [2023-07-30T03:02:05.357Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers/webApps/-/config 200
+[debug] [2023-07-30T03:02:05.357Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/frc-skywalkers/webApps/-/config {"projectId":"frc-skywalkers","appId":"1:86129312478:web:b06670457b876827e1784f","storageBucket":"frc-skywalkers.appspot.com","apiKey":"AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE","authDomain":"frc-skywalkers.firebaseapp.com","messagingSenderId":"86129312478","measurementId":"G-GMZX3PY5H6"}
+[info] i  hosting[frc-skywalkers]: Serving hosting files from: static {"metadata":{"emulator":{"name":"hosting"},"message":"Serving hosting files from: \u001b[1mstatic\u001b[22m"}}
+[info] ✔  hosting[frc-skywalkers]: Local server: http://0.0.0.0:5174 {"metadata":{"emulator":{"name":"hosting"},"message":"Local server: \u001b[4m\u001b[1mhttp://0.0.0.0:5174\u001b[22m\u001b[24m"}}
+[warn] ⚠  emulators: The Emulator UI is not starting, either because none of the running emulators have a UI component or the Emulator UI cannot determine the Project ID. Pass the --project flag to specify a project. {"metadata":{"emulator":{"name":"hub"},"message":"The Emulator UI is not starting, either because none of the running emulators have a UI component or the Emulator UI cannot determine the Project ID. Pass the --project flag to specify a project."}}
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+└─────────────────────────────────────────────────────────────┘
+
+┌──────────┬──────────────┐
+│ Emulator │ Host:Port    │
+├──────────┼──────────────┤
+│ Hosting  │ 0.0.0.0:5174 │
+└──────────┴──────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 

@@ -76,6 +76,18 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
                 throw redirect(307, "/verify?invalid=true");
             }
 
+            const everyone = (await (firebaseAdmin.getFirestore().collection('teams').doc(found.split("-")[1]).collection('roles').where('level', '==', 0)).get()).docs[0];
+
+            let everyoneRole = {
+                color: everyone.data().color as string,
+                permissions: everyone.data().permissions as string[],
+                level: everyone.data().level as number,
+                name: everyone.data().name as string,
+                connectTo: everyone.data().connectTo as string | null,
+                members: [],
+                id: everyone.ref.id,
+            };
+
             db.collection('users').doc(locals.user.uid).set({
                 displayName: locals.user.displayName,
                 photoURL: locals.user.photoURL,
@@ -84,6 +96,7 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
                 roles: [],
                 level: 0,
                 pronouns: "",
+                permissions: everyoneRole.permissions,
             })
 
             throw redirect(307, "/?invalidateAll=true");

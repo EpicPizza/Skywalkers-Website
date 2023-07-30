@@ -79,6 +79,18 @@ export const actions = {
             })
         }
 
+        const everyone = (await (firebaseAdmin.getFirestore().collection('teams').doc(team).collection('roles').where('level', '==', 0)).get()).docs[0];
+
+        let everyoneRole = {
+            color: everyone.data().color as string,
+            permissions: everyone.data().permissions as string[],
+            level: everyone.data().level as number,
+            name: everyone.data().name as string,
+            connectTo: everyone.data().connectTo as string | null,
+            members: [],
+            id: everyone.ref.id,
+        };
+
         db.collection('users').doc(locals.user.uid).set({
             displayName: locals.user.displayName,
             photoURL: locals.user.photoURL,
@@ -87,7 +99,16 @@ export const actions = {
             roles: [],
             level: 0,
             pronouns: "",
+            permissions: everyoneRole.permissions,
         })
+
+        const kickedRef = db.collection('quarantine').doc(locals.user.uid);
+
+        const kicked = await kickedRef.get();
+
+        if(kicked.exists) {
+            await kickedRef.delete();
+        }
 
         throw redirect(307, "/?invalidateAll=true");
     }

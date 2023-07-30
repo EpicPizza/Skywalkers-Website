@@ -1,6 +1,6 @@
 <script lang=ts>
     import type { Warning } from "$lib/stores";
-    import { getContext } from "svelte";
+    import { getContext, onDestroy } from "svelte";
     import type { Writable } from "svelte/store";
     import { superForm } from "sveltekit-superforms/client";
     import type { SuperValidated } from "sveltekit-superforms/index";
@@ -41,6 +41,17 @@
 
         submit.click();
     }
+
+    onDestroy(() => {
+        if($delayed == true) {
+            warning.set({
+                message: 'Member kicked.',
+                color: $message == 'Member kicked.' ? 'green' : 'red',
+            })
+
+            $localLoading = false;
+        }
+    })
 </script>
 
 <form class="hidden" method=POST action=?/kick use:enhance>

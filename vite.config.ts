@@ -8,9 +8,4 @@ export default defineConfig({
 			external: ["firebase-admin"]
 		}
 	},
-	server: {
-        proxy: {
-            '/__/auth': 'https://skywalkers-operations-373322.firebaseapp.com',
-        },
-    },
 });

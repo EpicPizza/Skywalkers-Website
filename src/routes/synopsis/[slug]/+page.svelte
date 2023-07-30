@@ -88,7 +88,7 @@
                 <div class="flex items-center gap-2.5">
                     <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}'s Profile" src={entry.member.photoURL}/>
                     <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}</p>
-                    <span class="bg-black  dark:bg-white bg-opacity-10 ml-1 w-24 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.time} hour{entry.time == 1 ? "" : 's'}</span>
+                    <span class="bg-black  dark:bg-white bg-opacity-10 ml-1 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.time} hour{entry.time == 1 ? "" : 's'}</span>
                 </div>
             {:else}
                 <div class="flex justify-around">
