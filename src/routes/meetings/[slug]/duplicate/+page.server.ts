@@ -60,7 +60,7 @@ export const actions = {
 
         const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings');
         
-        const users= await getUserList(db);
+        const users= await getUserList(db, locals.firestoreUser.team);
 
         console.log(form.data);
 

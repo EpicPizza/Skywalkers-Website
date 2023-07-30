@@ -69,7 +69,7 @@ export const actions = {
 
         const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
         
-        const users= await getUserList(db);
+        const users= await getUserList(db, locals.firestoreUser.team);
 
         if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
             return message(form, 'User(s) not found.', {

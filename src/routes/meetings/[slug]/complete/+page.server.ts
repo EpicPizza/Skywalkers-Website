@@ -1,10 +1,11 @@
 import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
-import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
-import { completeSchema } from '$lib/Meetings/meetings.server.js';
+import { firebaseAdmin, getUser, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
+import { completeSchema, getUserList } from '$lib/Meetings/meetings.server.js';
 import { getSpecifiedRoles } from '$lib/Roles/role.server.js';
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
-import { superValidate } from 'sveltekit-superforms/server';
+import { message, superValidate } from 'sveltekit-superforms/server';
+import type { z } from 'zod';
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -54,15 +55,91 @@ export async function load({ params, locals, url }) {
         thumbnail: data.thumbnail as string,
         completed: data.completed as boolean,
         id: params.slug as string,
+        length: 0,
         signups: signups
     }
 
+    const length = (meeting.when_end.valueOf() - meeting.when_start.valueOf()) / 1000 / 60 / 60;
+
+    meeting.length = length;
+
     if((meeting.lead != undefined && meeting.lead.team != locals.firestoreUser.team) || (typeof meeting.synopsis == 'object' && meeting.synopsis.team != locals.firestoreUser.team) || (typeof meeting.mentor == 'object' && meeting.mentor.team != locals.firestoreUser.team)) throw error(500, "Meeting Requested Inaccessible Resource");
 
-    let form = superValidate(completeSchema);
+    let form = await superValidate(completeSchema);
+
+    form.data.id = meeting.id;
+
+    let hours = new Array<{ id: string, time: number }>()
+
+    for(let i = 0; i < signups.length; i++) {
+        hours.push({
+            time: length,
+            id: signups[i].id
+        })    
+    }
+
+    form.data.hours = hours;
     
     return { 
         meeting: meeting,
         form: form,
+    }
+}
+
+export const actions = {
+    default: async function({ request, locals }) {
+        if(locals.user == undefined) throw error(403, "Sign In Required");
+
+        if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+
+        const form = await superValidate(request, completeSchema);
+
+        if(!form.valid) {
+            return fail(400, { form });
+        }
+
+        const db = firebaseAdmin.getFirestore();
+
+        let users = await getUserList(db, locals.firestoreUser.team);
+
+        for(let i = 0; i < form.data.hours.length; i++) {
+            if(!users.includes(form.data.hours[i].id)) {
+                return message(form, "User not found.");
+            }
+        }
+
+        const team = db.collection('teams').doc(locals.firestoreUser.team);
+
+        const meetingRef = team.collection('meetings').doc(form.data.id);
+
+        const synopsisRef = team.collection('synopsis').doc(form.data.id);
+
+        const meeting = await meetingRef.get();
+
+        if(!meeting.exists) {
+            return message(form, "Meeting not found.");
+        }
+
+        await db.runTransaction(async t => {
+            t.update(meetingRef, {
+                completed: true,
+            })
+
+            const synopsis = {
+                synopsis: form.data.synopsis,
+                hours: [] as { member: DocumentReference, time: number }[],
+            }
+
+            for(let i = 0; i < form.data.hours.length; i++) {
+                synopsis.hours.push({
+                    member: db.collection('users').doc(form.data.hours[i].id),
+                    time: form.data.hours[i].time
+                })
+            }
+
+            t.create(synopsisRef, synopsis);
+        })
+
+        throw redirect(307, "/meetings/" + form.data.id + "")
     }
 }

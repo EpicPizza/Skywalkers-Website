@@ -109,7 +109,7 @@
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
     <div class="w-[36rem] lg:w-[44rem]">
         <div class="w-full flex justify-between">
-            <a href="/meetings{data.meeting.completed ? "?completed=true" : ""}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
+            <a href="/meetings{data.meeting.completed ? "/completed" : ""}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
                 <p>Back</p>
             </a>
@@ -179,11 +179,13 @@
             </div>
             <div class="p-4 lg:p-6 pb-2 lg:pb-4 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
                 <div class="flex items-center justify-between mb-4">
-                    <h1 class="text-xl lg:text-2xl ml-1">Sign Up List:</h1>
-                    {#if signedup}
-                        <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
-                    {:else}
-                        <button class="b-primary lg:text-lg" on:click={() => { add(data.meeting.id, client ) }}>Sign Up</button>
+                    <h1 class="text-xl lg:text-2xl ml-1 mb-1">Sign Up List:</h1>
+                    {#if data.meeting.completed == false}
+                        {#if signedup}
+                            <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
+                        {:else}
+                            <button class="b-primary lg:text-lg" on:click={() => { add(data.meeting.id, client ) }}>Sign Up</button>
+                        {/if}
                     {/if}
                 </div>
                 {#each data.meeting.signups as user}
@@ -200,9 +202,13 @@
                 {/each}
             </div>
             <div class="pt-4 flex flex-row-reverse gap-2">
-                <button on:click={ async () => { await deleteMeeting(data.meeting.id, client); }} class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=delete/><span>Delete</span></button>
+                {#if data.meeting.completed == false}
+                    <button on:click={ async () => { await deleteMeeting(data.meeting.id, client); }} class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=delete/><span>Delete</span></button>
+                {/if}
                 <a href="/meetings/{data.meeting.id}/duplicate" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=content_copy/><span>Duplicate</span></a>
-                <a href="/meetings/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
+                {#if data.meeting.completed == false}
+                    <a href="/meetings/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
+                {/if}
             </div>
         </div>
     </div>

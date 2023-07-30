@@ -7,7 +7,7 @@ export async function load({ locals, url }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
     
-    return { meetings: [] as Meeting[], loading: true, completed: false, deleted: url.searchParams.get("deleted") === 'true' ? true : false };
+    return { meetings: [] as Meeting[], loading: true, completed: true, deleted: url.searchParams.get("deleted") === 'true' ? true : false };
 }
 
 interface Meeting {

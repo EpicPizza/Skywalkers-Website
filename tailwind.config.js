@@ -45,7 +45,7 @@ export default {
           dark: '#8ea5d7',
           text: {
             light: '#ffffff',
-            dark: '#000000'
+            dark: colors.zinc[800]
           }
         },
         'backgroud': {

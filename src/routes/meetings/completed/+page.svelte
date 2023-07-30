@@ -181,12 +181,8 @@
 </svelte:head>
 
 <div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 pb-[4.5rem] lg:pb-16 overflow-x-auto">
-    <div class="p-4 pb-0 flex justify-between items-center">
-        <p class="ml-1">Showing {lastFetched} {order} Meeting{lastFetched == 1 ? "" : "s"}</p>
-        <div class="flex gap-2">
-            <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
-            <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
-        </div>
+    <div class="p-4 pb-0 flex justify-between items-center h-[50px]">
+        <p class="ml-1">Showing {lastFetched} Completed Meeting{lastFetched == 1 ? "" : "s"}</p>
     </div>
     <div class="min-w-[640px]">
         <div class="p-4 pb-2">
@@ -209,36 +205,11 @@
                             <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                         </MenuButton>
                         <MenuItems class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
-
-                            <MenuItem on:click={async (event) => { 
-                                event.preventDefault(); 
-                                event.stopPropagation(); 
-
-                                if(meeting.signedup) {
-                                    await remove(meeting.id, client);
-                                } else {
-                                    await add(meeting.id, client);
-                                }
-                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                {#if meeting.signedup}
-                                    Leave
-                                {:else}
-                                    Sign Up
-                                {/if}
-                            </MenuItem>
-                            <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Edit
-                            </MenuItem>
                             <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Duplicate
                             </MenuItem>
-                            <MenuItem on:click={async (event) => {
-                                event.preventDefault(); 
-                                event.stopPropagation(); 
-
-                                await deleteMeeting(meeting.id, client);
-                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Delete                           
+                            <MenuItem href="/synopsis/{meeting.id}/" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Synopsis
                             </MenuItem>
                         </MenuItems>
                     </Menu>

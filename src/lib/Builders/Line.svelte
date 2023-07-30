@@ -4,4 +4,4 @@
     export {style as class}
 </script>
 
-<hr class="border-border-light dark:border-border-dark {style}">
+<div class="border-border-light dark:border-border-dark border-t-[1px] w-full {style}"/>
