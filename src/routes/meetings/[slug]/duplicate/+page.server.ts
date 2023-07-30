@@ -70,6 +70,21 @@ export const actions = {
             });
         }
 
+        for(let i = 0; i < 9; i++) {
+            await ref.add({
+                name: form.data.name,
+                lead: db.collection('users').doc(form.data.lead),
+                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
+                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
+                location: form.data.location,
+                when_start: form.data.starts,
+                when_end: form.data.ends,
+                thumbnail: form.data.thumbnail,
+                completed: false,
+                signups: [],
+            })
+        }
+
         const res = await ref.add({
             name: form.data.name,
             lead: db.collection('users').doc(form.data.lead),

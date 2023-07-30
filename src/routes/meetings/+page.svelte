@@ -38,10 +38,8 @@
 
     let number = 50;
     let lastFetched = 0;
-
     let returned = true;
-
-    let reachedEnd = false;
+    let reachedEnd = data.reachedEnd;
 
     function loadNext() {
         if(unsubscribeClient) unsubscribeClient();
@@ -53,9 +51,13 @@
             
             number += 25;
 
-            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
-
-            startListener(ref);
+            if(order == 'Upcoming') {
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+                startListener(ref);
+            } else {
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number));
+                startListener(ref);
+            }
         });
     }
 
@@ -82,7 +84,7 @@
 
             const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
 
-            startListener(ref);
+            startListener(ref, true);
         })
     })
 
@@ -92,9 +94,10 @@
         if(unsubscribeBottom) unsubscribeBottom();
     })
 
-    function startListener(ref: Query<DocumentData>) {
-        if(reachedEnd) {
-            number = lastFetched;
+    $: console.log(data.meetings);
+
+    function startListener(ref: Query<DocumentData>, intial: boolean = false) {
+        if(reachedEnd && !intial) {
             return;
         }
 
@@ -132,13 +135,13 @@
                 }
             }
 
-            if(meetings.length < number) {
-                reachedEnd = true;
-                lastFetched = meetings.length;
-            } else {
-                reachedEnd = false;
-                lastFetched = meetings.length;
-            }
+            data.meetingsShown = meetings.length;
+            lastFetched = meetings.length;
+
+            console.log("Length", meetings.length);
+            console.log("Number", number);
+
+            reachedEnd = meetings.length < number;
 
             data.meetings = meetings;
             data.loading = false;
@@ -182,7 +185,7 @@
 
 <div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 pb-[4.5rem] lg:pb-16 overflow-x-auto">
     <div class="p-4 pb-0 flex justify-between items-center">
-        <p class="ml-1">Showing {lastFetched} {order} Meeting{lastFetched == 1 ? "" : "s"}</p>
+        <p class="ml-1">Showing {data.meetingsShown} {order} Meeting{data.meetingsShown == 1 ? "" : "s"}</p>
         <div class="flex gap-2">
             <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
             <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
@@ -239,6 +242,9 @@
                                 await deleteMeeting(meeting.id, client);
                             }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Delete                           
+                            </MenuItem>
+                            <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Complete
                             </MenuItem>
                         </MenuItems>
                     </Menu>
