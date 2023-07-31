@@ -67,7 +67,7 @@ export const actions = {
             completed: false,
             signups: [],
         })
-        
+
         throw redirect(307, "/meetings/" + res?.id + "?created=true");
     }
 }
