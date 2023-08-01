@@ -2,7 +2,7 @@
     import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
-    import TimeInput from "$lib/Components/TimeInput.svelte";
+    import TimeInput from "$lib/Components/DateTimeInput.svelte";
     import IconChooser from "$lib/Components/IconChooser.svelte";
     import PersonChooser from "$lib/Components/PersonChooser.svelte";
     import { superForm } from "sveltekit-superforms/client";
@@ -16,7 +16,6 @@
         timeoutMs: 8000,
     });
 </script>
-
 
 <svelte:head>
     <title>Skywalkers | Add Meeting</title>

@@ -14,6 +14,11 @@
     import type { Warning } from "$lib/stores.js";
     import { slide } from "svelte/transition";
     import { page } from "$app/stores";
+    import { goto } from "$app/navigation";
+    import Dialog from "$lib/Builders/Dialog.svelte";
+    import Line from "$lib/Builders/Line.svelte";
+    import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
+    import TimeInput from "$lib/Components/TimeInput.svelte";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -185,6 +190,7 @@
     }
 
     let selected = Select();
+    let selectedMeetings: typeof data.meetings[0][] = [];
 
     function Select() {
         const { set, update, subscribe } = writable<string[]>([]);
@@ -198,6 +204,12 @@
                         if(n[i] == id) {
                             n.splice(i, 1);
 
+                            for(let j = 0; j < data.meetings.length; j++) {
+                                if(data.meetings[j].id == id) {
+                                    selectedMeetings.splice(j);
+                                }
+                            }
+
                             return n;
                         }
                     }
@@ -207,6 +219,11 @@
             } else {
                 update(n => {
                     n.push(id);
+                    for(let i = 0; i < data.meetings.length; i++) {
+                        if(data.meetings[i].id == id) {
+                            selectedMeetings.push(data.meetings[i]);
+                        }
+                    }
 
                     return n;
                 });
@@ -215,6 +232,7 @@
 
         const reset = () => {
             set([]);
+            selectedMeetings = [];
         }
 
         const actions = {
@@ -238,10 +256,27 @@
                 }
 
                 warning.set({
-                    message: "Added you from all selected meetings.",
+                    message: "Added you to all selected meetings.",
                     color: 'green'
                 })
             },
+            delete: async () => {
+                const n = get({ subscribe });
+
+                for(let i = 0; i < n.length; i++) {
+                    await deleteMeeting(n[i], client);
+                }
+
+                warning.set({
+                    message: "Done deleted meetings.",
+                    color: 'green'
+                })
+
+                reset();
+            },
+            duplicate: async = () => {
+                
+            }
         }
 
         return {
@@ -253,11 +288,71 @@
             actions,
         }
     }
+
+
+
+    let leave = "";
+
+    function gotoMeeting(id: string) {
+        if($selected.length != 0) {
+            selected.reset();
+
+            leave = "/meetings/" + id;
+        } else {
+            goto("/meetings/" + id);
+        }
+    }
+
+    function checkLeave() {
+        if(leave != "") {
+            goto(leave);
+        }
+    }
+
+
+
+    function menuOpened() {
+        if(!menu) return;
+
+        console.log(menu);
+
+        let x = menu.getBoundingClientRect().y;
+        let scroll = -document.body.getBoundingClientRect().y;
+
+        console.log(scroll);
+        console.log(x);
+
+        maxheight = windowHeight - x;
+    }
+    
+    function menuCheck() {
+        if(!menu) return;
+
+        console.log(menu);
+
+        let x = menu.getBoundingClientRect().y;
+        let scroll = -document.body.getBoundingClientRect().y;
+
+        console.log(scroll);
+        console.log(x);
+
+        maxheight = windowHeight - x;
+    }
+
+    let maxheight = 100000;
+    let menu: HTMLElement;
+    let windowHeight: number;
+
+
+
+    let open = false;
 </script>
 
 <svelte:head>
     <title>Skywalkers | {data.completed ? "Completed" : "Active"} Meetings</title>
 </svelte:head>
+
+<svelte:window on:scroll={menuCheck} on:resize={menuCheck} bind:innerHeight={windowHeight}></svelte:window>
 
 <div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 pb-[4.5rem] lg:pb-16 overflow-x-auto">
     <div class="p-4 pb-0 flex justify-between items-center">
@@ -269,7 +364,8 @@
     </div>
     <div class="p-4 pb-2">
         {#each data.meetings as meeting (meeting.id)}
-            <svelte:element this={$selected.length == 0 ? "a" : "button"} animate:flip on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
+            <svelte:element aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} animate:flip on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
                 <div class="ml-4">
                     {#if meeting.thumbnail.startsWith("icon:")}
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
@@ -286,50 +382,52 @@
                     <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
                         <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                     </MenuButton>
-                    <MenuItems class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
-                        <MenuItem href="/meetings/{meeting.id}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            Go to Page
-                        </MenuItem>
-                        <MenuItem on:click={async (event) => { 
-                            event.preventDefault(); 
-                            event.stopPropagation(); 
+                    <MenuItems>
+                        <div style="max-height: {maxheight}px;" on:introstart={menuOpened} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-scroll">
+                            <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Go to Page
+                            </MenuItem>
+                            <MenuItem on:click={async (event) => { 
+                                event.preventDefault(); 
+                                event.stopPropagation(); 
 
-                            if(meeting.signedup) {
-                                await remove(meeting.id, client);
-                            } else {
-                                await add(meeting.id, client);
-                            }
-                        }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            {#if meeting.signedup}
-                                Leave
-                            {:else}
-                                Sign Up
-                            {/if}
-                        </MenuItem>
-                        <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            {#if $selected.includes(meeting.id)}
-                                Deselect
-                            {:else}
-                                Select
-                            {/if}
-                        </MenuItem>
-                        <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            Edit
-                        </MenuItem>
-                        <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            Duplicate
-                        </MenuItem>
-                        <MenuItem on:click={async (event) => {
-                            event.preventDefault(); 
-                            event.stopPropagation(); 
+                                if(meeting.signedup) {
+                                    await remove(meeting.id, client);
+                                } else {
+                                    await add(meeting.id, client);
+                                }
+                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                {#if meeting.signedup}
+                                    Leave
+                                {:else}
+                                    Sign Up
+                                {/if}
+                            </MenuItem>
+                            <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                {#if $selected.includes(meeting.id)}
+                                    Deselect
+                                {:else}
+                                    Select
+                                {/if}
+                            </MenuItem>
+                            <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Edit
+                            </MenuItem>
+                            <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Duplicate
+                            </MenuItem>
+                            <MenuItem on:click={async (event) => {
+                                event.preventDefault(); 
+                                event.stopPropagation(); 
 
-                            await deleteMeeting(meeting.id, client);
-                        }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            Delete                           
-                        </MenuItem>
-                        <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                            Complete
-                        </MenuItem>
+                                await deleteMeeting(meeting.id, client);
+                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Delete                           
+                            </MenuItem>
+                            <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Complete
+                            </MenuItem>
+                        </div>
                     </MenuItems>
                 </Menu>
             </svelte:element>
@@ -360,7 +458,7 @@
 {/if}
 
 {#if $selected.length == 0}
-    <div id=bar transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
+    <div transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
         <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
             Active
         </svelte:element>
@@ -369,7 +467,7 @@
         </svelte:element>
     </div>
 {:else}
-    <div id=bar transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
+    <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
         <div class="w-full min-w-[690px] flex px-1.5 gap-1.5 h-full">
             <button on:click={selected.actions.delete} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-red-500 dark:bg-red-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
                 <div class="flex items-center text-red-500">   
@@ -377,7 +475,7 @@
                     <p class="ml-1">Delete</p>
                 </div>
             </button>
-            <button class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+            <button on:click={selected.actions.duplicate} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
                 <div class="flex items-center text-blue-500">   
                     <Icon icon=content_copy></Icon>
                     <p class="ml-1">Duplicate</p>
@@ -404,3 +502,28 @@
         </div>
     </div>
 {/if}
+
+<Dialog width=40rem bind:isOpen={open}>
+    <h1 class="text-2xl" slot=title>Duplicate Meeting(s)</h1>
+
+    <div slot=content>
+        <Line class="my-4"></Line>
+        <div class="flex flex-col gap-3 overflow-x-scroll">
+            {#each selectedMeetings as meeting}
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center ">
+                    <p class="whitespace-nowrap overflow-hidden overflow-ellipsis mr-1.5 w-full text-lg min-w-[120px]">{meeting.name}: </p>
+                    <div class="flex items-center">
+                        <DateTimeInput name=time bind:date={meeting.when_start} class="w-[215px] min-w-[215px] rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                        <p class="mx-1"> - </p>
+                        <TimeInput name=time bind:date={meeting.when_end} class="w-[120px] min-w-[120px] rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                    </div>
+                </div>
+            {/each}
+        </div>
+        <Line class="my-4"></Line>
+        <div class="flex flex-row-reverse gap-2">
+            <button class="b-green">Duplicate</button>
+            <button on:click={() => { open = !open; }} class="b-default">Cancel</button>
+        </div>
+    </div>
+</Dialog>

@@ -13,7 +13,7 @@
 
     let trytoparse = (input: string): Date => {
         if(stringdate != null && stringdate != undefined && stringdate != '') {
-            return format.parse(input, "HH:mm");   
+            return format.parse(input, "YYYY-MM-DDTHH:mm");   
         } else {
             return date;
         }
@@ -21,9 +21,9 @@
 
     onMount(() => {
         if(date) {
-            stringdate = format.format(date, "HH:mm");
+            stringdate = format.format(date, "YYYY-MM-DDTHH:mm");
         }
     });
 </script>
 
-<input name={name} type=time bind:value={stringdate} class={style}/>
+<input name={name} type="datetime-local" bind:value={stringdate} class={style}/>
