@@ -2,7 +2,7 @@ import type { firebaseClient } from "$lib/Firebase/firebase";
 import { DocumentReference, arrayRemove, arrayUnion, doc, getDoc, runTransaction } from "firebase/firestore";
 import { get } from "svelte/store";
 
-export async function add(id: string, client: ReturnType<typeof firebaseClient>) {
+export async function add(id: string, client: ReturnType<typeof firebaseClient>): Promise<undefined> {
     let user = get(client);
 
     if(user == undefined || 'preload' in user || user.team == undefined) return;
@@ -17,7 +17,7 @@ export async function add(id: string, client: ReturnType<typeof firebaseClient>)
     })
 }
 
-export async function remove(id: string, client: ReturnType<typeof firebaseClient>) {
+export async function remove(id: string, client: ReturnType<typeof firebaseClient>): Promise<undefined> {
     let user = get(client);
 
     if(user == undefined || 'preload' in user || user.team == undefined) throw new Error("Not Verified");
@@ -33,7 +33,7 @@ export async function remove(id: string, client: ReturnType<typeof firebaseClien
     })
 }
 
-export async function deleteMeeting(id: string, client: ReturnType<typeof firebaseClient>) {
+export async function deleteMeeting(id: string, client: ReturnType<typeof firebaseClient>): Promise<undefined> {
     let user = get(client);
 
     if(user == undefined || 'preload' in user || user.team == undefined) throw new Error("Not Verified");

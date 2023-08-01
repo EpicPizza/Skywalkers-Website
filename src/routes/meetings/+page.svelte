@@ -7,11 +7,13 @@
     import { getContext, onDestroy, onMount } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase.js";
     import Loading from "$lib/Builders/Loading.svelte";
-    import type { Unsubscriber, Writable } from "svelte/store";
+    import { writable, type Unsubscriber, type Writable, get } from "svelte/store";
     import { collection, limit, orderBy, query, where, type Unsubscribe, onSnapshot, Query } from "firebase/firestore";
     import { flip } from "svelte/animate";
     import type { DocumentData } from "firebase-admin/firestore";
     import type { Warning } from "$lib/stores.js";
+    import { slide } from "svelte/transition";
+    import { page } from "$app/stores";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -86,6 +88,8 @@
 
             startListener(ref, true);
         })
+
+        const controller = new AbortController();
     })
 
     onDestroy(() => {
@@ -151,6 +155,8 @@
     let order: "Upcoming" | "Recent" = "Upcoming";
 
     function changeOrder(newOrder: "Upcoming" | "Recent") {
+        selected.reset();
+
         if(unsubscribeClient) unsubscribeClient();
 
         data.loading = true;
@@ -177,6 +183,76 @@
             }
         })
     }
+
+    let selected = Select();
+
+    function Select() {
+        const { set, update, subscribe } = writable<string[]>([]);
+
+        const toggle = (id: string) => {
+            const n = get({ subscribe });
+
+            if(n.includes(id)) {
+                update(n => {
+                    for(let i = 0; i < n.length; i++) {
+                        if(n[i] == id) {
+                            n.splice(i, 1);
+
+                            return n;
+                        }
+                    }
+
+                    return n;
+                })
+            } else {
+                update(n => {
+                    n.push(id);
+
+                    return n;
+                });
+            }
+        }
+
+        const reset = () => {
+            set([]);
+        }
+
+        const actions = {
+            leave: async () => {
+                const n = get({ subscribe });
+
+                for(let i = 0; i < n.length; i++) {
+                    await remove(n[i], client);
+                }
+
+                warning.set({
+                    message: "Removed you from all selected meetings.",
+                    color: 'green'
+                })
+            },
+            signup: async () => {
+                const n = get({ subscribe });
+
+                for(let i = 0; i < n.length; i++) {
+                    await add(n[i], client);
+                }
+
+                warning.set({
+                    message: "Added you from all selected meetings.",
+                    color: 'green'
+                })
+            },
+        }
+
+        return {
+            subscribe,
+            reset,
+            toggle,
+            add,
+            remove,
+            actions,
+        }
+    }
 </script>
 
 <svelte:head>
@@ -193,7 +269,7 @@
     </div>
     <div class="p-4 pb-2">
         {#each data.meetings as meeting (meeting.id)}
-            <a animate:flip href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2">
+            <svelte:element this={$selected.length == 0 ? "a" : "button"} animate:flip on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
                 <div class="ml-4">
                     {#if meeting.thumbnail.startsWith("icon:")}
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
@@ -211,7 +287,9 @@
                         <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                     </MenuButton>
                     <MenuItems class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
-
+                        <MenuItem href="/meetings/{meeting.id}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                            Go to Page
+                        </MenuItem>
                         <MenuItem on:click={async (event) => { 
                             event.preventDefault(); 
                             event.stopPropagation(); 
@@ -226,6 +304,13 @@
                                 Leave
                             {:else}
                                 Sign Up
+                            {/if}
+                        </MenuItem>
+                        <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                            {#if $selected.includes(meeting.id)}
+                                Deselect
+                            {:else}
+                                Select
                             {/if}
                         </MenuItem>
                         <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
@@ -247,7 +332,7 @@
                         </MenuItem>
                     </MenuItems>
                 </Menu>
-            </a>
+            </svelte:element>
         {:else}
             {#if data.loading}
                 <div class="w-screen absolute left-0 flex justify-around pt-8">
@@ -274,11 +359,48 @@
     </a>
 {/if}
 
-<div class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
-    <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
-        Active
-    </svelte:element>
-    <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
-        Completed
-    </svelte:element>
-</div>
+{#if $selected.length == 0}
+    <div id=bar transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
+        <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+            Active
+        </svelte:element>
+        <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+            Completed
+        </svelte:element>
+    </div>
+{:else}
+    <div id=bar transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
+        <div class="w-full min-w-[690px] flex px-1.5 gap-1.5 h-full">
+            <button on:click={selected.actions.delete} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-red-500 dark:bg-red-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                <div class="flex items-center text-red-500">   
+                    <Icon icon=delete></Icon>
+                    <p class="ml-1">Delete</p>
+                </div>
+            </button>
+            <button class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                <div class="flex items-center text-blue-500">   
+                    <Icon icon=content_copy></Icon>
+                    <p class="ml-1">Duplicate</p>
+                </div>
+            </button>
+            <button on:click={selected.actions.signup} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-green-500 dark:bg-green-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                <div class="flex items-center text-green-500">   
+                    <Icon icon=event_available></Icon>
+                    <p class="ml-1">Sign Up</p>
+                </div>
+            </button>
+            <button on:click={selected.actions.leave} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-orange-500 dark:bg-orange-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                <div class="flex items-center text-orange-500">   
+                    <Icon icon=event_busy></Icon>
+                    <p class="ml-1">Leave</p>
+                </div>
+            </button>
+            <button on:click={selected.reset} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                <div class="flex items-center">   
+                    <Icon icon=cancel></Icon>
+                    <p class="ml-1">Reset</p>
+                </div>
+            </button>
+        </div>
+    </div>
+{/if}
