@@ -121,6 +121,16 @@
                     {/if}
                 </div>
             {/if}
+            {#if data.meeting.role != undefined}
+                <div class="mt-4 flex gap-2 items-center">
+                    <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=engineering></Icon>
+                    <span class="text-lg lg:text-xl">Group:</span>
+                    <a href="/settings/roles/{data.meeting.role.id}" class="bg-black inline-flex dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2">
+                        <div style="background-color: {data.meeting.role.color};" class="w-4 h-4 rounded-full"></div>
+                        {data.meeting.role.name}
+                    </a>
+                </div>
+            {/if}
         </div>  
         <form method=POST use:enhance>
             <div class="mt-8 items-center w-full">

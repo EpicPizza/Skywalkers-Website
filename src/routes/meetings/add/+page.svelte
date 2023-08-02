@@ -7,6 +7,7 @@
     import PersonChooser from "$lib/Components/PersonChooser.svelte";
     import { superForm } from "sveltekit-superforms/client";
     import Error from "$lib/Builders/Error.svelte";
+    import RoleInput from "$lib/Components/RoleInput.svelte";
 
     export let data;
     
@@ -72,6 +73,10 @@
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Synopsis:</p>
                 <PersonChooser optional name=synopsis bind:value={$form.synopsis} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700 text-left"></PersonChooser>
+            </div>
+            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
+                <p class="text-lg lg:text-xl">Group:</p>
+                <RoleInput roles={data.roles} name=role bind:value={$form.role} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
             <Error {allErrors} {message}></Error>
             <div class="flex items-center mt-6 gap-4">

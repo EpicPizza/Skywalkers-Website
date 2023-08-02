@@ -10,6 +10,8 @@
     import type { Unsubscriber, Writable } from 'svelte/store';
     import { add, deleteMeeting, remove } from "$lib/Meetings/meetings.js";
     import { goto } from '$app/navigation';
+    import type { Role } from '$lib/Roles/role.js';
+    import { current } from 'tailwindcss/colors.js';
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
 
@@ -58,6 +60,7 @@
 
             let synopsis: SecondaryUser | undefined = undefined;
             let mentor: SecondaryUser | undefined = undefined;
+            let role: Role | undefined = undefined;
         
             if(currentMeeting.synopsis != null) {
                 synopsis = await client.getUser(currentMeeting.synopsis.id) as SecondaryUser;
@@ -65,6 +68,10 @@
 
             if(currentMeeting.mentor != null) {
                 mentor = await client.getUser(currentMeeting.mentor.id) as SecondaryUser;
+            }
+
+            if(currentMeeting.role != null) {
+                role = await client.getRole(currentMeeting.role);
             }
 
             data.meeting = {
@@ -77,6 +84,7 @@
                 when_end: currentMeeting.when_end.toDate() as Date,
                 thumbnail: currentMeeting.thumbnail as string,
                 completed: currentMeeting.completed as boolean,
+                role: role,
                 id: data.meeting.id,
                 signups: signups,
             }
@@ -168,6 +176,16 @@
                     {:else}
                         <MiniProfile user={data.meeting.mentor}></MiniProfile>
                     {/if}
+                </div>
+            {/if}
+            {#if data.meeting.role != undefined}
+                <div class="mt-4 flex gap-2 items-center">
+                    <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=engineering></Icon>
+                    <span class="text-lg lg:text-xl">Group:</span>
+                    <a href="/settings/roles/{data.meeting.role.id}" class="flex items-center w-fit bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-4">
+                        <div style="background-color: {data.meeting.role.color};" class="w-4 h-4 m-0.5 mx-2 lg:w-6 lg:h-6 lg:m-1.5 rounded-full"></div>
+                        <p class="text-lg lg:text-xl">{data.meeting.role.name}</p>
+                    </a>
                 </div>
             {/if}
             <div class="mt-4 flex gap-2 items-center mb-6">

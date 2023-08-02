@@ -1,5 +1,5 @@
-import type { SecondaryUser } from "$lib/Firebase/firebase";
-import { deleteDoc, doc } from "firebase/firestore";
+import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
+import { deleteDoc, doc, getDoc } from "firebase/firestore";
 import { get, writable, } from "svelte/store";
 import { z } from "zod";
 

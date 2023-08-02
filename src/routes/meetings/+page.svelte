@@ -19,6 +19,7 @@
     import Line from "$lib/Builders/Line.svelte";
     import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
     import TimeInput from "$lib/Components/TimeInput.svelte";
+    import { superForm } from "sveltekit-superforms/client";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -191,6 +192,7 @@
 
     let selected = Select();
     let selectedMeetings: typeof data.meetings[0][] = [];
+    let delayed = false;
 
     function Select() {
         const { set, update, subscribe } = writable<string[]>([]);
@@ -203,13 +205,6 @@
                     for(let i = 0; i < n.length; i++) {
                         if(n[i] == id) {
                             n.splice(i, 1);
-
-                            for(let j = 0; j < data.meetings.length; j++) {
-                                if(data.meetings[j].id == id) {
-                                    selectedMeetings.splice(j);
-                                }
-                            }
-
                             return n;
                         }
                     }
@@ -219,11 +214,6 @@
             } else {
                 update(n => {
                     n.push(id);
-                    for(let i = 0; i < data.meetings.length; i++) {
-                        if(data.meetings[i].id == id) {
-                            selectedMeetings.push(data.meetings[i]);
-                        }
-                    }
 
                     return n;
                 });
@@ -268,14 +258,60 @@
                 }
 
                 warning.set({
-                    message: "Done deleted meetings.",
+                    message: "Done deleting meetings.",
                     color: 'green'
                 })
 
                 reset();
             },
-            duplicate: async = () => {
-                
+            duplicate: {
+                start: async () => {
+                    const n = get({ subscribe });
+
+                    for(let i = 0; i < n.length; i++) {
+                        for(let j = 0; j < data.meetings.length; j++) {
+                            if(data.meetings[j].id == n[i]) {
+                                selectedMeetings.push(data.meetings[j]);
+                            }
+                        }
+                    }
+
+                    open = !open;
+                },
+                finish: async () => {
+                    let meetings = new Array();
+
+                    for(let i = 0; i < selectedMeetings.length; i++) {
+                        meetings.push({
+                            id: selectedMeetings[i].id,
+                            starts: selectedMeetings[i].when_start,
+                            ends: selectedMeetings[i].when_end,
+                        })
+                    }
+
+                    delayed = true;
+
+                    const res = await fetch("/meetings/add", {
+                        method: 'PATCH',
+                        headers: {
+                            'content-type': 'application/json',
+                        },
+                        body: JSON.stringify({ meetings: meetings }),
+                    })
+
+                    let message = await res.json();
+
+                    delayed = false;
+
+                    warning.set({
+                        message: message,
+                        color: message == 'Meetings Duplicated!' ? 'green' : 'red',
+                    })
+
+                    open = !open;
+
+                    reset();
+                }
             }
         }
 
@@ -288,8 +324,6 @@
             actions,
         }
     }
-
-
 
     let leave = "";
 
@@ -311,20 +345,6 @@
 
 
 
-    function menuOpened() {
-        if(!menu) return;
-
-        console.log(menu);
-
-        let x = menu.getBoundingClientRect().y;
-        let scroll = -document.body.getBoundingClientRect().y;
-
-        console.log(scroll);
-        console.log(x);
-
-        maxheight = windowHeight - x;
-    }
-    
     function menuCheck() {
         if(!menu) return;
 
@@ -338,6 +358,7 @@
 
         maxheight = windowHeight - x;
     }
+
 
     let maxheight = 100000;
     let menu: HTMLElement;
@@ -383,7 +404,7 @@
                         <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                     </MenuButton>
                     <MenuItems>
-                        <div style="max-height: {maxheight}px;" on:introstart={menuOpened} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-scroll">
+                        <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-scroll">
                             <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Go to Page
                             </MenuItem>
@@ -475,7 +496,7 @@
                     <p class="ml-1">Delete</p>
                 </div>
             </button>
-            <button on:click={selected.actions.duplicate} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+            <button on:click={selected.actions.duplicate.start} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
                 <div class="flex items-center text-blue-500">   
                     <Icon icon=content_copy></Icon>
                     <p class="ml-1">Duplicate</p>
@@ -522,8 +543,13 @@
         </div>
         <Line class="my-4"></Line>
         <div class="flex flex-row-reverse gap-2">
-            <button class="b-green">Duplicate</button>
+            <button on:click={selected.actions.duplicate.finish} class="b-green">Duplicate</button>
             <button on:click={() => { open = !open; }} class="b-default">Cancel</button>
+            {#if delayed}
+                <div class="scale-75 flex items-center h-[2.125rem] overflow-hidden">
+                    <Loading></Loading>
+                </div>
+            {/if}
         </div>
     </div>
 </Dialog>

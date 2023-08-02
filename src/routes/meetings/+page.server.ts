@@ -1,6 +1,8 @@
 import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
-import { error, redirect } from '@sveltejs/kit';
+import { completeSchema, duplicateSchema } from '$lib/Meetings/meetings.server.js';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentSnapshot } from 'firebase-admin/firestore';
+import { message, superValidate } from 'sveltekit-superforms/server';
 
 export async function load({ locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -57,6 +59,6 @@ export async function load({ locals, url }) {
         meetingsShown: meetings.length, 
         loading: false, 
         completed: false, 
-        deleted: url.searchParams.get("deleted") === 'true' ? true : false 
+        deleted: url.searchParams.get("deleted") === 'true' ? true : false, 
     };
 }

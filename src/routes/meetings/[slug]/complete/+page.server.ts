@@ -1,7 +1,8 @@
 import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
 import { firebaseAdmin, getUser, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
 import { completeSchema, getUserList } from '$lib/Meetings/meetings.server.js';
-import { getSpecifiedRoles } from '$lib/Roles/role.server.js';
+import type { Role } from '$lib/Roles/role';
+import { getRole, getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
@@ -42,6 +43,11 @@ export async function load({ params, locals, url }) {
         mentor = await seralizeFirestoreUser((await data.mentor.get()).data())
     }
 
+    let role;
+    if(data.role != null) {
+        role = await getRole(data.role, locals.firestoreUser.team);
+    }
+
     const meeting = {
         name: data.name as string,
         lead: await seralizeFirestoreUser((await data.lead.get()).data()),
@@ -55,6 +61,7 @@ export async function load({ params, locals, url }) {
         thumbnail: data.thumbnail as string,
         completed: data.completed as boolean,
         id: params.slug as string,
+        role: role as Role | undefined,
         length: 0,
         signups: signups
     }

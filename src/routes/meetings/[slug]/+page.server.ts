@@ -1,6 +1,6 @@
 import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
-import { getSpecifiedRoles } from '$lib/Roles/role.server.js';
+import { getRole, getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 
@@ -39,6 +39,11 @@ export async function load({ params, locals, url }) {
         mentor = await seralizeFirestoreUser((await data.mentor.get()).data())
     }
 
+    let role;
+    if(data.role != null) {
+        role = await getRole(data.role, locals.firestoreUser.team);
+    }
+
     const meeting = {
         name: data.name as string,
         lead: await seralizeFirestoreUser((await data.lead.get()).data()),
@@ -46,6 +51,7 @@ export async function load({ params, locals, url }) {
         synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis,
         //@ts-ignore
         mentor: data.mentor == null ? undefined : mentor == undefined ? "User Not Found" :  mentor,
+        role: role,
         location: data.location as string,
         when_start: data.when_start.toDate() as Date,
         when_end: data.when_end.toDate() as Date,

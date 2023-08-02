@@ -1,5 +1,6 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { getUserList, meetingSchema } from "$lib/Meetings/meetings.server";
+import { getRoles } from "$lib/Roles/role.server.js";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { message, superValidate } from "sveltekit-superforms/server";
 
@@ -26,7 +27,9 @@ export async function load({ params, locals }) {
 
     form.data.thumbnail = "icon:event";
 
-    return { form: form };
+    const roles = await getRoles(locals.firestoreUser.team);
+
+    return { form: form, roles: roles, };
 }
 
 export const actions = {
@@ -55,6 +58,8 @@ export const actions = {
             });
         }
 
+        if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
+
         const res = await ref.add({
             name: form.data.name,
             lead: db.collection('users').doc(form.data.lead),
@@ -65,6 +70,7 @@ export const actions = {
             when_end: form.data.ends,
             thumbnail: form.data.thumbnail,
             completed: false,
+            role: form.data.role,
             signups: [],
         })
 

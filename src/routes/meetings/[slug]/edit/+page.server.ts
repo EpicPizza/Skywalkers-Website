@@ -2,6 +2,7 @@ import { PUBLIC_DEFAULT_USER } from '$env/static/public';
 import type { FirestoreUser } from '$lib/Firebase/firebase.js';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
 import { getUserList, meetingSchema } from '$lib/Meetings/meetings.server.js';
+import { getRoles } from '$lib/Roles/role.server';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
@@ -30,6 +31,7 @@ export async function load({ params, locals }) {
         when_end: data.when_end.toDate() as Date,
         thumbnail: data.thumbnail as string,
         completed: data.completed as boolean,
+        role: data.role as string | undefined,
         id: params.slug as string,
     }
 
@@ -47,8 +49,11 @@ export async function load({ params, locals }) {
     form.data.starts = meeting.when_start;
     form.data.ends = meeting.when_end;
     form.data.thumbnail = meeting.thumbnail;
+    form.data.role = meeting.role;
 
-    return { meeting: meeting, form: form };
+    const roles = await getRoles(locals.firestoreUser.team);
+
+    return { meeting: meeting, form: form, roles: roles };
 }
 
 export const actions = {
@@ -77,6 +82,8 @@ export const actions = {
             });
         }
 
+        if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
+
         await ref.update({
             name: form.data.name,
             lead: db.collection('users').doc(form.data.lead),
@@ -86,6 +93,7 @@ export const actions = {
             when_start: form.data.starts,
             when_end: form.data.ends,
             thumbnail: form.data.thumbnail,
+            role: form.data.role,
         })
 
         if(url.searchParams.get('redirect') == 'completed') {

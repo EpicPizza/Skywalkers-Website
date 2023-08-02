@@ -3,6 +3,19 @@ import type { DocumentReference, Transaction } from "firebase-admin/firestore";
 import type { Role } from "./role";
 import type { SecondaryUser } from "$lib/Firebase/firebase";
 
+export async function getRole(id: string, team: string): Promise<Role | undefined> {
+    const db = firebaseAdmin.getFirestore();
+
+    const role = await db.collection("teams").doc(team).collection("roles").doc(id).get();
+
+    if(!role.exists) return undefined;
+
+    return {
+        ...role.data(),
+        members: new Array(),
+    } as Role;
+}
+
 export async function getRoles(team: string) {
     const db = firebaseAdmin.getFirestore();
 

@@ -1,5 +1,6 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { getUserList, meetingSchema } from "$lib/Meetings/meetings.server";
+import { getRoles } from "$lib/Roles/role.server";
 import { error, fail, redirect } from "@sveltejs/kit";
 import type { DocumentReference } from "firebase/firestore";
 import { message, superValidate } from "sveltekit-superforms/server";
@@ -39,7 +40,9 @@ export async function load({ params, locals }) {
     form.data.mentor = meeting.mentor == null ? "" : meeting.mentor.id;
     form.data.synopsis = meeting.synopsis == null ? "" : meeting.synopsis.id;
 
-    return { form: form };
+    const roles = await getRoles(locals.firestoreUser.team);
+
+    return { form: form, roles: roles };
 }
 
 export const actions = {
@@ -70,20 +73,7 @@ export const actions = {
             });
         }
 
-        for(let i = 0; i < 9; i++) {
-            await ref.add({
-                name: form.data.name,
-                lead: db.collection('users').doc(form.data.lead),
-                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
-                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
-                location: form.data.location,
-                when_start: form.data.starts,
-                when_end: form.data.ends,
-                thumbnail: form.data.thumbnail,
-                completed: false,
-                signups: [],
-            })
-        }
+        if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
         const res = await ref.add({
             name: form.data.name,
@@ -95,6 +85,7 @@ export const actions = {
             when_end: form.data.ends,
             thumbnail: form.data.thumbnail,
             completed: false,
+            role: form.data.role,
             signups: [],
         })
 
