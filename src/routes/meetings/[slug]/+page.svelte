@@ -50,8 +50,10 @@
 
             let signups = new Array<SecondaryUser>();
 
+            const db = client.getFirestore();
+
             for(let i = 0; i < currentMeeting.signups.length; i++) {
-                const user = await client.getUser((currentMeeting.signups as DocumentReference[])[i].id); //function checks cache then server, so if its undefined, it means it couldn't find it in either
+                const user = await client.getUser(currentMeeting.signups[i]); //function checks cache then server, so if its undefined, it means it couldn't find it in either
 
                 if(user != undefined) {
                     signups.push(user);
@@ -200,7 +202,9 @@
                     <h1 class="text-xl lg:text-2xl ml-1 mb-1">Sign Up List:</h1>
                     {#if data.meeting.completed == false}
                         {#if signedup}
-                            <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                                <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
+                            {/if}
                         {:else}
                             <button class="b-primary lg:text-lg" on:click={() => { add(data.meeting.id, client ) }}>Sign Up</button>
                         {/if}
@@ -219,6 +223,12 @@
                     </div>
                 {/each}
             </div>
+            {#if ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                <div class="opacity-75 flex items-center mt-3">
+                    <Icon scale={0}  class="ml-1 text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" icon=info></Icon>
+                    <p class="ml-2 lg:text-lg">If you sign up, you cannot undo it.</p>
+                </div>
+            {/if}
             <div class="pt-4 flex flex-row-reverse gap-2">
                 {#if data.meeting.completed == false}
                     <button on:click={ async () => { await deleteMeeting(data.meeting.id, client); }} class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=delete/><span>Delete</span></button>

@@ -13,7 +13,7 @@ export async function add(id: string, client: ReturnType<typeof firebaseClient>)
 
     await runTransaction(db, async (transaction) => {
         if(user == undefined || 'preload' in user || user.team == undefined) return;
-        transaction.update(ref, {'signups': arrayUnion(doc(db, "users", user.uid)) });
+        transaction.update(ref, {'signups': arrayUnion(user.uid) });
     })
 }
 
@@ -29,7 +29,7 @@ export async function remove(id: string, client: ReturnType<typeof firebaseClien
     await runTransaction(db, async (transaction) => {
         if(user == undefined || 'preload' in user || user.team == undefined) return;
 
-        transaction.update(ref, {'signups': arrayRemove(doc(db, "users", user.uid)) });
+        transaction.update(ref, {'signups': arrayRemove(user.uid) });
     })
 }
 

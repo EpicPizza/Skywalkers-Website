@@ -31,6 +31,8 @@
             const db = client.getFirestore();
             const ref = collection(db, "teams", user.team, "roles");
 
+            console.log(ref.path);
+
             unsubscribeRoles = onSnapshot(ref, async (snapshots) => {
                 const roles = new Array<RoleType>();
 

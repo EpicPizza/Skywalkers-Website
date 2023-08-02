@@ -9,7 +9,9 @@ export async function load({ params, locals, url }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
-    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
 
     const data = (await ref.get()).data();
 
@@ -18,13 +20,13 @@ export async function load({ params, locals, url }) {
     let signups = new Array<SecondaryUser>();
 
     for(let i = 0; i < data.signups.length; i++) {
-        const user = (await data.signups[i].get()).data();
+        const user = (await db.collection('users').doc(data.signups[i]).get()).data();
 
         if(user != undefined) {
             signups.push({
                 ...user,
                 roles: await getSpecifiedRoles(user.roles),
-                id: data.signups[i].id,
+                id: data.signups[i],
             } as SecondaryUser);
         }
     }
