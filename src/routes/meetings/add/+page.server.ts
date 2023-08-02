@@ -70,7 +70,7 @@ export const actions = {
             when_end: form.data.ends,
             thumbnail: form.data.thumbnail,
             completed: false,
-            role: form.data.role,
+            role: form.data.role == undefined ? null : form.data.role,
             signups: [],
         })
 

@@ -94,7 +94,7 @@
     }
 </script>
 
-<button on:click={() => { open = !open; }} disabled={($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)} class="bg-zinc-200 dark:bg-zinc-600 p-2 px-3 rounded-lg hover:opacity-90 disabled:hover:opacity-100 disabled:cursor-not-allowed trnasition">
+<button on:click={() => { open = !open; }} disabled={($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)} class="bg-zinc-200 dark:bg-zinc-600 p-2 px-3 rounded-lg hover:opacity-90 disabled:hover:opacity-100 disabled:cursor-not-allowed trnasition disabled:opacity-40 hover:disabled:opacity-40">
     {#if role.connectTo == null}
         Select Discord Role
     {:else}

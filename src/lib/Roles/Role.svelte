@@ -324,12 +324,21 @@
             </svelte:fragment>
         </RolePermission>
 
+        <RolePermission permission=LEAVE_SIGNUP bind:permissions {role}>
+            <svelte:fragment slot=title>
+                Leave Signups
+            </svelte:fragment>
+            <svelte:fragment slot=description>
+                Without this permission, members will not be able to remove themselves if they sign up for a meeting.
+            </svelte:fragment>
+        </RolePermission>
+
         <RolePermission permission=MODERATE_MEETINGS bind:permissions {role}>
             <svelte:fragment slot=title>
                 Moderate Meetings
             </svelte:fragment>
             <svelte:fragment slot=description>
-                Members will be able to delete and edit all meetings, including completed meetings.
+                Moderators will be able to remove any sign ups from a meeting.
             </svelte:fragment>
         </RolePermission>
 

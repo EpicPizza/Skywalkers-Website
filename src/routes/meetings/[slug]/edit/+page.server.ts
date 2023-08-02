@@ -93,7 +93,7 @@ export const actions = {
             when_start: form.data.starts,
             when_end: form.data.ends,
             thumbnail: form.data.thumbnail,
-            role: form.data.role,
+            role: form.data.role == undefined ? null : form.data.role,
         })
 
         if(url.searchParams.get('redirect') == 'completed') {

@@ -180,10 +180,10 @@
             {/if}
             {#if data.meeting.role != undefined}
                 <div class="mt-4 flex gap-2 items-center">
-                    <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=engineering></Icon>
+                    <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=group></Icon>
                     <span class="text-lg lg:text-xl">Group:</span>
                     <a href="/settings/roles/{data.meeting.role.id}" class="flex items-center w-fit bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-4">
-                        <div style="background-color: {data.meeting.role.color};" class="w-4 h-4 m-0.5 mx-2 lg:w-6 lg:h-6 lg:m-1.5 rounded-full"></div>
+                        <div style="background-color: {data.meeting.role.color};" class="w-4 h-4 m-0.5 mx-2 lg:w-5 lg:h-5 lg:m-2 rounded-full"></div>
                         <p class="text-lg lg:text-xl">{data.meeting.role.name}</p>
                     </a>
                 </div>

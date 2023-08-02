@@ -200,6 +200,7 @@ export function firebaseClient() {
         const db = getFirestore();
 
         const userRef = doc(db, "users", id);
+        console.log(userRef.path);
         let userData;
         try {
             userData = (await getDoc(userRef)).data();
