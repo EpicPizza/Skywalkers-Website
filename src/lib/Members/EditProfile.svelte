@@ -8,7 +8,7 @@
     import type { z } from "zod";
     import type { EditProfile } from "./members";
     import { getContext } from "svelte";
-    import type { SuperValidated } from "sveltekit-superforms/index";
+    import type { SuperValidated } from "sveltekit-superforms";
 
     let editProfileForm: SuperValidated<typeof EditProfile>;
 

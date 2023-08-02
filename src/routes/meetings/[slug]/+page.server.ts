@@ -9,6 +9,8 @@ export async function load({ params, locals, url }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
+    if(!locals.firestoreUser.permissions.includes('VIEW_MEETINGS')) throw error(403, "Unauthorized.");
+
     const db = firebaseAdmin.getFirestore();
 
     const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);

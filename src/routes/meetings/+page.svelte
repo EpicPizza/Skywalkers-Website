@@ -128,7 +128,7 @@
                     let signedup = false;
 
                     for(let j = 0; j < firestoreMeetings[i].data().signups.length; j++) {
-                        if(firestoreMeetings[i].data().signups[j].id == $client?.uid) {
+                        if(firestoreMeetings[i].data().signups[j] == $client?.uid) {
                             signedup = true;
                         }
                     }
@@ -242,7 +242,11 @@
                 const n = get({ subscribe });
 
                 for(let i = 0; i < n.length; i++) {
-                    await add(n[i], client);
+                    try {
+                        await add(n[i], client);
+                    } catch(e) {
+                        console.log(e);
+                    }
                 }
 
                 warning.set({
@@ -254,7 +258,11 @@
                 const n = get({ subscribe });
 
                 for(let i = 0; i < n.length; i++) {
-                    await deleteMeeting(n[i], client);
+                    try {
+                        await deleteMeeting(n[i], client);
+                    } catch(e) {
+                        console.log(e);
+                    }
                 }
 
                 warning.set({

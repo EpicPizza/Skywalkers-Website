@@ -5,9 +5,11 @@ import type { DocumentSnapshot } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
 
 export async function load({ locals, url }) {
-    if(locals.user == undefined) throw error(403, "Sign In Required");
+    if(locals.user == undefined) throw error(401, "Sign In Required");
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+
+    if(!locals.firestoreUser.permissions.includes('VIEW_MEETINGS')) throw error(403, "Unauthorized.");
 
     let today = new Date();
     today.setHours(0);
@@ -36,7 +38,7 @@ export async function load({ locals, url }) {
             let signedup = false;
 
             for(let j = 0; j < firestoreMeetings[i].data().signups.length; j++) {
-                if(firestoreMeetings[i].data().signups[j].id == locals.user.uid) {
+                if(firestoreMeetings[i].data().signups[j] == locals.user.uid) {
                     signedup = true;
                 }
             }

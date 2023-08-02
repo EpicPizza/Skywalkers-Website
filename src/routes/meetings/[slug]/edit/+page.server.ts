@@ -13,6 +13,8 @@ export async function load({ params, locals }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
+    if(!locals.firestoreUser.permissions.includes('EDIT_MEETINGS')) throw error(403, "Unauthorized.");
+
     const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
 
     const data = (await ref.get()).data();
@@ -61,6 +63,8 @@ export const actions = {
         if(locals.user == undefined) { throw error(403, 'Sign In Required'); }
 
         if(!locals.team || locals.firestoreUser == undefined) throw redirect(307, "/verify");
+
+        if(!locals.firestoreUser.permissions.includes('EDIT_MEETINGS')) throw error(403, "Unauthorized.");
 
         const form = await superValidate(request, meetingSchema);
 

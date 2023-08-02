@@ -8,6 +8,8 @@ export const PATCH = async ({ locals, request }) => {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
+    if(!locals.firestoreUser.permissions.includes('CREATE_MEETINGS')) throw error(403, "Unauthorized.");
+
     let meetings: z.infer<typeof duplicateSchema>["meetings"];
 
     try {

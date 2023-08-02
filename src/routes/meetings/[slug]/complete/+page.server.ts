@@ -13,11 +13,15 @@ export async function load({ params, locals, url }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
+    if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES')) throw error(403, "Unauthorized.");
+
     const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
 
     const data = (await ref.get()).data();
 
     if(data == undefined) throw error(404, "Meeting Not Found");
+
+    if(data.completed == true) throw error(404, "Not Completable; Meeting Completed")
 
     let signups = new Array<SecondaryUser>();
 
@@ -98,6 +102,8 @@ export const actions = {
         if(locals.user == undefined) throw error(403, "Sign In Required");
 
         if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+
+        if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES')) throw error(403, "Unauthorized.");
 
         const form = await superValidate(request, completeSchema);
 

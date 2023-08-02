@@ -7,6 +7,8 @@ export async function load({ locals, url, params }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
+    if(!locals.firestoreUser.permissions.includes('VIEW_MEETINGS')) throw error(403, "Unauthorized.");
+
     let on = parseInt(params.slug);
 
     if(isNaN(on) || on < 1) throw error(400, "Invalid Page Number");
