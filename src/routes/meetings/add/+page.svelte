@@ -2,7 +2,7 @@
     import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
-    import TimeInput from "$lib/Components/DateTimeInput.svelte";
+    import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
     import IconChooser from "$lib/Components/IconChooser.svelte";
     import PersonChooser from "$lib/Components/PersonChooser.svelte";
     import { superForm } from "sveltekit-superforms/client";
@@ -16,6 +16,23 @@
         delayMs: 500,
         timeoutMs: 8000,
     });
+
+    let setStarts = false;
+    let setEnds = false;
+
+    $: {
+        if($tainted != undefined && $tainted.starts == true && setStarts == false) {
+            $tainted.starts = false;
+            setStarts = true;
+        }
+    }
+
+    $: {
+        if($tainted != undefined && $tainted.ends == true && setEnds == false) {
+            $tainted.ends = false;
+            setEnds = true;
+        }
+    }
 </script>
 
 
@@ -52,11 +69,11 @@
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Starts:</p>
-                <TimeInput name=starts bind:date={$form.starts} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                <DateTimeInput name=starts bind:date={$form.starts} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Ends:</p>
-                <TimeInput name=ends bind:date={$form.ends} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                <DateTimeInput name=ends bind:date={$form.ends} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Thumbnail:</p>

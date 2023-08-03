@@ -3,10 +3,14 @@
     import format from 'date-and-time';
     import meridiem from 'date-and-time/plugin/meridiem';
     import Line from '$lib/Builders/Line.svelte';
+    import type { firebaseClient } from '$lib/Firebase/firebase.js';
+    import { getContext } from 'svelte';
 
     format.plugin(meridiem);
 
     export let data;
+    
+    let client = getContext('client') as ReturnType<typeof firebaseClient>;
 </script>
 
 <svelte:head>
@@ -30,7 +34,7 @@
                 <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
             </div>
         </div>
-        <p class="mt-4 lg:text-lg whitespace-pre-line">
+        <p class="mt-4 lg:text-lg whitespace-pre-line break-all">
             {data.synopsis.body}
         </p>
         <div class="my-4 p-4 lg:p-6 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
@@ -46,11 +50,15 @@
                         <p>No Members</p>
                     </div>
                 {/each}
-            </div>
+            </div>  
         </div>
-        <div class="pt-4 flex flex-row-reverse gap-2">
-            <a href="/synopsis/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
-            <a href="/synopsis/{data.meeting.id}/reject" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=cancel/><span>Reject</span></a>
+        <div class="flex flex-row-reverse gap-2">
+            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_SYNOPSES'))}
+                <a href="/synopsis/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
+            {/if}
+            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_SYNOPSES'))}
+                <a href="/synopsis/{data.meeting.id}/reject" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=cancel/><span>Reject</span></a>
+            {/if}
         </div>
     </div>
 </div>

@@ -16,6 +16,23 @@
         delayMs: 500,
         timeoutMs: 8000,
     });
+
+    let setStarts = false;
+    let setEnds = false;
+
+    $: {
+        if($tainted != undefined && $tainted.starts == true && setStarts == false) {
+            $tainted.starts = false;
+            setStarts = true;
+        }
+    }
+
+    $: {
+        if($tainted != undefined && $tainted.ends == true && setEnds == false) {
+            $tainted.ends = false;
+            setEnds = true;
+        }
+    }
 </script>
 
 <svelte:head>

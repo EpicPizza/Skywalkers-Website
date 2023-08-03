@@ -33,6 +33,22 @@ export async function remove(id: string, client: ReturnType<typeof firebaseClien
     })
 }
 
+export async function removeOtherMember(id: string, member: string, client: ReturnType<typeof firebaseClient>): Promise<undefined> {
+    let user = get(client);
+
+    if(user == undefined || 'preload' in user || user.team == undefined) throw new Error("Not Verified");
+
+    const db = client.getFirestore();
+
+    const ref = doc(client.getFirestore(), "teams", user.team, "meetings", id);
+
+    await runTransaction(db, async (transaction) => {
+        if(user == undefined || 'preload' in user || user.team == undefined) return;
+
+        transaction.update(ref, {'signups': arrayRemove(member) });
+    })
+}
+
 export async function deleteMeeting(id: string, client: ReturnType<typeof firebaseClient>): Promise<undefined> {
     let user = get(client);
 

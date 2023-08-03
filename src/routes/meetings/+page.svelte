@@ -20,6 +20,7 @@
     import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
     import TimeInput from "$lib/Components/TimeInput.svelte";
     import { superForm } from "sveltekit-superforms/client";
+    import { browser } from "$app/environment";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -70,6 +71,8 @@
     }
 
     let unsubscribeBottom: Unsubscriber | undefined = bottom.subscribe((isBottom) => {
+        if(!browser) return;
+
         if(isBottom == true && returned == true && data.loading == false) {
             returned = false;
 
@@ -94,8 +97,6 @@
 
             startListener(ref, true);
         })
-
-        const controller = new AbortController();
     })
 
     onDestroy(() => {
@@ -136,6 +137,8 @@
                     meetings.push({
                         name: firestoreMeetings[i].data().name as string,
                         id: firestoreMeetings[i].id as string,
+                        lead: firestoreMeetings[i].data().lead.id == $client?.uid,
+                        synopsis: firestoreMeetings[i].data().synopsis == undefined ? false : firestoreMeetings[i].data().synopsis.id == $client?.uid,
                         location: firestoreMeetings[i].data().location as string,
                         thumbnail: firestoreMeetings[i].data().thumbnail as string,
                         when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
@@ -316,9 +319,10 @@
                         color: message == 'Meetings Duplicated!' ? 'green' : 'red',
                     })
 
-                    open = !open;
-
-                    reset();
+                    if(message == 'Meetings Duplicated!') {
+                        open = !open;
+                        reset(); 
+                    }
                 }
             }
         }
@@ -375,6 +379,12 @@
 
 
     let open = false;
+
+    $: {
+        if(!open) {
+            selectedMeetings = [];
+        }
+    }
 </script>
 
 <svelte:head>
@@ -383,7 +393,7 @@
 
 <svelte:window on:scroll={menuCheck} on:resize={menuCheck} bind:innerHeight={windowHeight}></svelte:window>
 
-<div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 pb-[4.5rem] lg:pb-16 overflow-x-auto">
+<div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 { !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) ? "pb-[4.5rem] lg:pb-16" : ""} overflow-x-auto">
     <div class="p-4 pb-0 flex justify-between items-center">
         <p class="ml-1">Showing {data.meetingsShown} {order} Meeting{data.meetingsShown == 1 ? "" : "s"}</p>
         <div class="flex gap-2">
@@ -416,46 +426,58 @@
                             <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Go to Page
                             </MenuItem>
-                            <MenuItem on:click={async (event) => { 
-                                event.preventDefault(); 
-                                event.stopPropagation(); 
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                                <MenuItem on:click={async (event) => { 
+                                    event.preventDefault(); 
+                                    event.stopPropagation(); 
 
-                                if(meeting.signedup) {
-                                    await remove(meeting.id, client);
-                                } else {
-                                    await add(meeting.id, client);
-                                }
-                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                {#if meeting.signedup}
-                                    Leave
-                                {:else}
-                                    Sign Up
-                                {/if}
-                            </MenuItem>
-                            <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                {#if $selected.includes(meeting.id)}
-                                    Deselect
-                                {:else}
-                                    Select
-                                {/if}
-                            </MenuItem>
-                            <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Edit
-                            </MenuItem>
-                            <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Duplicate
-                            </MenuItem>
-                            <MenuItem on:click={async (event) => {
-                                event.preventDefault(); 
-                                event.stopPropagation(); 
+                                    if(meeting.signedup) {
+                                        await remove(meeting.id, client);
+                                    } else {
+                                        await add(meeting.id, client);
+                                    }
+                                }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    {#if meeting.signedup}
+                                        Leave
+                                    {:else}
+                                        Sign Up
+                                    {/if}
+                                </MenuItem>
+                            {/if}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    {#if $selected.includes(meeting.id)}
+                                        Deselect
+                                    {:else}
+                                        Select
+                                    {/if}
+                                </MenuItem>
+                            {/if}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
+                                <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Edit
+                                </MenuItem>
+                            {/if}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
+                                <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Duplicate
+                                </MenuItem>
+                            {/if}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
+                                <MenuItem on:click={async (event) => {
+                                    event.preventDefault(); 
+                                    event.stopPropagation(); 
 
-                                await deleteMeeting(meeting.id, client);
-                            }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Delete                           
-                            </MenuItem>
-                            <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Complete
-                            </MenuItem>
+                                    await deleteMeeting(meeting.id, client);
+                                }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Delete                           
+                                </MenuItem>
+                            {/if}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || meeting.lead || meeting.synopsis}
+                                <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Complete
+                                </MenuItem>
+                            {/if}
                         </div>
                     </MenuItems>
                 </Menu>
@@ -479,7 +501,7 @@
     </div>
 </div>
 
-{#if !data.completed}
+{#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) && !data.completed}
     <a href="/meetings/add" class="-mt-[58px] mr-4 mb-0 sticky float-right items-center bottom-16 lg:bottom-[4.25rem] px-4 pr-5 py-3 bg-backgroud-light flex dark:bg-backgroud-dark border-[1px] border-border-light dark:border-border-dark rounded-full shadow-lg shadow-shadow-light dark:shadow-shadow-dark hover:brightness-[95%] transition w-fit">
         <Icon class="mr-1" scale=2rem icon=add></Icon>
         <p class="text-lg">Create Meeting</p>
@@ -497,32 +519,38 @@
     </div>
 {:else}
     <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
-        <div class="w-full min-w-[690px] flex px-1.5 gap-1.5 h-full">
-            <button on:click={selected.actions.delete} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-red-500 dark:bg-red-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
-                <div class="flex items-center text-red-500">   
-                    <Icon icon=delete></Icon>
-                    <p class="ml-1">Delete</p>
-                </div>
-            </button>
-            <button on:click={selected.actions.duplicate.start} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
-                <div class="flex items-center text-blue-500">   
-                    <Icon icon=content_copy></Icon>
-                    <p class="ml-1">Duplicate</p>
-                </div>
-            </button>
-            <button on:click={selected.actions.signup} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-green-500 dark:bg-green-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
-                <div class="flex items-center text-green-500">   
-                    <Icon icon=event_available></Icon>
-                    <p class="ml-1">Sign Up</p>
-                </div>
-            </button>
-            <button on:click={selected.actions.leave} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-orange-500 dark:bg-orange-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
-                <div class="flex items-center text-orange-500">   
-                    <Icon icon=event_busy></Icon>
-                    <p class="ml-1">Leave</p>
-                </div>
-            </button>
-            <button on:click={selected.reset} class="w-full text-center lg:text-lg my-1.5 rounded-md bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+        <div class="flex px-1.5 gap-1.5 h-full">
+            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
+                <button on:click={selected.actions.delete} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-red-500 dark:bg-red-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                    <div class="flex items-center text-red-500">   
+                        <Icon icon=delete></Icon>
+                        <p class="ml-1">Delete</p>
+                    </div>
+                </button>
+            {/if}
+            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
+                <button on:click={selected.actions.duplicate.start} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                    <div class="flex items-center text-blue-500">   
+                        <Icon icon=content_copy></Icon>
+                        <p class="ml-1">Duplicate</p>
+                    </div>
+                </button>
+            {/if}
+            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                <button on:click={selected.actions.signup} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-green-500 dark:bg-green-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                    <div class="flex items-center text-green-500">   
+                        <Icon icon=event_available></Icon>
+                        <p class="ml-1">Sign Up</p>
+                    </div>
+                </button>
+                <button on:click={selected.actions.leave} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-orange-500 dark:bg-orange-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
+                    <div class="flex items-center text-orange-500">   
+                        <Icon icon=event_busy></Icon>
+                        <p class="ml-1">Leave</p>
+                    </div>
+                </button>
+            {/if}
+            <button on:click={selected.reset} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">
                 <div class="flex items-center">   
                     <Icon icon=cancel></Icon>
                     <p class="ml-1">Reset</p>

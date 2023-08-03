@@ -1,6 +1,8 @@
 <script lang=ts>
     import format from 'date-and-time';
     import { onMount } from 'svelte';
+    import type { Unsubscriber, Writable } from 'svelte/store';
+    import { onDestroy } from 'svelte';
 
     export {style as class};
     export let date: Date;
@@ -19,11 +21,17 @@
         }
     }
 
+    let unsubscribe: Unsubscriber | undefined;
+
     onMount(() => {
         if(date) {
             stringdate = format.format(date, "YYYY-MM-DDTHH:mm");
         }
     });
+
+    onDestroy(() => {
+        if(unsubscribe) unsubscribe();
+    })
 </script>
 
 <input name={name} type="datetime-local" bind:value={stringdate} class={style}/>

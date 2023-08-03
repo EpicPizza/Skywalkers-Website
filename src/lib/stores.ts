@@ -185,20 +185,20 @@ export const navLinks: Writable<Link[]> = writable([
         protected: false,
     },
     {
-        href: "/resources",
-        display: "Resources",
-        protected: true,
-    },
-    {
-        href: "/tasks",
-        display: "Tasks",
-        protected: true,
+        href: "/help",
+        display: "Help",
+        protected: false,
     },
     {
         href: "/meetings",
         display: "Meetings",
         protected: true,
     },
+    {
+        href: "/hours",
+        display: "Hours",
+        protected: true,
+    }
 ]);
 
 //https://svelte.dev/repl/0ace7a508bd843b798ae599940a91783?version=3.16.7

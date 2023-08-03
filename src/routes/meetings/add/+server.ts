@@ -10,6 +10,12 @@ export const PATCH = async ({ locals, request }) => {
 
     if(!locals.firestoreUser.permissions.includes('CREATE_MEETINGS')) throw error(403, "Unauthorized.");
 
+    let today = new Date();
+    today.setMilliseconds(0);
+    today.setSeconds(0);
+    today.setMinutes(0);
+    today.setHours(0);
+
     let meetings: z.infer<typeof duplicateSchema>["meetings"];
 
     try {
@@ -33,6 +39,9 @@ export const PATCH = async ({ locals, request }) => {
         if(!doc.exists) {
             return json("Meeting not found.");
         }
+
+        if(meetings[i].starts.valueOf() < today.valueOf()) return json("Past meetings cannot be made.");
+        if(meetings[i].ends.valueOf() <= meetings[i].starts.valueOf()) return json("Start time must be before end time.");
 
         await colRef.add({
             ...doc.data(),

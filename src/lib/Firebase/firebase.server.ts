@@ -6,7 +6,7 @@ import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
 import { AuthCredential } from 'firebase/auth';
 import { type Firestore, getFirestore as getFirebaseFirestore, DocumentReference } from 'firebase-admin/firestore';
 import { getSpecifiedRoles } from '$lib/Roles/role.server';
-import type { FirestoreUser } from './firebase';
+import type { FirestoreUser, SecondaryUser } from './firebase';
 
 export let firebaseAdmin = getFirebaseAdmin();
 
@@ -65,10 +65,11 @@ function getFirebaseAdmin() {
     }
 }
 
-export async function seralizeFirestoreUser(user: any): Promise<FirestoreUser | undefined> {
+export async function seralizeFirestoreUser(user: any, id: string): Promise<SecondaryUser | undefined> {
     if(user == undefined) return undefined;
     return {
         ...user,
+        id: id,
         roles: await getSpecifiedRoles(user.roles as DocumentReference[]),
     }
 }

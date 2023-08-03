@@ -35,12 +35,12 @@ export async function load({ params, locals, url }) {
 
     let synopsis; 
     if(data.synopsis != null) {
-        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data())
+        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data(), data.synopsis.id)
     }
 
     let mentor;
     if(data.mentor != null) {
-        mentor = await seralizeFirestoreUser((await data.mentor.get()).data())
+        mentor = await seralizeFirestoreUser((await data.mentor.get()).data(), data.mentor.id)
     }
 
     let role;
@@ -50,11 +50,11 @@ export async function load({ params, locals, url }) {
 
     const meeting = {
         name: data.name as string,
-        lead: await seralizeFirestoreUser((await data.lead.get()).data()),
+        lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
         //@ts-ignore
-        synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis,
+        synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis as SecondaryUser,
         //@ts-ignore
-        mentor: data.mentor == null ? undefined : mentor == undefined ? "User Not Found" :  mentor,
+        mentor: data.mentor == null ? undefined : mentor == undefined ? "User Not Found" :  mentor as SecondaryUser,
         role: role,
         location: data.location as string,
         when_start: data.when_start.toDate() as Date,

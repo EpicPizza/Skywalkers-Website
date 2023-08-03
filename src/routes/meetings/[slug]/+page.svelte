@@ -8,7 +8,7 @@
     import { doc, documentId, DocumentReference, onSnapshot, type Unsubscribe } from 'firebase/firestore';
     import { onDestroy, onMount, getContext } from 'svelte';
     import type { Unsubscriber, Writable } from 'svelte/store';
-    import { add, deleteMeeting, remove } from "$lib/Meetings/meetings.js";
+    import { add, deleteMeeting, remove, removeOtherMember } from "$lib/Meetings/meetings.js";
     import { goto } from '$app/navigation';
     import type { Role } from '$lib/Roles/role.js';
     import { current } from 'tailwindcss/colors.js';
@@ -124,10 +124,12 @@
                 <p>Back</p>
             </a>
             {#if data.meeting.completed === false}
-                <a href="/meetings/{data.meeting.id}/complete" class="flex gap-1 p-1 mb-2 pl-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
-                    <p>Complete</p>
-                    <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=double_arrow></Icon>
-                </a>
+                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('ADD_SYNOPSES')) || (data.meeting.lead != undefined && typeof data.meeting.lead == 'object' ? data.meeting.lead.id == $client?.uid : false) || (data.meeting.synopsis != undefined && typeof data.meeting.synopsis == 'object' ? data.meeting.synopsis.id == $client?.uid : false)}
+                    <a href="/meetings/{data.meeting.id}/complete" class="flex gap-1 p-1 mb-2 pl-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
+                        <p>Complete</p>
+                        <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=double_arrow></Icon>
+                    </a>
+                {/if}
             {:else}
                 <a href="/synopsis/{data.meeting.id}" class="flex gap-1 p-1 mb-2 pl-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                     <p>Synopsis</p>
@@ -198,11 +200,11 @@
                 </div>
             </div>
             <div class="p-4 lg:p-6 pb-2 lg:pb-4 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between mb-4 h-[34px] lg:h-[38px]">
                     <h1 class="text-xl lg:text-2xl ml-1 mb-1">Sign Up List:</h1>
                     {#if data.meeting.completed == false}
                         {#if signedup}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
                                 <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, client ) }}>Leave</button>
                             {/if}
                         {:else}
@@ -215,6 +217,9 @@
                         <div class="flex items-center mb-3">
                             <img referrerpolicy="no-referrer" alt="{user.displayName}'s Profile Picture" src="{user.photoURL}" class="h-8 w-8 lg:h-9 lg:w-9 rounded-full ml-1 mr-2"/>
                             <h1 class="lg:text-lg">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
+                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS')) && data.meeting.completed == false}
+                                <button on:click={() => { removeOtherMember(data.meeting.id, user.id, client); }} class="b-default ml-3 h-[32px] lg:h-[36px]"><Icon class="text-[0.875rem] w-[0.875rem] h-[0.875rem] lg:text-[1.125rem] lg:w-[1.125rem] lg:h-[1.125rem]" scale={0} icon=remove></Icon></button>
+                            {/if}
                         </div>
                     {/if}
                 {:else}
@@ -223,18 +228,20 @@
                     </div>
                 {/each}
             </div>
-            {#if ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+            {#if ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP')) && data.meeting.completed == false && ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
                 <div class="opacity-75 flex items-center mt-3">
                     <Icon scale={0}  class="ml-1 text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" icon=info></Icon>
                     <p class="ml-2 lg:text-lg">If you sign up, you cannot undo it.</p>
                 </div>
             {/if}
             <div class="pt-4 flex flex-row-reverse gap-2">
-                {#if data.meeting.completed == false}
+                {#if data.meeting.completed == false && !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
                     <button on:click={ async () => { await deleteMeeting(data.meeting.id, client); }} class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=delete/><span>Delete</span></button>
                 {/if}
-                <a href="/meetings/{data.meeting.id}/duplicate" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=content_copy/><span>Duplicate</span></a>
-                {#if data.meeting.completed == false}
+                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
+                    <a href="/meetings/{data.meeting.id}/duplicate" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=content_copy/><span>Duplicate</span></a>
+                {/if}
+                {#if data.meeting.completed == false && !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
                     <a href="/meetings/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
                 {/if}
             </div>

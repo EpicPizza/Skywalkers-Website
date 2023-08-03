@@ -13,38 +13,40 @@ export async function load({ params, locals, url }) {
 
     if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
-    if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES')) throw error(403, "Unauthorized.");
+    const db = firebaseAdmin.getFirestore();
 
-    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
+    const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
 
     const data = (await ref.get()).data();
 
     if(data == undefined) throw error(404, "Meeting Not Found");
 
-    if(data.completed == true) throw error(404, "Not Completable; Meeting Completed")
+    if(data.completed == true) throw error(404, "Not Completable; Meeting Completed");
+
+    if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES') && data.synopsis.id != locals.user.uid && data.lead.id != locals.user.uid) throw error(403, "Unauthorized.");
 
     let signups = new Array<SecondaryUser>();
 
     for(let i = 0; i < data.signups.length; i++) {
-        const user = (await data.signups[i].get()).data();
+        const user = (await db.collection('users').doc(data.signups[i]).get()).data();
 
         if(user != undefined) {
             signups.push({
                 ...user,
                 roles: await getSpecifiedRoles(user.roles),
-                id: data.signups[i].id,
+                id: data.signups[i],
             } as SecondaryUser);
         }
     }
 
     let synopsis; 
     if(data.synopsis != null) {
-        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data())
+        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data(), data.synopsis.id)
     }
 
     let mentor;
     if(data.mentor != null) {
-        mentor = await seralizeFirestoreUser((await data.mentor.get()).data())
+        mentor = await seralizeFirestoreUser((await data.mentor.get()).data(), data.mentor.id)
     }
 
     let role;
@@ -54,7 +56,7 @@ export async function load({ params, locals, url }) {
 
     const meeting = {
         name: data.name as string,
-        lead: await seralizeFirestoreUser((await data.lead.get()).data()),
+        lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
         //@ts-ignore
         synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis,
         //@ts-ignore
@@ -103,8 +105,6 @@ export const actions = {
 
         if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
-        if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES')) throw error(403, "Unauthorized.");
-
         const form = await superValidate(request, completeSchema);
 
         if(!form.valid) {
@@ -112,14 +112,6 @@ export const actions = {
         }
 
         const db = firebaseAdmin.getFirestore();
-
-        let users = await getUserList(db, locals.firestoreUser.team);
-
-        for(let i = 0; i < form.data.hours.length; i++) {
-            if(!users.includes(form.data.hours[i].id)) {
-                return message(form, "User not found.");
-            }
-        }
 
         const team = db.collection('teams').doc(locals.firestoreUser.team);
 
@@ -129,8 +121,18 @@ export const actions = {
 
         const meeting = await meetingRef.get();
 
-        if(!meeting.exists) {
+        if(!meeting.exists || meeting.data() == undefined) {
             return message(form, "Meeting not found.");
+        }
+
+        if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES') && meeting.data()?.synopsis.id != locals.user.uid && meeting.data()?.lead.id != locals.user.uid) throw error(403, "Unauthorized.");
+
+        let users = await getUserList(db, locals.firestoreUser.team);
+
+        for(let i = 0; i < form.data.hours.length; i++) {
+            if(!users.includes(form.data.hours[i].id)) {
+                return message(form, "User not found.");
+            }
         }
 
         await db.runTransaction(async t => {

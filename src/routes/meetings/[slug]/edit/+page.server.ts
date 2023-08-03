@@ -25,9 +25,9 @@ export async function load({ params, locals }) {
 
     const meeting = {
         name: data.name as string,
-        lead: await seralizeFirestoreUser((await data.lead.get()).data()),
-        synopsis:  data.synopsis == null ? undefined : await seralizeFirestoreUser((await data.synopsis.get()).data()),
-        mentor: data.mentor == null ? undefined : await seralizeFirestoreUser((await data.mentor.get()).data()),
+        lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
+        synopsis:  data.synopsis == null ? undefined : await seralizeFirestoreUser((await data.synopsis.get()).data(), data.synopsis.id),
+        mentor: data.mentor == null ? undefined : await seralizeFirestoreUser((await data.mentor.get()).data(), data.mentor.id),
         location: data.location as string,
         when_start: data.when_start.toDate() as Date,
         when_end: data.when_end.toDate() as Date,
@@ -73,6 +73,15 @@ export const actions = {
         if(!form.valid) {
             return fail(400, { form });
         }
+
+        let today = new Date();
+        today.setMilliseconds(0);
+        today.setSeconds(0);
+        today.setMinutes(0);
+        today.setHours(0);
+
+        if(form.data.starts.valueOf() < today.valueOf()) return message(form, "Past meetings cannot be made.");
+        if(form.data.ends.valueOf() <= form.data.starts.valueOf()) return message(form, "Start time must be before end time.");
 
         const db = firebaseAdmin.getFirestore();
 

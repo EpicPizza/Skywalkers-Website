@@ -25,6 +25,8 @@ export async function load({ locals, url }) {
         thumbnail: string,
         when_start: Date,
         when_end: Date,
+        lead: boolean,
+        synopsis: boolean,
     }
 
     interface MeetingPreview extends Meeting {
@@ -46,6 +48,8 @@ export async function load({ locals, url }) {
             meetings.push({
                 name: firestoreMeetings[i].data().name as string,
                 id: firestoreMeetings[i].id as string,
+                lead: firestoreMeetings[i].data().lead.id == locals.user.uid,
+                synopsis: firestoreMeetings[i].data().synopsis == undefined ? false : firestoreMeetings[i].data().lead.id == locals.user.uid,
                 location: firestoreMeetings[i].data().location as string,
                 thumbnail: firestoreMeetings[i].data().thumbnail as string,
                 when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
