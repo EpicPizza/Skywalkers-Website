@@ -29,7 +29,8 @@
 </div>
 
 <style>
-    input[type="date"]::-webkit-calendar-picker-indicator {
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="date"]::-webkit-inner-spin-button {
         background: transparent;
         bottom: 0;
         color: transparent;
@@ -39,6 +40,9 @@
         position: absolute;
         right: 0;
         top: 0;
+        opacity: 0;
+        -webkit-appearance: none;
+        display: none;
         width: auto;
     }
 
