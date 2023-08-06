@@ -4,6 +4,7 @@
     import Line from "$lib/Builders/Line.svelte";
     import Page from "$lib/Builders/Page.svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
+    import Footer from "$lib/Nav/Footer.svelte";
     import { getContext } from "svelte";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
@@ -17,8 +18,10 @@
             <Icon icon=delete scale=2.5rem></Icon>
             <div class="ml-4">
                 <h2 class="mb-1 text-xl">Delete Your Account</h2>
-                <h3 class="opacity-75">Delete your account, profile, and linked data. Learn what data specifically gets deleted.</h3>
+                <h3>Delete your account, profile, and linked data. Learn what data specifically gets deleted.</h3>
             </div>
         </a>
     </Page>
 </Background>
+
+<Footer></Footer>

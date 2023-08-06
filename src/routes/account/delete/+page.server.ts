@@ -56,15 +56,19 @@ export const actions = {
 
         const folderPath = `users/${locals.user.uid}`;
 
-        firebaseAdmin.getBucket().deleteFiles({
-            prefix: folderPath,
-        }, (err, files) => {
-            if(err) {
-                console.log(err);
+        await new Promise((resolve) => {
+            firebaseAdmin.getBucket().deleteFiles({
+                prefix: folderPath,
+            }, (err, files) => {
+                if(err) {
+                    console.log(err);
 
-                throw error(501, "An unexpected error occurred, please contact us for further help.");
-            }
-        })
+                    throw error(501, "An unexpected error occurred, please contact us for further help.");
+                }
+
+                resolve(null);
+            })
+        });
 
         return { success: true };
     }       

@@ -5,12 +5,41 @@
     import Line from '$lib/Builders/Line.svelte';
     import type { firebaseClient } from '$lib/Firebase/firebase.js';
     import { getContext } from 'svelte';
+    import { attr } from 'svelte/internal';
 
     format.plugin(meridiem);
 
     export let data;
     
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+
+    function checkIfImage(type: string) {
+        switch(type) {
+            case 'image/apng':
+            case 'image/avif':
+            case 'image/gif':
+            case 'image/jpeg':
+            case 'image/png':
+            case 'image/svg+xml':
+            case 'image/webp':
+                return true;
+            case 'application/pdf':
+            case 'text/plain':
+            default:
+                return false;
+        }
+    }
+
+    let photos: (typeof data)["synopsis"]["attachments"] = [];
+    let files: (typeof data)["synopsis"]["attachments"] = [];
+
+    for(let i = 0; i < data.synopsis.attachments.length; i++) {
+        if(checkIfImage(data.synopsis.attachments[i].type)) {
+            photos.push(data.synopsis.attachments[i]);
+        } else {
+            files.push(data.synopsis.attachments[i]);
+        }
+    }
 </script>
 
 <svelte:head>
@@ -18,7 +47,7 @@
 </svelte:head>
 
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
-    <div class="w-[36rem] lg:w-[44rem]">
+    <div class="w-[36rem] max-w-[36rem] lg:w-[44rem] lg:max-w-[44rem] overflow-clip">
         <div class="w-full flex justify-between">
             <button on:click={() => { history.back(); }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
@@ -34,9 +63,20 @@
                 <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
             </div>
         </div>
-        <p class="mt-4 lg:text-lg whitespace-pre-line break-all">
+        <p class="my-4 lg:text-lg whitespace-pre-line break-all">
             {data.synopsis.body}
         </p>
+        {#each photos as attachment}
+            <img class="object-contain rounded-2xl mb-3 w-full h-80 border-[1px] border-border-light dark:border-border-dark" alt={attachment.name} src={attachment.url}/>
+        {/each}
+        {#if data.synopsis.attachments.length == 0}
+            <div class="mb-4"></div>
+        {/if}
+        {#each files as attachment}
+            <a href="{attachment.url}" target="_blank" class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto">
+                <p>{attachment.name}</p>
+            </a>
+        {/each}
         <div class="my-4 p-4 lg:p-6 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
             <div class="gap-4 flex flex-col">
                 {#each data.synopsis.hours as entry}

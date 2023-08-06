@@ -64,6 +64,22 @@ export const actions = {
             t.delete(synopsisRef);
         })
 
-        throw redirect(307, "/completed/1");
+        const folderPath = `synopses/${params.slug}`;
+
+        await new Promise((resolve) => {
+            firebaseAdmin.getBucket().deleteFiles({
+                prefix: folderPath,
+            }, (err, files) => {
+                if(err) {
+                    console.log(err);
+
+                    throw error(501, "An unexpected error occurred, please contact us for further help.");
+                }
+
+                resolve(null);
+            })
+        })
+
+        throw redirect(303, "/meetings/completed/1");
     }
 }

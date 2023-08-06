@@ -51,6 +51,7 @@ export async function load({ params, locals, url }) {
         synopsis: {
             body: synopsis.synopsis as string,
             hours: hours,
+            attachments: synopsis.urls as { url: string, type: string, name: string }[],
         }
     };
 }

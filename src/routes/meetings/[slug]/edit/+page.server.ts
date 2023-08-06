@@ -19,7 +19,7 @@ export async function load({ params, locals }) {
 
     const data = (await ref.get()).data();
 
-    if(data == undefined) throw error(404, "Meeting Not Found");
+    if(data == undefined)throw error(404, "Meeting Not Found");
 
     if(data.completed == true) throw error(404, "Not Editable; Meeting Completed")
 

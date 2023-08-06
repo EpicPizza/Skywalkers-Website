@@ -7,6 +7,8 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import type { z } from 'zod';
+import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
+import { getDownloadURL } from 'firebase-admin/storage';
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -100,15 +102,58 @@ export async function load({ params, locals, url }) {
 }
 
 export const actions = {
-    default: async function({ request, locals }) {
+    default: async function({ request, locals, params }) {
         if(locals.user == undefined) throw error(403, "Sign In Required");
 
         if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
-        const form = await superValidate(request, completeSchema);
+        const formData = await request.formData();
+
+        const form = await superValidate(formData, completeSchema);
 
         if(!form.valid) {
             return fail(400, { form });
+        }
+
+        console.log(formData);
+
+        let attachments = formData.getAll('attachments');
+
+        let files = new Array<File>()
+
+        if(attachments) {
+            for(let i = 0; i < attachments.length; i++) {
+
+                if(attachments[i] instanceof File) {
+                    const type = await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer());
+
+                    console.log(type);
+
+                    if(!type || !checkType(type.mime)) {
+                        if(type != undefined) {
+                            return message(form, "Invalid attachment file type.");
+                        }
+                    } else {
+                        files.push(attachments[i] as File);
+                    }
+                }
+            }
+        }
+
+        for(let i = 0; i < files.length; i++) {
+            for(let j = 0; j < files.length; j++) {
+                if(files[i].name == files[j].name && j != i) {
+                    return message(form, "Cannot have attachments with duplicate names.");
+                }
+            }
+
+            if(files[i].size / 1024 / 1024 > 20) {
+                return message(form, files[i].name + " is too large.");
+            }
+
+            if(files[i].name.length > 100) {
+                return message(form, files[i].name + " has a name too long.");
+            }
         }
 
         const db = firebaseAdmin.getFirestore();
@@ -135,6 +180,22 @@ export const actions = {
             }
         }
 
+        let urls: {url: string, type: string, name: string}[] = [];
+
+        for(let i = 0; i < files.length; i++) {
+            const ref = firebaseAdmin.getBucket().file(`synopses/${params.slug}/${files[i].name}`);
+
+            try {
+                await ref.save(arrayBufferToBuffer(await files[i].arrayBuffer()));
+            } catch(e) {
+                console.log(e);
+
+                return message(form, "Failed to upload attachment. Please try again.");
+            }
+
+            urls.push({url: await getDownloadURL(ref), type: (await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer()))?.mime ?? "plain/text", name: files[i].name});
+        }
+
         await db.runTransaction(async t => {
             t.update(meetingRef, {
                 completed: true,
@@ -143,18 +204,47 @@ export const actions = {
             const synopsis = {
                 synopsis: form.data.synopsis,
                 hours: [] as { member: DocumentReference, time: number }[],
+                urls: urls
             }
 
             for(let i = 0; i < form.data.hours.length; i++) {
                 synopsis.hours.push({
                     member: db.collection('users').doc(form.data.hours[i].id),
-                    time: form.data.hours[i].time
+                    time: form.data.hours[i].time,
                 })
             }
 
             t.create(synopsisRef, synopsis);
         })
 
-        throw redirect(307, "/meetings/" + form.data.id + "")
+        throw redirect(307, "/meetings/" + form.data.id + "");
+    }
+}
+
+function arrayBufferToBuffer(ab: ArrayBuffer) {
+    let buffer = Buffer.alloc(ab.byteLength);
+    let view = new Uint8Array(ab);
+
+    for (var i = 0; i < buffer.length; ++i) {
+        buffer[i] = view[i];
+    }
+
+    return buffer;
+}
+
+function checkType(type: string) {
+    switch(type) {
+        case 'image/apng':
+        case 'image/avif':
+        case 'image/gif':
+        case 'image/jpeg':
+        case 'image/png':
+        case 'image/svg+xml':
+        case 'image/webp':
+        case 'application/pdf':
+        case 'text/plain':
+            return true;
+        default:
+            return false;
     }
 }

@@ -2,21 +2,29 @@
     import Background from "$lib/Builders/Background.svelte";
     import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
+    import Loading from "$lib/Builders/Loading.svelte";
     import Page from "$lib/Builders/Page.svelte";
+    import Footer from "$lib/Nav/Footer.svelte";
 
     export let form;
+
+    let pressed = false;
 </script>
 
 <Background>
-    <Page expand size="24rem">
-        <h1 class="text-2xl font-bold">Delete Your Account:</h1>
-        <Line class="my-4"></Line>
+    <Page expand={!pressed} size="24rem">
         {#if form && form.success == true}
+            <h1 class="text-2xl font-bold">Delete Your Account:</h1>
+            <Line class="my-4"></Line>
             <p>Your account has been deleted.</p>
             <div class="mt-8 flex justify-between items-center">
                 <a href="/" class="b-primary flex items-center gap-1 w-fit"><Icon scale=1.25rem icon=arrow_back></Icon>Back Home</a>
             </div>
+        {:else if pressed}
+            <Loading></Loading>
         {:else}
+            <h1 class="text-2xl font-bold">Delete Your Account:</h1>
+            <Line class="my-4"></Line>
             <p class="mb-2">What gets deleted:</p>
             <ul class="list-disc my-1">
                 <li class="my-1 ml-5">Your Account</li>
@@ -37,10 +45,12 @@
             </div>
             <div class="mt-8 flex justify-between items-center">
                 <a href="/account" class="b-primary flex items-center gap-1 w-fit"><Icon scale=1.25rem icon=arrow_back></Icon>Back</a>
-                <form method=POST>
+                <form on:submit={() => { setTimeout(() => { pressed = true; }, 500); }} method=POST>
                     <button class="b-red flex items-center gap-1 w-fit">Delete<Icon scale=1.25rem icon=delete></Icon></button>
                 </form>
             </div>
         {/if}
     </Page>
 </Background>
+
+<Footer></Footer>

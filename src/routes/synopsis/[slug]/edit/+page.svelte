@@ -4,6 +4,7 @@
     import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
+    import FileChooser from "$lib/Components/FileChooser.svelte";
     import Member from "$lib/Components/Member.svelte";
     import MiniProfile from "$lib/Components/MiniProfile.svelte";
     import PersonDialog from "$lib/Components/PersonDialog.svelte";
@@ -56,7 +57,7 @@
             </button>
         </div>
         <Line class="mb-4"></Line>
-        <h1 class="text-2xl lg:text-3xl pb-4">Complete Meeting:</h1>
+        <h1 class="text-2xl lg:text-3xl pb-4">Edit Synopsis:</h1>
         <form method=POST use:enhance>
             <div class="mt-8 items-center w-full">
                 <div class="flex justify-between">
@@ -65,6 +66,8 @@
                 </div>
                 <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-3xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
             </div>
+            <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
+            <FileChooser name=attachments/>
             <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
             <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
