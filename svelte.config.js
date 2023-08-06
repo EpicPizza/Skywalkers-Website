@@ -18,7 +18,7 @@ const config = {
             directives: {
                 'script-src': ['self', "https://apis.google.com"],
 				'style-src': ['self', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
-				'img-src': ['self', 'https://lh3.googleusercontent.com/'],
+				'img-src': ['self', 'https:', 'http:'],
 				'connect-src': ['self', 'https://identitytoolkit.googleapis.com/', 'https://firestore.googleapis.com/', 'https://securetoken.googleapis.com/'],
 				'font-src': ['self', 'https://fonts.gstatic.com/'],
 				'frame-src': ['self', 'https://frc-skywalkers.firebaseapp.com/'],

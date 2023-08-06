@@ -4,7 +4,6 @@ import { getMember, getQuarantinedMember, quarantineMember, type QuarantinedMemb
 import { EditProfile, QuarantineMember } from '$lib/Members/members';
 import { getRoles } from '$lib/Roles/role.server';
 import { error, fail, redirect } from '@sveltejs/kit';
-import type { SuperValidated } from 'sveltekit-superforms/index';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import type { z } from 'zod';
 

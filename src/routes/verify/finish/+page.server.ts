@@ -1,5 +1,5 @@
 import type { Code } from "$lib/Codes/codes";
-import { firebaseAdmin } from "$lib/Firebase/firebase.server";
+import { firebaseAdmin, getPhotoURL } from "$lib/Firebase/firebase.server";
 import { error, redirect, type RequestHandler } from "@sveltejs/kit";
 import { FieldValue } from "firebase-admin/firestore";
 import safeCompare from "safe-compare";
@@ -53,15 +53,17 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
 
                 role = members[found.split("-")[0] as any];
 
-                await db.collection('teams').doc(found.split("-")[1]).update({
-                    [found.split("-")[0]]: FieldValue.delete(),
-                });
-
                 foundMember = true;
             }
         }
 
         if(foundMember) {
+            let photoURL = await getPhotoURL(locals.user.photoURL as string, locals.user.uid);
+
+            await db.collection('teams').doc(found.split("-")[1]).update({
+                [found.split("-")[0]]: FieldValue.delete(),
+            });
+
             const users = await (db.collection('verify').where('code', '==', found).get())
 
             if(!users.empty) {
@@ -90,7 +92,7 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
 
             db.collection('users').doc(locals.user.uid).set({
                 displayName: locals.user.displayName,
-                photoURL: locals.user.photoURL,
+                photoURL: photoURL,
                 team: found.split("-")[1],
                 role: role,
                 roles: [],
@@ -98,6 +100,14 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
                 pronouns: "",
                 permissions: everyoneRole.permissions,
             })
+
+            const kickedRef = db.collection('quarantine').doc(locals.user.uid);
+
+            const kicked = await kickedRef.get();
+    
+            if(kicked.exists) {
+                await kickedRef.delete();
+            }
 
             throw redirect(307, "/?invalidateAll=true");
         } else {

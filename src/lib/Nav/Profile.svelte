@@ -21,7 +21,7 @@ import Icon from "$lib/Builders/Icon.svelte";
 </script>
 
 {#if $user == undefined}
-    {#if !$page.url.pathname.includes("/help")}
+    {#if !($page.url.pathname.includes("/help") || $page.url.pathname.includes("/account"))}
         <button disabled class="b-bold whitespace-nowrap">Signed Out</button>
     {:else}
         <a href="/" class="b-bold whitespace-nowrap">Signed Out</a>
@@ -64,12 +64,15 @@ import Icon from "$lib/Builders/Icon.svelte";
                     </MenuItem>
                 </Tooltip>
             </div>
+            <Line class="my-2 mx-1"/>
             {#if $verified}
-                <Line class="my-2 mx-1"/>
                 <MenuItem on:click={() => { $navmenu = false; }} href="/settings" class="rounded-md b-menu">
                     Team Settings
                 </MenuItem>
             {/if}
+            <MenuItem on:click={() => { $navmenu = false; }} href="/account" class="rounded-md b-menu">
+                Your Account
+            </MenuItem>
         </MenuItems>
     </Menu>
 {/if}

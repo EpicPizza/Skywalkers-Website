@@ -29,7 +29,7 @@
     } else if(data.errors.verified) {
         warning.set({
             color: 'aqua',
-            message: 'Already verified',
+            message: 'Verified',
         })
     }
 

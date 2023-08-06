@@ -59,6 +59,7 @@ export function firebaseClient() {
     let unsubscribe: Unsubscribe | undefined = undefined;
     let cachedUsers: Map<string, SecondaryUser | { team: undefined }> = new Map();
     let cachedRoles: Map<string, Role | { id: undefined } > = new Map();
+    let firestoreEntry: any | undefined = undefined;
 
     const getApp = (): FirebaseApp => {
         if(app == undefined) {
@@ -84,6 +85,14 @@ export function firebaseClient() {
         }
 
         return auth;
+    }
+
+    const getAuthUser = (): (ReturnType<typeof getAuth>)["currentUser"] | null => {
+        return getAuth().currentUser;
+    }
+
+    const getFirestoreEntry = (): any => {
+        return firestoreEntry;
     }
 
     const getProvider = (): GoogleAuthProvider => {
@@ -229,6 +238,8 @@ export function firebaseClient() {
                 const currentUser = get(user);
 
                 if(!(currentUser == undefined || 'prelaod' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
+                    firestoreEntry = snapshot.data();
+
                     user.set({
                         ...currentUser,
                         ...{
@@ -242,7 +253,7 @@ export function firebaseClient() {
 
         return userData ? {
             ...userData,
-            roles: get(user) ? get(user)?.roles : [], //this gets run before user object is updated and getSpecifiedRoles waits until user object is updated, which causes website to get stuck in promise :/
+            roles: get(user) ? get(user)?.roles : [], //this gets run before user object is updated and getSpecifiedRoles waits until user object is updated, which causes website to get stuck in a promise loop waiting for each other :/
         } as FirestoreUser : undefined;
     }
 
@@ -454,6 +465,10 @@ export function firebaseClient() {
         serverInit: serverInit,
         getFirestore: getFirestore,
         getApp: getApp,
+        debug: {
+            getUser: getAuthUser,
+            getEntry: getFirestoreEntry,
+        },
         cacheUser: cacheUser,
         getUser: getUser,
         getRole: getRole,

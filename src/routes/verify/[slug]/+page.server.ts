@@ -1,5 +1,5 @@
 import type { Code } from '$lib/Codes/codes';
-import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
+import { firebaseAdmin, getPhotoURL } from '$lib/Firebase/firebase.server.js';
 import { error, redirect } from '@sveltejs/kit';
 import { FieldValue } from 'firebase-admin/firestore';
 import safeCompare from 'safe-compare';
@@ -65,6 +65,8 @@ export const actions = {
 
         if(found == undefined || team == undefined || member == undefined) throw error(400, "An error occurred. (Possibly wrong email)");
 
+        let photoURL = await getPhotoURL(locals.user.photoURL as string, locals.user.uid);
+        
         await db.collection('teams').doc(team).update({
             [member]: FieldValue.delete(),
         });
@@ -93,7 +95,7 @@ export const actions = {
 
         db.collection('users').doc(locals.user.uid).set({
             displayName: locals.user.displayName,
-            photoURL: locals.user.photoURL,
+            photoURL: photoURL,
             team: team,
             role: found.role,
             roles: [],
