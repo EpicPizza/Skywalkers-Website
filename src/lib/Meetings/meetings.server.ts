@@ -29,7 +29,19 @@ export const completeSchema = z.object({
     hours: z.object({
         time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be negative." }).max(12, { message: "Max hours contributed is 12." }),
         id: z.string().min(1).max(100),
-    }).array()
+    }).array(),
+})
+
+export const editSchema = z.object({
+    id: z.string().min(1).max(100),
+    synopsis: z.string({ invalid_type_error: "Synopsis must be a string.", required_error: "A synopsis must be written."}).min(1, { message: "A synopsis must be written." }).max(10000, { message: "Ten thousand character max synopsis allowed."}),
+    hours: z.object({
+        time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be negative." }).max(12, { message: "Max hours contributed is 12." }),
+        id: z.string().min(1).max(100),
+    }).array(),
+    attachments: z.object({
+        name: z.string({ invalid_type_error: "Name must be a string.", required_error: "A name is required for the attachment." }).min(1, {message: "Attachment name too small."}).max(100, { message: "Attachment name too long." })
+    })
 })
 
 export async function getUserList(db: Firestore, team: string) {
