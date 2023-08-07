@@ -173,9 +173,13 @@
                     <Line class="ml-2"></Line>
                 </div>
             </div>
+            <div class="flex gap-2 mt-6 items-center lg:gap-3">
+                <div><input class="appearance-none -mb-2 bg-transparent bg-gray-200 checked:bg-blue-500 w-8 h-8 lg:w-9 lg:h-9 rounded-md transition hover:cursor-pointer" bind:checked={$form.discord} type=checkbox/><Icon class="absolute max-h-none translate-x-1 lg:translate-x-0.5 -translate-y-[27px] lg:-translate-y-[33px] pointer-events-none transition-opacity text-white {$form.discord ? "opacity-100" : "opacity-0"} text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[2rem] lg:w-[2rem] lg:h-[2rem]" scale={0} icon=check></Icon></div>
+                <p class="text-lg lg:text-xl">Send synopsis message to discord.</p>
+            </div>
             <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: data.meeting.length }); $form.hours = $form.hours; }}></PersonDialog>
             <Error {allErrors} {message}></Error>
-            <div class="flex items-center mt-6 gap-4">
+            <div class="flex items-center mt-7 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">
                     <p class="text-inherit">Complete</p>
                     <Icon class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" scale={0} icon=check></Icon>

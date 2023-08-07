@@ -6,9 +6,18 @@ import { getRole, getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
-import type { z } from 'zod';
+import { coerce, type z } from 'zod';
 import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
 import { getDownloadURL } from 'firebase-admin/storage';
+import path from 'path';
+import { attachmentHelpers } from '$lib/Meetings/meetings.server';
+import { sendSynopsis } from '$lib/Discord/discord.server.js';
+import format from "date-and-time";
+import meridiem from "date-and-time/plugin/meridiem";
+import { DOMAIN } from '$env/static/private';
+import { charset, extension, lookup } from 'mime-types';
+
+format.plugin(meridiem);
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -94,6 +103,7 @@ export async function load({ params, locals, url }) {
     }
 
     form.data.hours = hours;
+    form.data.discord = true;
     
     return { 
         meeting: meeting,
@@ -119,7 +129,7 @@ export const actions = {
 
         let attachments = formData.getAll('attachments');
 
-        let files = new Array<File>()
+        let files = new Array<{file: File, ext: string, mime: string}>()
 
         if(attachments) {
             for(let i = 0; i < attachments.length; i++) {
@@ -128,13 +138,28 @@ export const actions = {
                     const type = await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer());
 
                     console.log(type);
+                    console.log((attachments[i] as File).name)
 
-                    if(!type || !checkType(type.mime)) {
+                    if(!type || !attachmentHelpers.checkType(type.mime)) {
                         if(type != undefined) {
                             return message(form, "Invalid attachment file type.");
+                        } else {
+                            const mime = lookup((attachments[i] as File).name);
+
+                            if(!mime) {
+                                return message(form, "Invalid attachment file type.");
+                            }
+
+                            console.log(extension(mime));
+
+                            if(attachmentHelpers.checkType(mime) && !attachmentHelpers.isImage(mime)) {
+                                files.push({file: attachments[i] as File, ext: extension(mime) ? extension(mime) as string : "text/plain", mime: mime})
+                            } else {
+                                return message(form, "Invalid attachment file type.");
+                            }
                         }
                     } else {
-                        files.push(attachments[i] as File);
+                        files.push({file: attachments[i] as File, ext: type.ext, mime: type.mime});
                     }
                 }
             }
@@ -142,18 +167,22 @@ export const actions = {
 
         for(let i = 0; i < files.length; i++) {
             for(let j = 0; j < files.length; j++) {
-                if(files[i].name == files[j].name && j != i) {
+                if(path.parse(files[i].file.name).base == path.parse(files[j].file.name).base && j != i) {
                     return message(form, "Cannot have attachments with duplicate names.");
                 }
             }
 
-            if(files[i].size / 1024 / 1024 > 20) {
-                return message(form, files[i].name + " is too large.");
+            if(files[i].file.size / 1024 / 1024 > 100) {
+                return message(form, path.parse(files[i].file.name).base + " is too large.");
             }
 
-            if(files[i].name.length > 100) {
-                return message(form, files[i].name + " has a name too long.");
+            if(files[i].file.name.length > 100) {
+                return message(form, path.parse(files[i].file.name).base + " has a name too long.");
             }
+        }
+
+        if(files.length > 10) {
+            return message(form, "Cannot have more than 10 attachments.");
         }
 
         const db = firebaseAdmin.getFirestore();
@@ -174,26 +203,38 @@ export const actions = {
 
         let users = await getUserList(db, locals.firestoreUser.team);
 
+        let names: string[] = [];
+
         for(let i = 0; i < form.data.hours.length; i++) {
             if(!users.includes(form.data.hours[i].id)) {
                 return message(form, "User not found.");
+            } else if(form.data.discord) {
+                let user = await seralizeFirestoreUser((await db.collection('users').doc(form.data.hours[i].id).get()).data(), form.data.hours[i].id);
+
+                if(user) {
+                    console.log(user.displayName);
+                    names.push(user.displayName);
+                }
             }
         }
 
-        let urls: {url: string, type: string, name: string}[] = [];
+        let urls: {url: string, type: string, name: string, location: string, code: string, ext: string }[] = [];
 
-        for(let i = 0; i < files.length; i++) {
-            const ref = firebaseAdmin.getBucket().file(`synopses/${params.slug}/${files[i].name}`);
+        for(let i = 0; i < files.length; i++) {     
+            const code = attachmentHelpers.getCode(urls);    
+
+            const ref = firebaseAdmin.getBucket().file(`synopses/${params.slug}/${code}.${files[i].ext}`);
 
             try {
-                await ref.save(arrayBufferToBuffer(await files[i].arrayBuffer()));
+                await ref.save(attachmentHelpers.arrayBufferToBuffer(await files[i].file.arrayBuffer()));
+                await ref.setMetadata({ contentDispoition: 'inline; filename*=utf-8\'\'"' + path.parse(files[i].file.name).name + '.' + files[i].ext + '"'});
             } catch(e) {
                 console.log(e);
 
                 return message(form, "Failed to upload attachment. Please try again.");
             }
 
-            urls.push({url: await getDownloadURL(ref), type: (await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer()))?.mime ?? "plain/text", name: files[i].name});
+            urls.push({url: await getDownloadURL(ref), type: files[i].mime, name: path.parse(files[i].file.name).name, code: code, ext: files[i].ext, location: `${code}.${files[i].ext}` });
         }
 
         await db.runTransaction(async t => {
@@ -217,34 +258,45 @@ export const actions = {
             t.create(synopsisRef, synopsis);
         })
 
+        if(form.data.discord) {
+            let data = meeting.data() as any;
+
+            let role;
+            if(data.role != null) {
+                role = await getRole(data.role, locals.firestoreUser.team);
+            }
+
+            const meetingObject = {
+                name: data.name as string,
+                lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
+                role: role,
+                location: data.location as string,
+                when_start: data.when_start.toDate() as Date,
+                when_end: data.when_end.toDate() as Date,
+                thumbnail: data.thumbnail as string,
+                completed: data.completed as boolean,
+                id: params.slug as string,
+                signups: []
+            }
+
+            let nameString = "";
+
+            for(let i = 0; i < names.length; i++) {
+                nameString += names[i] + ", ";
+            }
+
+            if(nameString.length > 0) nameString = nameString.substring(0, nameString.length - 2);
+
+            console.log(nameString);
+
+            await sendSynopsis(
+                meetingObject.name + " on " + format.format(meetingObject.when_start, "M/D/Y"), 
+                (role ? "<@&" + role.connectTo + "> " : "") + format.format(meetingObject.when_start, "M/D/Y, h:mm a") + " - " + format.format(meetingObject.when_end, "h:mm a") + (nameString.length != 0 ? " ( " + nameString + " )" : "") + ": " + form.data.synopsis, 
+                urls,
+                DOMAIN + "/synopsis/" + form.data.id,
+            );
+        }
+ 
         throw redirect(307, "/meetings/" + form.data.id + "");
-    }
-}
-
-function arrayBufferToBuffer(ab: ArrayBuffer) {
-    let buffer = Buffer.alloc(ab.byteLength);
-    let view = new Uint8Array(ab);
-
-    for (var i = 0; i < buffer.length; ++i) {
-        buffer[i] = view[i];
-    }
-
-    return buffer;
-}
-
-function checkType(type: string) {
-    switch(type) {
-        case 'image/apng':
-        case 'image/avif':
-        case 'image/gif':
-        case 'image/jpeg':
-        case 'image/png':
-        case 'image/svg+xml':
-        case 'image/webp':
-        case 'application/pdf':
-        case 'text/plain':
-            return true;
-        default:
-            return false;
     }
 }

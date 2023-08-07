@@ -25,6 +25,18 @@
             case 'image/webp':
             case 'application/pdf':
             case 'text/plain':
+            case 'application/json':
+            case 'text/csv':
+            case 'application/vnd.ms-powerpoint':
+            case 'application/vnd.oasis.opendocument.presentation':
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            case 'application/vnd.oasis.opendocument.text':
+            case 'text/csv':
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+            case 'application/vnd.oasis.opendocument.spreadsheet':
                 return true;
             default:
                 return false;

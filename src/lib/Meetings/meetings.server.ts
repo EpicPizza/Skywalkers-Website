@@ -30,6 +30,7 @@ export const completeSchema = z.object({
         time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be negative." }).max(12, { message: "Max hours contributed is 12." }),
         id: z.string().min(1).max(100),
     }).array(),
+    discord: z.boolean(),
 })
 
 export const editSchema = z.object({
@@ -40,8 +41,9 @@ export const editSchema = z.object({
         id: z.string().min(1).max(100),
     }).array(),
     attachments: z.object({
-        name: z.string({ invalid_type_error: "Name must be a string.", required_error: "A name is required for the attachment." }).min(1, {message: "Attachment name too small."}).max(100, { message: "Attachment name too long." })
-    })
+        name: z.string({ invalid_type_error: "Name must be a string.", required_error: "A name is required for the attachment." }).min(1, {message: "Attachment name too small."}).max(100, { message: "Attachment name too long." }),
+        remove: z.boolean({ invalid_type_error: "Remove value must be a boolean", required_error: "You must say whether you want an attachment to be removed." }) 
+    }).array()
 })
 
 export async function getUserList(db: Firestore, team: string) {
@@ -56,4 +58,99 @@ export async function getUserList(db: Firestore, team: string) {
     })
 
     return users;
+}
+
+export const attachmentHelpers = {
+    arrayBufferToBuffer: (ab: ArrayBuffer) => {
+        let buffer = Buffer.alloc(ab.byteLength);
+        let view = new Uint8Array(ab);
+    
+        for (var i = 0; i < buffer.length; ++i) {
+            buffer[i] = view[i];
+        }
+    
+        return buffer;
+    },
+    checkType: (type: string) => {
+        switch(type) {
+            case 'image/apng':
+            case 'image/avif':
+            case 'image/gif':
+            case 'image/jpeg':
+            case 'image/png':
+            case 'image/svg+xml':
+            case 'image/webp':
+            case 'application/pdf':
+            case 'text/plain':
+            case 'application/json':
+            case 'text/csv':
+            case 'application/vnd.ms-powerpoint':
+            case 'application/vnd.oasis.opendocument.presentation':
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            case 'application/vnd.oasis.opendocument.text':
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+            case 'application/vnd.oasis.opendocument.spreadsheet':
+                return true;
+            default:
+                return false;
+        }
+    },
+    isImage: (type: string): boolean => {
+        switch(type) {
+            case 'image/apng':
+            case 'image/avif':
+            case 'image/gif':
+            case 'image/jpeg':
+            case 'image/png':
+            case 'image/svg+xml':
+            case 'image/webp':
+                return true;
+            case 'application/pdf':
+            case 'text/plain':
+            case 'application/json':
+            case 'text/csv':
+            case 'application/vnd.ms-powerpoint':
+            case 'application/vnd.oasis.opendocument.presentation':
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            case 'application/vnd.oasis.opendocument.text':
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+            case 'application/vnd.oasis.opendocument.spreadsheet':
+            default:
+                return false;
+        }
+    },
+    getCode: (previous: {url: string, type: string, name: string, location: string, code: string }[]): string => {
+        const code = attachmentHelpers.getRandomCode();
+    
+        let found = false;
+        for(let i = 0; i < previous.length; i++) {
+            if(previous[i].code == code) {
+                found = true;
+            }
+        }
+    
+        if(found) {
+            return attachmentHelpers.getCode(previous);
+        }
+    
+        return code;
+    },
+    getRandomNumber: () => {
+        return crypto.getRandomValues(new Uint32Array(1))[0]/2**32;
+    },
+    getRandomCode: () => {
+        let code = "";
+    
+        for(let i = 0; i < 6; i++) {
+            code += Math.floor(attachmentHelpers.getRandomNumber() * 9 + 1);
+        }
+    
+        return code;
+    }
 }

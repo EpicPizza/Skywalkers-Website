@@ -72,22 +72,15 @@
     let selected: undefined | number;
 
     async function handleConnect(index: number) {
-        await new Promise((resolve) => {
-            client.subscribe(async (user) => {
-                if(user == undefined || 'preload' in user || user.team == undefined) return;
-
-                const db = client.getFirestore();
-
-                const ref = doc(db, "teams", user.team, "roles", role.id);
-
-                await runTransaction(db, async (transaction) => {
-                    transaction.update(ref, {
-                        connectTo: index == -1 ? null : roles[index].id,
-                    })
-                })
-
-                resolve(0)
-            })
+        await fetch("/api/roles/connect", {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+                role: role.id,
+                id: index == -1 ? null : roles[index].id
+            }),
         });
 
         open = !open;

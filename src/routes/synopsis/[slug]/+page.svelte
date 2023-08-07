@@ -23,8 +23,6 @@
             case 'image/svg+xml':
             case 'image/webp':
                 return true;
-            case 'application/pdf':
-            case 'text/plain':
             default:
                 return false;
         }
@@ -39,6 +37,18 @@
         } else {
             files.push(data.synopsis.attachments[i]);
         }
+    }
+
+    async function download(url: string, name: string) {
+        const blob = await fetch(url).then((res) => res.blob());
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.download = name;
+        a.href = blobUrl;
+        a.target = "_blank";
+
+        a.click();
     }
 </script>
 
@@ -67,15 +77,17 @@
             {data.synopsis.body}
         </p>
         {#each photos as attachment}
-            <img class="object-contain rounded-2xl mb-3 w-full h-80 border-[1px] border-border-light dark:border-border-dark" alt={attachment.name} src={attachment.url}/>
+            <img class="object-contain rounded-2xl mb-3 max-w-full max-h-[320px] border-[1px] border-border-light dark:border-border-dark" alt={attachment.name} src={attachment.url}/>
         {/each}
         {#if data.synopsis.attachments.length == 0}
             <div class="mb-4"></div>
         {/if}
         {#each files as attachment}
-            <a href="{attachment.url}" target="_blank" class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto">
+            <div class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto">
+                <button on:click={() => { download(attachment.url, attachment.name + "." + attachment.ext); }}><Icon icon=download></Icon></button>
                 <p>{attachment.name}</p>
-            </a>
+                <p class="p-1 px-3 rounded-full bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10">{attachment.ext}</p>
+            </div>
         {/each}
         <div class="my-4 p-4 lg:p-6 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
             <div class="gap-4 flex flex-col">

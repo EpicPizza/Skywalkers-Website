@@ -58,6 +58,10 @@
         </div>
         <Line class="mb-4"></Line>
         <h1 class="text-2xl lg:text-3xl pb-4">Edit Synopsis:</h1>
+        <div class="opacity-75 flex items-center mb-4 lg:mb-6">
+            <Icon scale={0}  class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem] mb-auto" icon=info></Icon>
+            <p class="ml-2 lg:text-lg">Editing the synopsis will not update the synopsis message sent to the discord server.</p>
+        </div>
         <form method=POST use:enhance>
             <div class="mt-8 items-center w-full">
                 <div class="flex justify-between">
@@ -66,8 +70,19 @@
                 </div>
                 <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-3xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
             </div>
-            <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
+            <p class="text-lg lg:text-xl mb-3 mt-4">New Attachments:</p>
             <FileChooser name=attachments/>
+            {#if $form.attachments.length != 0}
+                <p class="text-lg lg:text-xl mb-3 mt-4">Previous Attachments:</p>
+                <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 pb-2">
+                    {#each $form.attachments as attachment}
+                        <button on:click|preventDefault={() => { attachment.remove = !attachment.remove }} class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 transition-opacity {attachment.remove ? "opacity-50" : ""}">
+                            <p>{attachment.name}</p>
+                            <button on:click|preventDefault|stopPropagation={() => { attachment.remove = !attachment.remove }} class="w-6 h-6 transition bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 hover:bg-opacity-20 hover:dark:bg-opacity-20 flex rounded-full justify-around items-center"><Icon scale=1.1rem icon={attachment.remove ? "add" : "remove"}></Icon></button>
+                        </button>
+                    {/each}
+                </div>
+            {/if}
             <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
             <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}

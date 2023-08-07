@@ -80,7 +80,6 @@ export const actions = {
         today.setMinutes(0);
         today.setHours(0);
 
-        if(form.data.starts.valueOf() < today.valueOf()) return message(form, "Past meetings cannot be made.");
         if(form.data.ends.valueOf() <= form.data.starts.valueOf()) return message(form, "Start time must be before end time.");
 
         const db = firebaseAdmin.getFirestore();
