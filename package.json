@@ -10,6 +10,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@types/mime-types": "^2.1.1",
 		"date-and-time": "^3.0.1",
 		"firebase": "^10.1.0",
 		"firebase-admin": "^11.4.1",
@@ -27,7 +28,6 @@
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/adapter-node": "^1.2.4",
 		"@sveltejs/kit": "^1.22.3",
-		"@types/mime-types": "^2.1.1",
 		"@types/safe-compare": "^1.1.0",
 		"autoprefixer": "^10.4.14",
 		"file-type": "^18.5.0",

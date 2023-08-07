@@ -5,7 +5,6 @@
     import Line from '$lib/Builders/Line.svelte';
     import type { firebaseClient } from '$lib/Firebase/firebase.js';
     import { getContext } from 'svelte';
-    import { attr } from 'svelte/internal';
 
     format.plugin(meridiem);
 
@@ -39,7 +38,25 @@
         }
     }
 
+    let loading: string[] = [];
+    let running: string[] = [];
+
+    function addLoader(url: string) {
+        loading.push(url);
+        loading = loading;
+    }
+
     async function download(url: string, name: string) {
+        if(running.indexOf(url) != -1) return;
+
+        setTimeout(function () {
+            if(running.indexOf(url) != -1) {
+                addLoader(url);
+            }
+        }, 500);
+
+        running.push(url);
+
         const blob = await fetch(url).then((res) => res.blob());
         const blobUrl = URL.createObjectURL(blob);
         
@@ -49,6 +66,15 @@
         a.target = "_blank";
 
         a.click();
+
+        if(running.indexOf(url) != -1) {
+            running.splice(running.indexOf(url), 1);
+        }
+
+        if(loading.indexOf(url) != -1) {
+            loading.splice(loading.indexOf(url), 1);
+            loading = loading;
+        }
     }
 </script>
 
@@ -84,7 +110,13 @@
         {/if}
         {#each files as attachment}
             <div class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto">
-                <button on:click={() => { download(attachment.url, attachment.name + "." + attachment.ext); }}><Icon icon=download></Icon></button>
+                <button on:click={() => { download(attachment.url, attachment.name + "." + attachment.ext); }}>
+                    {#if loading.includes(attachment.url)}
+                        <div class="w-5 h-5 mx-0.5 rounded-full border-[3px] border-t-black dark:border-t-white border-b-transparent border-l-transparent border-r-transparent animate-spin"></div>
+                    {:else}
+                        <Icon icon=download></Icon>
+                    {/if}
+                </button>
                 <p>{attachment.name}</p>
                 <p class="p-1 px-3 rounded-full bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10">{attachment.ext}</p>
             </div>

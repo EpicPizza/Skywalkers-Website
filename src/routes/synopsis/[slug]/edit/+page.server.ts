@@ -11,7 +11,7 @@ import type { z } from 'zod';
 import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
 import { getDownloadURL } from 'firebase-admin/storage';
 import path from 'path';
-import { charset, extension, lookup } from 'mime-types';
+import { extension, lookup } from 'mime-types';
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
