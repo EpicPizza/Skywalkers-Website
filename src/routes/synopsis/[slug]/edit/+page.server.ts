@@ -220,6 +220,6 @@ export const actions = {
             t.update(synopsisRef, synopsis);
         })
 
-        throw redirect(307, "/synopsis/" + form.data.id + "")
+        return message(form, "Success");
     }
 }

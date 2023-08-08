@@ -36,6 +36,12 @@
 
         return list;
     }
+
+    $: {
+        if($message == 'Success') {
+            history.back();
+        }
+    }
 </script>
 
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
@@ -60,7 +66,7 @@
         <h1 class="text-2xl lg:text-3xl pb-4">Edit Synopsis:</h1>
         <div class="opacity-75 flex items-center mb-4 lg:mb-6">
             <Icon scale={0}  class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem] mb-auto" icon=info></Icon>
-            <p class="ml-2 lg:text-lg">Editing the synopsis will not update the synopsis message sent to the discord server.</p>
+            <p class="ml-2 lg:text-lg">Editing the synopsis will not update the synopsis message sent to the discord server. Deleting attachments will prevent the image urls sent to discord from working, but images may be cached by discord for some time.</p>
         </div>
         <form method=POST use:enhance>
             <div class="mt-8 items-center w-full">
@@ -112,7 +118,7 @@
                 </div>
             </div>
             <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: data.length }); $form.hours = $form.hours; }}></PersonDialog>
-            <Error {allErrors} {message}></Error>
+            <Error disallowMessage=Success {allErrors} {message}></Error>
             <div class="flex items-center mt-6 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">
                     <Icon scale=1.25rem icon=save></Icon>
