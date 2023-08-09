@@ -109,6 +109,13 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
                 await kickedRef.delete();
             }
 
+            const hoursRef = db.collection('teams').doc(found.split("-")[1]).collection('hours').doc(locals.user.uid);
+
+            await hoursRef.set({
+                total: 0,
+                entries: [],
+            })
+
             throw redirect(307, "/?invalidateAll=true");
         } else {
             if(ref == undefined) {

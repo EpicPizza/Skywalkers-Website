@@ -112,6 +112,13 @@ export const actions = {
             await kickedRef.delete();
         }
 
+        const hoursRef = db.collection('teams').doc(team).collection('hours').doc(locals.user.uid);
+
+        await hoursRef.set({
+            total: 0,
+            entries: [],
+        })
+
         throw redirect(307, "/?invalidateAll=true");
     }
 }

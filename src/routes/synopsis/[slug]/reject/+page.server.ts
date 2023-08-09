@@ -1,8 +1,11 @@
+import { DOMAIN } from '$env/static/private';
 import type { SecondaryUser } from '$lib/Firebase/firebase';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server';
+import type { Hours } from '$lib/Hours/hours.server';
 import type { Role } from '$lib/Roles/role';
 import { getRole } from '$lib/Roles/role.server';
 import { error, redirect } from '@sveltejs/kit';
+import type { DocumentReference } from 'firebase-admin/firestore';
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -56,7 +59,44 @@ export const actions = {
     
         if(synopsisData == undefined) throw error(404, "Synopsis Not Found");
 
+        const team = locals.firestoreUser.team;
+        const uid = locals.user.uid;
+
         await db.runTransaction(async t => {
+            let toUpdate: {ref: DocumentReference, data: { total: number, entries: Hours['entries'] }}[] = new Array();
+
+            console.log(synopsisData.hours)
+            for(let i = 0; i < synopsisData.hours.length; i++) {
+
+                const ref = db.collection('teams').doc(team).collection('hours').doc(synopsisData.hours[i].member.id);
+
+                const doc = await t.get(ref);
+
+                if(!doc.exists) throw error(400, "Hours not found.");
+
+                const data = doc.data() as Hours;
+
+                if(!data) throw error(400, "Hours not found.");
+
+                (() => {
+                    for(let j = 0; j < data.entries.length; j++) {
+                        if(data.entries[j].id == params.slug) {
+                            data.entries.splice(j, 1);
+                            return;
+                        }
+                    }
+                })();
+
+                toUpdate.push({ref, data: {
+                    total: data.total - synopsisData.hours[i].time,
+                    entries: data.entries,
+                }});
+            }
+
+            for(let i = 0; i < toUpdate.length; i++) {
+                t.update(toUpdate[i].ref, toUpdate[i].data);
+            }
+
             t.update(meetingRef, {
                 completed: false,
             });

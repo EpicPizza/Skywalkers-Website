@@ -38,12 +38,31 @@ export async function load({ params, locals, url }) {
     let hours: { member: SecondaryUser, time: number }[] = [];
 
     for(let i = 0; i < synopsis.hours.length; i++) {
-        let member = await getMember(synopsis.hours[i].member.id); 
+        try { 
+            let member = await getMember(synopsis.hours[i].member.id); 
 
-        hours.push({
-            member,
-            time: synopsis.hours[i].time,
-        })
+            hours.push({
+                member,
+                time: synopsis.hours[i].time,
+            })
+        } catch(e) {
+            let member = {
+                id: synopsis.hours[i].member.id,
+                permissions: [],
+                level: 0,
+                photoURL: "/unknown.webp",
+                displayName: "User Not Found",
+                role: "unknown",
+                team: "unknown",
+                pronouns: "",
+                roles: [],
+            } satisfies SecondaryUser;
+
+            hours.push({
+                member,
+                time: synopsis.hours[i].time,
+            })
+        }
     }
 
     return { 

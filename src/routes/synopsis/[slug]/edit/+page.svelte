@@ -92,13 +92,13 @@
             <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
             <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
-                    <Member id={member.id} let:member={user}>
+                    <Member silent id={member.id} let:member={user}>
                         {#await user}
                             <p class="h-9 flex items-center">Loading<Ellipse/></p>
                         {:then user}
                             <div class="flex items-center gap-2.5">
                                 <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}'s Profile" src={user.photoURL}/>
-                                <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
+                                <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis {user.photoURL == "/unknown.webp" ? "italic" : ""}">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
                                 <div class="flex gap-1.5">
                                     <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
                                     <input step="0.25" class="w-16 p-2 py-1 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>

@@ -46,6 +46,14 @@ export const actions = {
             throw error(501, "An unexpected error occurred, please contact us for further help.");
         }
 
+        if(locals.firestoreUser && locals.firestoreUser.team) {
+            const hoursRef = db.collection('teams').doc(locals.firestoreUser.team).collection('hours').doc(locals.user.uid);
+
+            const hours = await hoursRef.get();
+
+            if(hours.exists) await hoursRef.delete();
+        }
+
         try {
             await firebaseAdmin.getAuth().deleteUser(locals.user.uid);
         } catch(e) {

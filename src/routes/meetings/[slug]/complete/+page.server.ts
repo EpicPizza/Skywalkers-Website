@@ -4,7 +4,7 @@ import { completeSchema, getUserList } from '$lib/Meetings/meetings.server.js';
 import type { Role } from '$lib/Roles/role';
 import { getRole, getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, fail, redirect } from '@sveltejs/kit';
-import type { DocumentReference } from 'firebase-admin/firestore';
+import { FieldValue, type DocumentReference } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import { coerce, type z } from 'zod';
 import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
@@ -16,6 +16,8 @@ import format from "date-and-time";
 import meridiem from "date-and-time/plugin/meridiem";
 import { DOMAIN } from '$env/static/private';
 import { charset, extension, lookup } from 'mime-types';
+import { meetingIndicator, type Hours, type Indicator } from '$lib/Hours/hours.server.js';
+import colors from 'tailwindcss/colors.js';
 
 format.plugin(meridiem);
 
@@ -134,7 +136,7 @@ export const actions = {
         if(attachments) {
             for(let i = 0; i < attachments.length; i++) {
 
-                if(attachments[i] instanceof File) {
+                if(attachments[i] instanceof File && (attachments[i] as File).size != 0) {
                     const type = await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer());
 
                     console.log(type);
@@ -187,11 +189,11 @@ export const actions = {
 
         const db = firebaseAdmin.getFirestore();
 
-        const team = db.collection('teams').doc(locals.firestoreUser.team);
+        const teamRef = db.collection('teams').doc(locals.firestoreUser.team);
 
-        const meetingRef = team.collection('meetings').doc(form.data.id);
+        const meetingRef = teamRef.collection('meetings').doc(form.data.id);
 
-        const synopsisRef = team.collection('synopsis').doc(form.data.id);
+        const synopsisRef = teamRef.collection('synopsis').doc(form.data.id);
 
         const meeting = await meetingRef.get();
 
@@ -237,48 +239,76 @@ export const actions = {
             urls.push({url: await getDownloadURL(ref), type: files[i].mime, name: path.parse(files[i].file.name).name, code: code, ext: files[i].ext, location: `${code}.${files[i].ext}` });
         }
 
-        await db.runTransaction(async t => {
-            t.update(meetingRef, {
-                completed: true,
-            })
+        const uid = locals.user.uid;
+        const team = locals.firestoreUser.team;
 
+        let data = meeting.data() as any;
+
+        let role;
+        if(data.role != null) {
+            role = await getRole(data.role, locals.firestoreUser.team);
+        }
+
+        const meetingObject = {
+            name: data.name as string,
+            lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
+            role: role,
+            location: data.location as string,
+            when_start: data.when_start.toDate() as Date,
+            when_end: data.when_end.toDate() as Date,
+            thumbnail: data.thumbnail as string,
+            completed: data.completed as boolean,
+            id: params.slug as string,
+            signups: []
+        }
+
+        console.log("Running Transaction");
+
+        await db.runTransaction(async t => {
             const synopsis = {
                 synopsis: form.data.synopsis,
                 hours: [] as { member: DocumentReference, time: number }[],
                 urls: urls
             }
 
+            let toUpdate: {ref: DocumentReference, data: { total: number, entries: FieldValue }}[] = new Array();
+
             for(let i = 0; i < form.data.hours.length; i++) {
                 synopsis.hours.push({
                     member: db.collection('users').doc(form.data.hours[i].id),
                     time: form.data.hours[i].time,
-                })
+                });
+
+                const ref = db.collection('teams').doc(team).collection('hours').doc(form.data.hours[i].id);
+
+                const doc = await t.get(ref);
+
+                if(!doc.exists) throw error(400, "Hours not found.");
+
+                const data = doc.data() as Hours;
+
+                if(!data) throw error(400, "Hours not found.");
+
+                console.log("getting 2");
+
+                toUpdate.push({ref, data: {
+                    total: data.total + form.data.hours[i].time,
+                    entries: FieldValue.arrayUnion({ total: form.data.hours[i].time, id: form.data.id, latest: 0, history: [{ total: form.data.hours[i].time, link: DOMAIN + "/synopsis/" + form.data.id, reason: meetingObject.name + " - " + format.format(meetingObject.when_start, "M/D/Y"), id: uid, date: new Date().valueOf(), indicator: meetingIndicator }]})
+                }});
+            }
+
+            for(let i = 0; i < toUpdate.length; i++) {
+                t.update(toUpdate[i].ref, toUpdate[i].data);
             }
 
             t.create(synopsisRef, synopsis);
+
+            t.update(meetingRef, {
+                completed: true,
+            })
         })
 
         if(form.data.discord) {
-            let data = meeting.data() as any;
-
-            let role;
-            if(data.role != null) {
-                role = await getRole(data.role, locals.firestoreUser.team);
-            }
-
-            const meetingObject = {
-                name: data.name as string,
-                lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
-                role: role,
-                location: data.location as string,
-                when_start: data.when_start.toDate() as Date,
-                when_end: data.when_end.toDate() as Date,
-                thumbnail: data.thumbnail as string,
-                completed: data.completed as boolean,
-                id: params.slug as string,
-                signups: []
-            }
-
             let nameString = "";
 
             for(let i = 0; i < names.length; i++) {
@@ -290,7 +320,7 @@ export const actions = {
             console.log(nameString);
 
             await sendSynopsis(
-                meetingObject.name + " on " + format.format(meetingObject.when_start, "M/D/Y"), 
+                meetingObject.name + " - " + format.format(meetingObject.when_start, "M/D/Y"), 
                 (role ? "<@&" + role.connectTo + "> " : "") + format.format(meetingObject.when_start, "M/D/Y, h:mm a") + " - " + format.format(meetingObject.when_end, "h:mm a") + (nameString.length != 0 ? " ( " + nameString + " )" : "") + ": " + form.data.synopsis, 
                 urls,
                 DOMAIN + "/synopsis/" + form.data.id,

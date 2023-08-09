@@ -5,6 +5,7 @@
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
 
     export let id: string;
+    export let silent = false;
 
     let member: Promise<SecondaryUser> = new Promise(() => {});
 
@@ -17,7 +18,21 @@
             console.log(user);
 
             if(user == undefined) {
-                reject("User not found.");
+                if(silent) {
+                    resolve({
+                        id: id,
+                        permissions: [],
+                        level: 0,
+                        photoURL: "/unknown.webp",
+                        displayName: "User Not Found",
+                        role: "unknown",
+                        team: "unknown",
+                        pronouns: "",
+                        roles: [],
+                    } satisfies SecondaryUser)
+                } else {
+                    reject("User not found.");
+                }
                 return;
             }
 

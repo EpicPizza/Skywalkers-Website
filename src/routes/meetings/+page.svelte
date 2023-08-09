@@ -54,18 +54,22 @@
         if(unsubscribeClient) unsubscribeClient();
 
         unsubscribeClient = client.subscribe((user) => {
-            if(user == undefined || 'preload' in user || user.team == undefined) return;
+            try {
+                if(user == undefined || 'preload' in user || user.team == undefined) return;
 
-            const db = client.getFirestore();
-            
-            number += 25;
+                const db = client.getFirestore();
+                
+                number += 25;
 
-            if(order == 'Upcoming') {
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
-                startListener(ref);
-            } else {
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number));
-                startListener(ref);
+                if(order == 'Upcoming') {
+                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+                    startListener(ref);
+                } else {
+                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number));
+                    startListener(ref);
+                }
+            } catch(e) {
+                console.error(e);
             }
         });
     }
