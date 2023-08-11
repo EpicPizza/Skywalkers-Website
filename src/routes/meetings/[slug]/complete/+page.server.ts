@@ -321,7 +321,7 @@ export const actions = {
 
             await sendSynopsis(
                 meetingObject.name + " - " + format.format(meetingObject.when_start, "M/D/Y"), 
-                (role ? "<@&" + role.connectTo + "> " : "") + format.format(meetingObject.when_start, "M/D/Y, h:mm a") + " - " + format.format(meetingObject.when_end, "h:mm a") + (nameString.length != 0 ? " ( " + nameString + " )" : "") + ": " + form.data.synopsis, 
+                (role && role.connectTo ? "<@&" + role.connectTo + "> " : "") + format.format(meetingObject.when_start, "M/D/Y, h:mm a") + " - " + format.format(meetingObject.when_end, "h:mm a") + (nameString.length != 0 ? " ( " + nameString + " )" : "") + ": " + form.data.synopsis, 
                 urls,
                 DOMAIN + "/synopsis/" + form.data.id,
             );

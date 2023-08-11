@@ -13,7 +13,7 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
         throw error(401, "UNAUTHORIZED REQUEST");
     }
 
-    const expiresIn = 1000 * 60 * 60 * 24;
+    const expiresIn = 1000 * 60 * 60 * 24 * 7;
     console.log(encodedToken);
 
     var recent = await checkRecent(encodedToken);
@@ -32,9 +32,7 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
                 .then(
                     (sessionCookie) => {
                         console.log("got cookie");
-                        const options = { maxAge: expiresIn, httpOnly: true, secure: DEV == 'TRUE' ? false : true, path: "/", sameSite: true };
-                        console.log("actually setting cookie");
-                        cookies.set("session", sessionCookie, options)
+                        cookies.set("session", sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: DEV == 'TRUE' ? false : true, path: "/", sameSite: "lax" })
                         console.log(sessionCookie);
                         resolve(json({'Authorization': 'Success'}));
                     },  

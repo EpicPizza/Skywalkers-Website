@@ -318,45 +318,42 @@ export const actions = {
 
             for(let i = 0; i < synopsisData.hours.length; i++) {
                 if(!wentThrough.includes(synopsisData.hours[i].member.id)) {
-                    synopsis.hours.push({
-                        member: db.collection('users').doc(synopsisData.hours[i].member.id),
-                        time: 0,
-                    })
-
                     const ref = db.collection('teams').doc(team).collection('hours').doc(synopsisData.hours[i].member.id);
 
                     const doc = await t.get(ref);
-
-                    if(!doc.exists) throw error(400, "Hours not found.");
-
                     const data = doc.data() as Hours;
 
-                    if(!data) throw error(400, "Hours not found.");
-
-                    let by = 0;
-                    (() => {
-                        for(let j = 0; j < data.entries.length; j++) {
-                            if(data.entries[j].id == params.slug) {
-                                by = 0 - data.entries[j].total;
-                                data.entries[j].history.push({ 
-                                    total: 0,
-                                    link: data.entries[j].history[data.entries[j].latest].link,
-                                    reason: data.entries[j].history[data.entries[j].latest].reason, 
-                                    id: uid, 
-                                    date: new Date().valueOf(), 
-                                    indicator: data.entries[j].history[data.entries[j].latest].indicator, 
-                                })
-                                data.entries[j].latest ++;
-                                data.entries[j].total = 0;
-                                return;
+                    if(doc.exists && data && data.deleted == false) {
+                        let by = 0;
+                        (() => {
+                            for(let j = 0; j < data.entries.length; j++) {
+                                if(data.entries[j].id == params.slug) {
+                                    by = 0 - data.entries[j].total;
+                                    data.entries[j].history.push({ 
+                                        total: 0,
+                                        link: data.entries[j].history[data.entries[j].latest].link,
+                                        reason: data.entries[j].history[data.entries[j].latest].reason, 
+                                        id: uid, 
+                                        date: new Date().valueOf(), 
+                                        indicator: data.entries[j].history[data.entries[j].latest].indicator, 
+                                    })
+                                    data.entries[j].latest ++;
+                                    data.entries[j].total = 0;
+                                    return;
+                                }
                             }
-                        }
-                    })();
+                        })();
 
-                    toUpdate.push({ref, data: {
-                        total: data.total + by,
-                        entries: data.entries,
-                    }});
+                        toUpdate.push({ref, data: {
+                            total: data.total + by,
+                            entries: data.entries,
+                        }});
+
+                        synopsis.hours.push({
+                            member: db.collection('users').doc(synopsisData.hours[i].member.id),
+                            time: 0,
+                        })
+                    }
                 }
             }
 

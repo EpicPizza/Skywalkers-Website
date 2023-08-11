@@ -2,15 +2,19 @@
     import Icon from "$lib/Builders/Icon.svelte";
     import { deleteDoc, doc } from "firebase/firestore";
     import { fade } from "svelte/transition";
-    import { deleteRole, sidebar, type Role } from "./role";
+    import { deleteRole, type Role } from "./role";
     import Dialog from "$lib/Builders/Dialog.svelte";
     import DeleteDialog from "./DeleteDialog.svelte";
     import { page } from "$app/stores";
     import { goto } from "$app/navigation";
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
+    import type { Writable } from "svelte/store";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+
+    let sidebar = getContext('sidebar') as Writable<boolean>;
+    let clicked = getContext('clicked') as Writable<boolean>;
 
     export let role: Role;
     let open: boolean = false;

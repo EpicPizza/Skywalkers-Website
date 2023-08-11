@@ -3,7 +3,7 @@
     import RolePermission from './RolePermission.svelte';
     import Discord from './Discord.svelte';
     import { getContext, onDestroy, onMount } from "svelte";
-    import { clicked, sidebar, type Role, deleteRole, type DiscordRole } from "./role";
+    import { type Role, deleteRole, type DiscordRole } from "./role";
     import Icon from "$lib/Builders/Icon.svelte";
     import DeleteDialog from "./DeleteDialog.svelte";
     import { beforeNavigate, goto } from "$app/navigation";
@@ -15,8 +15,11 @@
     import { browser } from '$app/environment';
     import Loading from '$lib/Builders/Loading.svelte';
     import type { firebaseClient } from '$lib/Firebase/firebase';
+    import type { Writable } from 'svelte/store';
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    let sidebar = getContext('sidebar') as Writable<boolean>;
+    let clicked = getContext('clicked') as Writable<boolean>;
 
     export let role: Role;
     export let discord: Promise<DiscordRole[]>;

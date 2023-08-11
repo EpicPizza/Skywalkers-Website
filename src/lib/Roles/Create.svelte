@@ -7,7 +7,11 @@
     import Loading from "$lib/Builders/Loading.svelte";
     import { superForm } from "sveltekit-superforms/client";
     import type { SuperValidated } from "sveltekit-superforms";
-    import { sidebar } from "./role";
+    import { getContext } from "svelte";
+    import type { Writable } from "svelte/store";
+    
+    let sidebar = getContext('sidebar') as Writable<boolean>;
+    let clicked = getContext('clicked') as Writable<boolean>;
 
     let open: boolean = false;
     let colorElement: HTMLElement;

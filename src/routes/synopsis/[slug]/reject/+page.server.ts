@@ -77,20 +77,21 @@ export const actions = {
                 const data = doc.data() as Hours;
 
                 if(!data) throw error(400, "Hours not found.");
-
-                (() => {
-                    for(let j = 0; j < data.entries.length; j++) {
-                        if(data.entries[j].id == params.slug) {
-                            data.entries.splice(j, 1);
-                            return;
+                if(!data.deleted) {
+                    (() => {
+                        for(let j = 0; j < data.entries.length; j++) {
+                            if(data.entries[j].id == params.slug) {
+                                data.entries.splice(j, 1);
+                                return;
+                            }
                         }
-                    }
-                })();
+                    })();
 
-                toUpdate.push({ref, data: {
-                    total: data.total - synopsisData.hours[i].time,
-                    entries: data.entries,
-                }});
+                    toUpdate.push({ref, data: {
+                        total: data.total - synopsisData.hours[i].time,
+                        entries: data.entries,
+                    }});
+                }
             }
 
             for(let i = 0; i < toUpdate.length; i++) {

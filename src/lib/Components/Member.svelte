@@ -11,11 +11,7 @@
 
     onMount(() => {
         member = new Promise(async (resolve, reject) => {
-            console.log(id)
-
             let user = await client.getUser(id);
-
-            console.log(user);
 
             if(user == undefined) {
                 if(silent) {

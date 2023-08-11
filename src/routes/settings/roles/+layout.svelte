@@ -1,13 +1,13 @@
 <script lang=ts>
     import Create from '../../../lib/Roles/Create.svelte';
     import Role from '../../../lib/Roles/RoleItem.svelte';
-    import{ clicked, sidebar, type Role as RoleType } from '../../../lib/Roles/role';
+    import type { Role as RoleType } from '../../../lib/Roles/role';
     import Loading from '$lib/Builders/Loading.svelte';
     import type { SecondaryUser, firebaseClient } from '$lib/Firebase/firebase.js';
     import type { Unsubscribe } from 'firebase/auth';
     import { collection, onSnapshot, runTransaction } from 'firebase/firestore';
     import { getContext, onDestroy, onMount } from 'svelte';
-    import { writable, type Unsubscriber } from 'svelte/store';
+    import { writable, type Unsubscriber, type Writable } from 'svelte/store';
     import SortableList from '$lib/Builders/SortableList.svelte';
     import { setContext } from 'svelte';
     import { TabPanel } from '@rgossiaux/svelte-headlessui';
@@ -19,6 +19,9 @@
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
 
+    let sidebar = getContext('sidebar') as Writable<boolean>;
+    let clicked = getContext('clicked') as Writable<boolean>;
+
     export let data;
 
     let unsubscribeUser: Unsubscriber;
@@ -28,10 +31,11 @@
         unsubscribeUser = client.subscribe((user) => {
             if(user == undefined || 'preload' in user || user.role == undefined) return;
 
+            if(unsubscribeUser) unsubscribeUser();
+            if(unsubscribeRoles) unsubscribeRoles();
+
             const db = client.getFirestore();
             const ref = collection(db, "teams", user.team, "roles");
-
-            console.log(ref.path);
 
             unsubscribeRoles = onSnapshot(ref, async (snapshots) => {
                 const roles = new Array<RoleType>();
@@ -96,8 +100,6 @@
     async function handleSort(e: CustomEvent) {
         let {from, to} = e.detail as any;
 
-        console.log(from, to);
-
         if(parseInt(from) === parseInt(to) || parseInt(to) === parseInt(from) + 1) { //dont resort if going to same position
             return;
         }
@@ -107,8 +109,6 @@
         if(status == 'pending') return;
         
         let fromRole = data.roles[from]; // gets role that is being moved
-
-        console.log(fromRole);
 
         let movedRole = { ... fromRole }; // to differ from new/old role when role that is being moved gets inserted at new index
         (movedRole as any).moved = true;
@@ -239,7 +239,7 @@
 <div class="min-h-[calc(100dvh-4rem)] w-full">
     <div class="sm:flex min-h-[calc(100dvh-4rem)] md:min-w-[768px] md:absolute md:left-1/2 md:-translate-x-1/2">
         <div class="{$sidebar ? "left-0" : "-left-44"} transition-all absolute z-30 sm:relative sm:left-0 bg-backgroud-light dark:bg-backgroud-dark max-h-[calc(100dvh-4rem)] min-h-[calc(100dvh-4rem)] min-w-[11rem] max-w-[11rem] sm:max-h-[calc(100dvh-4rem)] sm:m-h-full p-3 pt-0 border-border-light dark:border-border-dark border-r-[1px] md:border-l-[1px] flex flex-col justify-between">
-            <div class="relative overflow-scroll flex-grow pt-3">
+            <div class="relative overflow-auto flex-grow pt-3">
                 <SortableList list={data.roles} disable={loading} class="relative after:pointer-events-none after:w-full after:h-1 after:bg-black after:dark:bg-white after:absolute after:-top-[3px] after:rounded-md" {ignore} softIgnore={data.roles.length - 1} on:sort={handleSort} let:item={role}>
                     <Role on:click={() => { if(small) { handleClick(); } }} role={role}></Role>
                 </SortableList>
@@ -256,7 +256,7 @@
                 </div>
             {/if}
         </div>
-        <div bind:this={rolePage} on:scroll={() => { $sidebar = false; }} class="w-full min-h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-scroll sm:max-w-[592px] border-border-light dark:border-border-dark md:border-r-[1px]">
+        <div bind:this={rolePage} on:scroll={() => { $sidebar = false; }} class="w-full min-h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-auto sm:max-w-[592px] border-border-light dark:border-border-dark md:border-r-[1px]">
             <slot></slot>
         </div>
     </div>

@@ -66,8 +66,6 @@
                         });
 
                         users = data.users == undefined ? [] : data.users;
-
-                        console.log("Fetched User List");
                     })
                 })
             }

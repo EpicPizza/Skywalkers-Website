@@ -5,7 +5,6 @@ import Icon from "$lib/Builders/Icon.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Tooltip from "$lib/Builders/Tooltip.svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
-    import { sidebar } from "$lib/Roles/role";
     import type { createMode, createVerified }  from "$lib/stores";
     import { Menu, MenuButton, MenuItem, MenuItems } from "@rgossiaux/svelte-headlessui";
     import { getContext } from "svelte";
@@ -40,13 +39,13 @@ import Icon from "$lib/Builders/Icon.svelte";
             <MenuItem disabled href="/settings" class="p-2 py-1 rounded-t-md rounded-sm cursor-default">
                 <div class="flex flex-row items-center">
                     <img referrerpolicy="no-referrer" alt="profile" src="{$user.photoURL}" class="h-14 w-14 rounded-full">
-                    <div class="ml-3">
+                    <div class="ml-3 mr-1">
                         <p>{$user.displayName}{$user.pronouns != undefined && $user.pronouns != "" ? " (" + $user.pronouns + ")": ""}</p>
                         <p class="opacity-75">{$user.email}</p>
                     </div>
                 </div>
             </MenuItem>
-            <Line class="my-2 mx-1"/>
+            <Line class="my-2 mx-1 -translate-x-1"/>
             <div class="flex flex-row">
                 <Tooltip text="Sign Out" class="w-full">
                     <MenuItem on:click={() => { $navmenu = false; user.signOut() }} class="hover:cursor-pointer rounded-md b-menu w-full flex justify-around items-center">
@@ -64,7 +63,7 @@ import Icon from "$lib/Builders/Icon.svelte";
                     </MenuItem>
                 </Tooltip>
             </div>
-            <Line class="my-2 mx-1"/>
+            <Line class="my-2 mx-1 -translate-x-1"/>
             {#if $verified}
                 <MenuItem on:click={() => { $navmenu = false; }} href="/settings" class="rounded-md b-menu">
                     Team Settings

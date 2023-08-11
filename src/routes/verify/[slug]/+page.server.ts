@@ -117,6 +117,8 @@ export const actions = {
         await hoursRef.set({
             total: 0,
             entries: [],
+            deleted: false,
+            history: [],
         })
 
         throw redirect(307, "/?invalidateAll=true");

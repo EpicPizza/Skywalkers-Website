@@ -38,6 +38,10 @@
     let store: HTMLElement;
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Account</title>
+</svelte:head>
+
 <Background>
     <Page expand size="36rem">
         <h1 class="text-2xl font-bold">Your Data:</h1>

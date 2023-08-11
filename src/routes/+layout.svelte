@@ -36,6 +36,8 @@
     setContext('onScroll', onScroll);
     setContext('warning', writable<Warning | undefined>(undefined));
     setContext('bottom', bottom);
+    setContext('clicked', writable(false));
+    setContext('sidebar', writable(false));
 
     onMount(() => {
         mode.clientInit();
@@ -64,7 +66,7 @@
         }, true)
 
         console.log("\n\n███████╗██╗  ██╗██╗   ██╗██╗    ██╗ █████╗ ██╗     ██╗  ██╗███████╗██████╗ ███████╗\n██╔════╝██║ ██╔╝╚██╗ ██╔╝██║    ██║██╔══██╗██║     ██║ ██╔╝██╔════╝██╔══██╗██╔════╝\n███████╗█████╔╝  ╚████╔╝ ██║ █╗ ██║███████║██║     █████╔╝ █████╗  ██████╔╝███████╗\n╚════██║██╔═██╗   ╚██╔╝  ██║███╗██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗╚════██║\n███████║██║  ██╗   ██║   ╚███╔███╔╝██║  ██║███████╗██║  ██╗███████╗██║  ██║███████║\n╚══════╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝\n\n");
-        console.warn("Do not enter or share anything here or your account could be compromised.");
+        console.warn("%cDo not enter or share anything here or your account could be compromised.", "font-size: 1.5rem;");
     })
 </script>
 

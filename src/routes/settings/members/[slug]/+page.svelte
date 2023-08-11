@@ -34,6 +34,7 @@
             if(user == undefined || 'preload' in user || user.team == undefined) return;
 
             if(unsubscribeClient) unsubscribeClient();
+            if(unsubscribeFirestore) unsubscribeFirestore();
 
             if(data.member.kicked == false) {
                 subscribeVerified();
@@ -49,16 +50,12 @@
         const ref = doc(db, "quarantine", data.member.user.id);
 
         unsubscribeFirestore = onSnapshot(ref, async (snapshot) => {
-            console.log(snapshot.exists());
-
             if(!snapshot.exists()) {
                 if($loading == true) {
                     await invalidate('member-' + snapshot.id);
                     
                     return;
                 }
-
-                console.log("Member verified");
 
                 if(unsubscribeFirestore) unsubscribeFirestore();
 
@@ -95,8 +92,6 @@
                         
                         return;
                     }
-                    
-                    console.log("Member kicked");
 
                     if(unsubscribeFirestore) unsubscribeFirestore();
 
@@ -146,6 +141,10 @@
     })
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Member Info</title>
+</svelte:head>
+
 <Background>
     <Page expand size="46rem" disableLoader>
         {#if data.member.kicked}
@@ -159,7 +158,13 @@
         {:else}
             <ProfileTag verified id={data.member.user.id} member={data.member.user}/>
             <RoleViewer member={data.member.user} roles={data.roles}/>
-            <div class="flex w-full mt-8 gap-2 flex-row-reverse items-center">
+            <div class="flex flex-row-reverse mr-2">
+                <div class="opacity-75 flex items-center mt-4 ">
+                    <Icon scale={0}  class="ml-1 text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" icon=info></Icon>
+                    <p class="ml-2 lg:text-lg">Kicking members will reset their hours.</p>
+                </div>
+            </div>
+            <div class="flex w-full mt-4 gap-2 flex-row-reverse items-center">
                 {#if !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('KICK_MEMBERS') || data.member.user.level >= $client.level)}
                     <KickMember disableSuccessMessage member={data.member.user} form={data.forms.kick} let:handleKickMember>
                         <button on:click={handleKickMember} class="b-primary">Kick</button>

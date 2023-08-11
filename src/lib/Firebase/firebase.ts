@@ -137,8 +137,6 @@ export function firebaseClient() {
 
                 user.set(undefined);
 
-                console.log("INVALIDATED");
-
                 invalidateAll();
             }
 
@@ -209,7 +207,6 @@ export function firebaseClient() {
         const db = getFirestore();
 
         const userRef = doc(db, "users", id);
-        console.log(userRef.path);
         let userData;
         try {
             userData = (await getDoc(userRef)).data();
@@ -228,7 +225,6 @@ export function firebaseClient() {
                 let currentUser = get(user);
                 if(currentUser != undefined && currentUser.team != undefined) {
                     signOut();
-                    console.log("SIGNED OUT");
                 }
             } else {
                 if(get(user)?.team == undefined) {
@@ -237,7 +233,7 @@ export function firebaseClient() {
 
                 const currentUser = get(user);
 
-                if(!(currentUser == undefined || 'prelaod' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
+                if(!(currentUser == undefined || 'preload' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
                     firestoreEntry = snapshot.data();
 
                     user.set({

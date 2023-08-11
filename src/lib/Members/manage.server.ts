@@ -16,6 +16,19 @@ export async function quarantineMember(id: string) {
     await db.runTransaction(async t => {
         const member = await getMemberWithTransaction(id, t);
 
+        const hoursRef = db.collection('teams').doc(member.team).collection('hours').doc(member.id);
+
+        const hours = await t.get(hoursRef);
+
+        if(hours.exists && hours.data()) {
+            t.update(hoursRef, {
+                total: 0,
+                entries: [],
+                deleted: true,
+                history: FieldValue.arrayUnion({ date: new Date().valueOf(), id: crypto.randomUUID(), data: { total: hours.data()?.total, entries: hours.data()?.entries } })
+            });
+        }
+
         for(let i = 0; i < member.roles.length; i++) {
             t.update(db.collection('teams').doc(member.team).collection('roles').doc(member.roles[i].id), {
                 members: FieldValue.arrayRemove(db.collection('users').doc(id))
@@ -137,6 +150,16 @@ export async function unquarantineMember(id: string, adminRoles: Role[], data: Q
                     roleRefs.splice(i, 1);
                 }
             }
+        }
+
+        const hoursRef = db.collection('teams').doc(member.team).collection('hours').doc(member.id);
+
+        const hours = await t.get(hoursRef);
+
+        if(hours.exists && hours.data()) {
+            t.update(hoursRef, {
+                deleted: false,
+            });
         }
 
         t.create(userRef, {

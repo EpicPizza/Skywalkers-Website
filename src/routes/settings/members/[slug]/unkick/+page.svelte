@@ -29,7 +29,6 @@
     function deleteRole(id: string) {
         let newRoles = structuredClone($form.roles);
         newRoles.splice(newRoles.indexOf(id), 1);
-        console.log(newRoles);
         reset({ data: { roles: structuredClone(newRoles) }});
     }
 
@@ -51,8 +50,6 @@
     $: {
         invalid = false;
 
-        console.log("Length", $form.roles.length);
-
         for(let i = 0; i < $form.roles.length; i++) {
             for(let j = 0; j < areInvalid.length; j++) {
                 if($form.roles[i] == areInvalid[j].id && areInvalid[j].invalid) {
@@ -70,6 +67,10 @@
         }
     }
 </script>
+
+<svelte:head>
+    <title>Skywalkers | Unkick Member</title>
+</svelte:head>
 
 <Background>
     <Page expand size="24rem">

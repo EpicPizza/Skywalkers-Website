@@ -128,8 +128,6 @@
                                 roles: [],
                             }
                         }
-
-                        console.log("Fetched User List");
                     })
                 })
             }

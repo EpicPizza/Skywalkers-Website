@@ -38,8 +38,6 @@
     let search: string = "";
     let selected: SecondaryUser | undefined;
 
-    $: console.log(ignore);
-
     let unsubscribe: Unsubscriber;
     
     let users = new Array<SecondaryUser>();
@@ -75,8 +73,6 @@
                         data.users.forEach((secondaryUser: SecondaryUser) => {
                             client.cacheUser(secondaryUser.id, secondaryUser);
                         });
-
-                        console.log("Fetched User List");
                     })
                 })
             }
@@ -90,8 +86,6 @@
     })
 
     function handleChoose() {
-        console.log(selected);
-
         dispatch('choosen', { id: selected ? selected.id : undefined });
 
         selected = undefined;

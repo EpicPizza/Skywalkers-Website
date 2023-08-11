@@ -21,6 +21,8 @@
     import TimeInput from "$lib/Components/TimeInput.svelte";
     import { superForm } from "sveltekit-superforms/client";
     import { browser } from "$app/environment";
+    import Role from "$lib/Components/Role.svelte";
+    import Ellipse from "$lib/Builders/Ellipse.svelte";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -84,7 +86,6 @@
         }
 
         if(isBottom == false && data.loading == false) {
-            console.log("returned");
             returned = true;
         }
     });
@@ -109,8 +110,6 @@
         if(unsubscribeBottom) unsubscribeBottom();
     })
 
-    $: console.log(data.meetings);
-
     function startListener(ref: Query<DocumentData>, intial: boolean = false) {
         if(reachedEnd && !intial) {
             return;
@@ -118,8 +117,6 @@
 
         if(lastFetched == number) return;
         lastFetched = number;
-
-        console.log(number);
 
         if(unsubscribeFirestore) unsubscribeFirestore();
 
@@ -147,6 +144,7 @@
                         thumbnail: firestoreMeetings[i].data().thumbnail as string,
                         when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
                         when_end: firestoreMeetings[i].data().when_end.toDate() as Date,
+                        role: firestoreMeetings[i].data().role == null ? false : firestoreMeetings[i].data().role as string,
                         signedup: signedup,
                     })
                 }
@@ -154,9 +152,6 @@
 
             data.meetingsShown = meetings.length;
             lastFetched = meetings.length;
-
-            console.log("Length", meetings.length);
-            console.log("Number", number);
 
             reachedEnd = meetings.length < number;
 
@@ -364,13 +359,7 @@
     function menuCheck() {
         if(!menu) return;
 
-        console.log(menu);
-
         let x = menu.getBoundingClientRect().y;
-        let scroll = -document.body.getBoundingClientRect().y;
-
-        console.log(scroll);
-        console.log(x);
 
         maxheight = windowHeight - x;
     }
@@ -414,19 +403,33 @@
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
                     {/if}
                 </div>
-                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0">
-                    <p class="text-left lg:text-lg ml-4">{meeting.name}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4">At: {meeting.location}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4">{format.format(meeting.when_start, "M/D/YY, h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "M/D/YY, h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                    {#if typeof meeting.role != 'boolean'}
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <Role id={meeting.role} let:role>
+                            {#await role}
+                                <p class="text-left lg:text-lg ml-4">Loading<Ellipse/></p>  
+                            {:then role}
+                                <div class="flex items-center gap-2">
+                                    <p class="text-left lg:text-lg ml-4">Group:</p>
+                                    <div style="background-color: {role.color};" class="h-4 w-4 rounded-full"></div>
+                                    <p class="text-left lg:text-lg -ml-0.5">{role.name}</p>
+                                </div>
+                            {/await}
+                        </Role>
+                    {/if}
                 </div>
                 <Menu>
                     <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
                         <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                     </MenuButton>
                     <MenuItems>
-                        <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-scroll">
+                        <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
                             <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Go to Page
                             </MenuItem>
@@ -449,7 +452,7 @@
                                 </MenuItem>
                             {/if}
                             {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
-                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                     {#if $selected.includes(meeting.id)}
                                         Deselect
                                     {:else}
@@ -522,7 +525,7 @@
         </svelte:element>
     </div>
 {:else}
-    <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
+    <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-auto">
         <div class="flex px-1.5 gap-1.5 h-full">
             {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
                 <button on:click={selected.actions.delete} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-red-500 dark:bg-red-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">

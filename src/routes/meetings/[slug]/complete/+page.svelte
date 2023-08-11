@@ -54,6 +54,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Complete Meeting</title>
+</svelte:head>
+
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
     <div class="w-[36rem] lg:w-[44rem]">
         <div class="w-full flex justify-between">

@@ -9,6 +9,10 @@
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Team Settings</title>
+</svelte:head>
+
 <Background>
     <Page>
         <h1 class="text-2xl font-bold">Team Settings</h1>

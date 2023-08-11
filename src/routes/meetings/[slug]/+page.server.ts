@@ -46,6 +46,12 @@ export async function load({ params, locals, url }) {
     let role;
     if(data.role != null) {
         role = await getRole(data.role, locals.firestoreUser.team);
+
+        if(role == undefined) {
+            await ref.update({
+                role: null,
+            })
+        }
     }
 
     const meeting = {

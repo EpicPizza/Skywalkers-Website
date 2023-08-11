@@ -11,8 +11,8 @@ export const RoleForm = z.object({
 export interface Role { color: string, permissions: string[], connectTo: string | null, level: number, name: string, id: string, members: SecondaryUser[] }
 export interface DiscordRole { color: string, name: string, id: string };
 
-export const clicked = writable(true);
-export const sidebar = custom();
+//export const clicked = writable(true);
+//export const sidebar = custom();
 
 function custom() {
     const store = writable(false);

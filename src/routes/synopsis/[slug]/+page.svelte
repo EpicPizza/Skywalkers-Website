@@ -79,7 +79,7 @@
 </script>
 
 <svelte:head>
-    <title>Skywalkers | Meeting Listing</title>
+    <title>Skywalkers | Synopsis</title>
 </svelte:head>
 
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">

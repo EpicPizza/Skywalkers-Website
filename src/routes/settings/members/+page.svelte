@@ -8,20 +8,27 @@
     import { getContext, onDestroy, onMount } from 'svelte';
     import EditProfile from '$lib/Members/EditProfile.svelte';
     import KickMember from '$lib/Members/KickMember.svelte';
-    import type { Unsubscriber } from 'svelte/store';
+    import type { Unsubscriber, Writable } from 'svelte/store';
     import { collection, query, where, type Unsubscribe, onSnapshot } from 'firebase/firestore';
 
     export let data;
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    let localLoading = getContext('localLoading') as Writable<boolean>;
 
     let unsubscribeClient: Unsubscriber | undefined;
     let unsubscribeFirestoreQuarantined: Unsubscribe | undefined;
     let unsubscribeFirestoreVerified: Unsubscribe | undefined;
 
     onMount(() => {
+        $localLoading = false; 
+
         unsubscribeClient = client.subscribe(async (user) => {
             if(user == undefined || 'preload' in user || user.team == undefined) return;
+
+            if(unsubscribeClient) unsubscribeClient();
+            if(unsubscribeFirestoreQuarantined) unsubscribeFirestoreQuarantined();
+            if(unsubscribeFirestoreVerified) unsubscribeFirestoreVerified();
 
             const db = client.getFirestore();
 
@@ -69,6 +76,10 @@
     })
 </script>
 
+<svelte:head>
+    <title>Skywalkers | Members</title>
+</svelte:head>
+
 <Background bottom=4.5rem>
     <Page size=44rem expand let:top>
         <div class="flex justify-between min-w-full items-center">
@@ -88,30 +99,19 @@
                         <img referrerpolicy="no-referrer" class="rounded-full w-8 h-8 mr-2" alt="{member.displayName} Profile" src="{member.photoURL}"/>
                         <div class="whitespace-nowrap overflow-hidden overflow-ellipsis">{member.displayName}{member.pronouns == "" ? "" :  " (" + member.pronouns + ")"}</div>
                     </a>
-                    {#if !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('KICK_MEMBERS') || member.level >= $client.level) &&  !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('MANAGE_CODES') || member.level >= $client.level)}
+                    {#if !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('MODERATE_PROFILES') || member.level >= $client.level)}
                         <Menu class="grow flex flex-row-reverse">
                             <MenuButton class="bg-black dark:bg-white transition bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-5 hover:dark:bg-opacity-5 rounded-full ml-1 h-9 w-9 flex items-center justify-around">
                                 <Icon scale=1.25rem rounded={true} icon=more_vert/>
                             </MenuButton>
                             <EditProfile {member} form={data.forms.editProfile} let:handleEditProfile>
-                            <KickMember {member} form={data.forms.kickForm} let:handleKickMember>
                             <MenuItems style="transform: translateY({36 - top}px);" class="fixed z-10 bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark flex flex-col">
-                                {#if !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('KICK_MEMBERS') || member.level >= $client.level)}
-                                    <MenuItem let:active on:click={handleKickMember}>
-                                        <div class="float-left w-full px-2 py-1 pr-8 bg-black dark:bg-white {active ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"} hover:bg-opacity-10 dark:hover:bg-opacity-10 transition text-left rounded-md hover:cursor-pointer">
-                                            Kick
-                                        </div> 
-                                    </MenuItem>
-                                {/if}
-                                {#if !($client == undefined || $client.permissions == undefined || $client.level == undefined || !$client.permissions.includes('MANAGE_CODES') || member.level >= $client.level)}
-                                    <MenuItem let:active on:click={handleEditProfile}>
-                                        <div class="float-left w-full px-2 py-1 pr-8 bg-black dark:bg-white {active ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"} hover:bg-opacity-10 dark:hover:bg-opacity-10 transition text-left rounded-md hover:cursor-pointer">
-                                            Edit Profile
-                                        </div>
-                                    </MenuItem>
-                                {/if}
+                                <MenuItem let:active on:click={handleEditProfile}>
+                                    <div class="float-left w-full px-2 py-1 pr-8 bg-black dark:bg-white {active ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"} hover:bg-opacity-10 dark:hover:bg-opacity-10 transition text-left rounded-md hover:cursor-pointer">
+                                        Edit Profile
+                                    </div>
+                                </MenuItem>
                             </MenuItems>
-                            </KickMember>
                             </EditProfile>
                         </Menu>
                     {/if}

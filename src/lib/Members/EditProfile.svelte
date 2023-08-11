@@ -23,7 +23,6 @@
     const { form, reset, tainted, delayed, allErrors, message, enhance } = superForm(editProfileForm);
 
     function handleEditProfile() {
-        console.log("clicked");
         reset({
             data: {
                 name: member.displayName,
@@ -33,8 +32,6 @@
         })
         open = !open;
     }
-
-    $: console.log(open);
 
     $: {
         if(open == false) {

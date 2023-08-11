@@ -2,7 +2,7 @@
     import Dialog from "$lib/Builders/Dialog.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import { superForm } from "sveltekit-superforms/client";
-    import type { SuperValidated } from "sveltekit-superforms/index";
+    import type { SuperValidated } from "sveltekit-superforms";
     import Error from "$lib/Builders/Error.svelte"
     import Loading from "$lib/Builders/Loading.svelte";
 

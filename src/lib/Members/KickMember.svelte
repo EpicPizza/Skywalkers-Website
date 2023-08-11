@@ -3,7 +3,7 @@
     import { getContext, onDestroy } from "svelte";
     import type { Writable } from "svelte/store";
     import { superForm } from "sveltekit-superforms/client";
-    import type { SuperValidated } from "sveltekit-superforms/index";
+    import type { SuperValidated } from "sveltekit-superforms";
     import type { QuarantineMember } from "./members";
     import type { SecondaryUser } from "$lib/Firebase/firebase";
 

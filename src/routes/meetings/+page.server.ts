@@ -26,6 +26,7 @@ export async function load({ locals, url }) {
         when_start: Date,
         when_end: Date,
         lead: boolean,
+        role: string | boolean,
         synopsis: boolean,
     }
 
@@ -54,6 +55,7 @@ export async function load({ locals, url }) {
                 thumbnail: firestoreMeetings[i].data().thumbnail as string,
                 when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
                 when_end: firestoreMeetings[i].data().when_end.toDate() as Date,
+                role: firestoreMeetings[i].data().role == null ? false : firestoreMeetings[i].data().role as string,
                 signedup: signedup,
             })
         }

@@ -51,7 +51,7 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
 
             if(correct && (anyone || access)) {
 
-                role = members[found.split("-")[0] as any];
+                role = members[found.split("-")[0] as any].role;
 
                 foundMember = true;
             }
@@ -114,6 +114,8 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
             await hoursRef.set({
                 total: 0,
                 entries: [],
+                deleted: false,
+                history: [],
             })
 
             throw redirect(307, "/?invalidateAll=true");

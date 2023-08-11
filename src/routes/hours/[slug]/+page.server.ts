@@ -14,15 +14,17 @@ const AddHours = z.object({
 let addIndicator: Indicator = { color: colors.green['500'], icon: "add_circle" };
 let removeIndicator: Indicator = { color: colors.red['500'], icon: "remove_circle" };
 
-export async function load({ locals, params, url }) {
+export async function load({ locals, params, url, depends }) {
     if(locals.user == undefined) throw error(401, "Sign In Required");
     if(locals.firestoreUser == undefined) throw redirect(307, "/verify");
+
+    depends('hours:' + locals.user.uid);
 
     const db = firebaseAdmin.getFirestore();
 
     const user = await seralizeFirestoreUser((await db.collection('users').doc(params.slug).get()).data(), params.slug);
 
-    if(!user || user.team != locals.firestoreUser.team) throw error(400, "User not found.");
+    //if(!user || user.team != locals.firestoreUser.team) throw error(400, "User not found.");
 
     const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('hours').doc(params.slug);
 
@@ -34,9 +36,11 @@ export async function load({ locals, params, url }) {
 
     if(!data) throw error(400, "Hours not found.");
 
+    if(data.deleted) throw error(400, "Hours deleted.");
+
     const form = await superValidate(AddHours);
 
-    return { hours: data, forms: { add: form }, name: user.displayName, };
+    return { hours: data, forms: { add: form }, id: params.slug, name: user?.displayName ?? "Deleted User", };
 }
 
 export const actions = {

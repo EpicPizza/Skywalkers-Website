@@ -82,8 +82,6 @@
         }
         fileinput.files = dataTransfer.files;
 
-        console.log(files);
-
         draggingover = false;
     }
 
@@ -108,8 +106,6 @@
             dataTransfer.items.add(files[i]);
         }
         fileinput.files = dataTransfer.files;
-
-        console.log(files);
     }
 
     function removeFile(index: number) {

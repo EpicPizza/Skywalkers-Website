@@ -17,6 +17,8 @@
     import { slide } from "svelte/transition";
     import { onDestroy } from "svelte";
     import { page } from "$app/stores";
+    import Role from "$lib/Components/Role.svelte";
+    import Ellipse from "$lib/Builders/Ellipse.svelte";
 
     format.plugin(meridiem);
 
@@ -179,12 +181,26 @@
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
                     {/if}
                 </div>
-                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0">
-                    <p class="text-left lg:text-lg ml-4">{meeting.name}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4">At: {meeting.location}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4">{format.format(meeting.when_start, "M/D/YY, h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "M/D/YY, h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                    {#if typeof meeting.role != 'boolean'}
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <Role id={meeting.role} let:role>
+                            {#await role}
+                                <p class="text-left lg:text-lg ml-4">Loading<Ellipse/></p>  
+                            {:then role}
+                                <div class="flex items-center gap-2">
+                                    <p class="text-left lg:text-lg ml-4">Group:</p>
+                                    <div style="background-color: {role.color};" class="h-4 w-4 rounded-full"></div>
+                                    <p class="text-left lg:text-lg -ml-0.5">{role.name}</p>
+                                </div>
+                            {/await}
+                        </Role>
+                    {/if}
                 </div>
                 <Menu>    
                     <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
@@ -198,7 +214,7 @@
                             Synopsis
                         </MenuItem>
                         {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
-                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); console.log("selecting"); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                     {#if $selected.includes(meeting.id)}
                                         Deselect
                                     {:else}
@@ -250,7 +266,7 @@
         </svelte:element>
     </div>
 {:else}
-    <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-scroll">
+    <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-auto">
         <div class="flex px-1.5 gap-1.5 h-full">
             {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
                 <button on:click={selected.actions.duplicate.start} class="w-full min-w-[150px] text-center lg:text-lg my-1.5 rounded-md bg-blue-500 dark:bg-blue-500 bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition flex justify-around items-center">

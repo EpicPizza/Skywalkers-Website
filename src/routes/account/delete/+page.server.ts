@@ -39,6 +39,12 @@ export const actions = {
         kickedDoc = await kickedRef.get();
 
         if(!(!kickedDoc || kickedDoc.data() == undefined)) {
+            const hoursRef = db.collection('teams').doc(kickedDoc.data()?.team).collection('hours').doc(locals.user.uid);
+
+            const hours = await hoursRef.get();
+
+            if(hours.exists) await hoursRef.delete();
+
             await kickedRef.delete();
         } else {
             console.log("Kicked doc not found.");

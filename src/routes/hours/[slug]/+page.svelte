@@ -1,4 +1,5 @@
 <script lang=ts>
+    import { invalidate } from "$app/navigation";
     import Background from "$lib/Builders/Background.svelte";
     import Error from "$lib/Builders/Error.svelte";
     import Icon from "$lib/Builders/Icon.svelte";
@@ -8,7 +9,11 @@
     import Tooltip from "$lib/Builders/Tooltip.svelte";
     import Member from "$lib/Components/Member.svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
-    import { getContext } from "svelte";
+    import type { Hours } from "$lib/Hours/hours.server.js";
+    import { doc } from "firebase/firestore";
+    import { getContext, onMount } from "svelte";
+    import type { Unsubscriber } from "svelte/store";
+    import { onDestroy } from "svelte";
     import { superForm } from "sveltekit-superforms/client";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
@@ -22,7 +27,28 @@
             reset();
         }
     }
+
+    let unsubscribe: Unsubscriber | undefined = undefined;
+
+    onMount(() => {
+        if($client == undefined || $client.team == undefined) return;
+        unsubscribe = client.doc<Hours | undefined>(doc(client.getFirestore(), "teams", $client.team, "hours", data.id), structuredClone(data.hours)).subscribe(async (snapshotData) => {
+            if(snapshotData == undefined) {
+                invalidate('hours:' + $client?.uid);
+            } else {
+                data.hours = snapshotData;
+            }
+        });
+    });
+
+    onDestroy(() => {
+        if(unsubscribe) unsubscribe();
+    })
 </script>
+
+<svelte:head>
+    <title>Skywalkers | Hours</title>
+</svelte:head>
 
 {#if $client != undefined}
     <Background>
@@ -70,7 +96,7 @@
                     <Icon scale=1.75rem style="color: {entry.history[entry.latest].indicator.color}" icon={entry.history[entry.latest].indicator.icon}></Icon>
                     <div class="grow w-full overflow-hidden flex gap-3 items-center">
                         {#if entry.history[entry.latest].id != null}
-                            <Member id={entry.history[entry.latest].id ?? ""} let:member>
+                            <Member silent id={entry.history[entry.latest].id ?? ""} let:member>
                                 {#await member}
                                     <p hidden>Loading...</p>
                                 {:then member}

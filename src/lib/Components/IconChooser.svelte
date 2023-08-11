@@ -119,8 +119,6 @@
 
             cachedIcons.set(page, recievedIcons);
 
-            console.log("Fetched Icons (" + page + ")");
-
             return recievedIcons;
         } else {
             return cache;
@@ -144,8 +142,6 @@
             let recievedIcons = (await result.json()).icons;
 
             cachedIcons.set(query, recievedIcons);
-
-            console.log("Fetched Icons (" + query + ")"); 
 
             return recievedIcons;
         } else {

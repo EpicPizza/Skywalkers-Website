@@ -23,7 +23,6 @@
     $: {
         if($message == 'Meeting Edited') {
             history.back();
-            console.log("backkkkk");
         }
     }
 
