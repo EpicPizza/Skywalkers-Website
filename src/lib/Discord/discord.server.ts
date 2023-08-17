@@ -1,4 +1,4 @@
-import { GUILD, PRIVATE_KEY } from "$env/static/private";
+import { DISCORD, GUILD, PRIVATE_KEY } from "$env/static/private";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import type { DiscordRole } from "$lib/Roles/role";
 import crypto from 'crypto';
@@ -10,7 +10,7 @@ export async function getRoles() {
 
     console.log(request);
 
-    const result = await fetch("http://localhost:1357/server/role", {
+    const result = await fetch(DISCORD + "/server/role", {
         method: "GET",
         headers: {
             'content-type': 'application/json',
@@ -61,7 +61,7 @@ export async function sendSynopsis(name: string, content: string, attachments: {
 
     console.log(request);
 
-    const result = await fetch("http://localhost:1357/post/message/" + GUILD, {
+    const result = await fetch(DISCORD + "/post/message/" + GUILD, {
         method: "POST",
         headers: {
             'content-type': 'application/json',
