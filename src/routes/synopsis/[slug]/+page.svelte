@@ -5,6 +5,7 @@
     import Line from '$lib/Builders/Line.svelte';
     import type { firebaseClient } from '$lib/Firebase/firebase.js';
     import { getContext } from 'svelte';
+    import Markdown from '../../../lib/Markdown/Markdown.svelte';
 
     format.plugin(meridiem);
 
@@ -90,18 +91,18 @@
                 <p>Back</p>
             </button>
         </div>
-        <div class="p-4 lg:p-6 bg-accent-light dark:bg-accent-dark text-accent-text-light dark:text-accent-text-dark rounded-2xl flex items-center">
-            {#if data.meeting.thumbnail.startsWith("icon:")}
-                <Icon scale={0} class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]" icon={data.meeting.thumbnail.substring(5, data.meeting.thumbnail.length)}/>
-            {/if}
-            <div class="ml-4 lg:ml-5">
-                <div class="text-2xl lg:text-3xl lg:mb-1">Synopsis for {data.meeting.name}</div>
-                <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
+        <div class="sticky top-20 z-10">
+            <div class="p-4 lg:p-6 bg-accent-light dark:bg-accent-dark text-accent-text-light dark:text-accent-text-dark rounded-2xl flex items-center">
+                {#if data.meeting.thumbnail.startsWith("icon:")}
+                    <Icon scale={0} class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]" icon={data.meeting.thumbnail.substring(5, data.meeting.thumbnail.length)}/>
+                {/if}
+                <div class="ml-4 lg:ml-5">
+                    <div class="text-2xl lg:text-3xl lg:mb-1">Synopsis for {data.meeting.name}</div>
+                    <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
+                </div>
             </div>
         </div>
-        <p class="my-4 lg:text-lg whitespace-pre-line break-all">
-            {data.synopsis.body}
-        </p>
+        <Markdown content={data.synopsis.body}/>
         {#each photos as attachment}
             <img class="object-contain rounded-2xl mb-3 max-w-full max-h-[320px] border-[1px] border-border-light dark:border-border-dark" alt={attachment.name} src={attachment.url}/>
         {/each}
