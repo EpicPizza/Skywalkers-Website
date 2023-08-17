@@ -149,7 +149,7 @@
             </div>
             <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
             <FileChooser name=attachments/>
-            <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
+            <p class="text-lg lg:text-xl mb-3 mt-4">Participation:</p>
             <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
                     <Member id={member.id} let:member={user}>
@@ -160,9 +160,9 @@
                                 <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}'s Profile" src={user.photoURL}/>
                                 <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
                                 <div class="flex gap-1.5">
-                                    <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
+                                    <!--<button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
                                     <input step="0.25" class="w-16 p-2 py-1 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
-                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
+                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>-->
                                     <button class="b-accent w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
                                 </div>
                             </div>
@@ -181,7 +181,7 @@
                 <div><input class="appearance-none -mb-2 bg-transparent bg-gray-200 checked:bg-blue-500 w-8 h-8 lg:w-9 lg:h-9 rounded-md transition hover:cursor-pointer" bind:checked={$form.discord} type=checkbox/><Icon class="absolute max-h-none translate-x-1 lg:translate-x-0.5 -translate-y-[27px] lg:-translate-y-[33px] pointer-events-none transition-opacity text-white {$form.discord ? "opacity-100" : "opacity-0"} text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[2rem] lg:w-[2rem] lg:h-[2rem]" scale={0} icon=check></Icon></div>
                 <p class="text-lg lg:text-xl">Send synopsis message to discord.</p>
             </div>
-            <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: data.meeting.length }); $form.hours = $form.hours; }}></PersonDialog>
+            <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: 1 }); $form.hours = $form.hours; }}></PersonDialog>
             <Error {allErrors} {message}></Error>
             <div class="flex items-center mt-7 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">

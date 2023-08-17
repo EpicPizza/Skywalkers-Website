@@ -193,11 +193,6 @@ export const navLinks: Writable<Link[]> = writable([
         href: "/meetings",
         display: "Meetings",
         protected: true,
-    },
-    {
-        href: "/hours",
-        display: "Hours",
-        protected: true,
     }
 ]);
 

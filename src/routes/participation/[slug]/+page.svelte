@@ -53,11 +53,12 @@
 {#if $client != undefined}
     <Background>
         <Page size=24rem expand>
-            <h1 class="text-2xl font-bold text-center">{data.name}'s Hours</h1>
+            <h1 class="text-2xl font-bold text-center">{data.name}'s Participation</h1>
             <Line class="my-4 mt-2"></Line>
             <div class="bg-accent-light mb-4 dark:bg-accent-dark text-accent-text-light dark:text-accent-text-dark px-8 py-4 w-fit rounded-full ml-auto mr-auto">
-                <p class="text-xl font-extrabold">Total: {data.hours.total} hour{data.hours.total == 1 ? "" : "s"}</p>
+                <p class="text-xl font-extrabold">Total: {data.hours.total} meeting{data.hours.total == 1 ? "" : "s"}</p>
             </div>
+            <!--
             <div class="rounded-lg border-border-light dark:border-border-dark border-[1px] p-4 flex flex-col items-center gap-4 mb-6">
                 <div class="flex items-center gap-2">
                     <Icon icon=add_circle></Icon>
@@ -91,8 +92,9 @@
             </div>
             <h2 class="text-lg mb-2 font-bold">History:</h2>
             <Line class="mb-2"></Line>
+            -->
             {#each [... data.hours.entries].reverse() as entry (entry.id)}
-                <div class="flex items-center py-4 gap-4 w-full overflow-hidden">
+                <div class="flex items-center py-4 gap-4 w-full overflow-hidden {entry.total == 0 ? "opacity-50" : ""}">
                     <Icon scale=1.75rem style="color: {entry.history[entry.latest].indicator.color}" icon={entry.history[entry.latest].indicator.icon}></Icon>
                     <div class="grow w-full overflow-hidden flex gap-3 items-center">
                         {#if entry.history[entry.latest].id != null}
@@ -110,10 +112,10 @@
                             {entry.history[entry.latest].reason ?? "No Reason Given"}
                         </svelte:element>
                     </div>
-                    <span class="bg-black whitespace-nowrap dark:bg-white bg-opacity-10 ml-1 text-center dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.total} hour{entry.total == 1 ? "" : 's'}</span>
+                    <!--<span class="bg-black whitespace-nowrap dark:bg-white bg-opacity-10 ml-1 text-center dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.total} hour{entry.total == 1 ? "" : 's'}</span>-->
                 </div>
             {:else}
-                <p class="mb-4 pt-4 font-bold text-red-500 dark:text-red-500">No History</p>
+                <p class="mb-4 pt-4 text-center font-bold text-red-500 dark:text-red-500">No History</p>
             {/each}
             <div class="-mb-4"></div>
         </Page>
