@@ -20,7 +20,7 @@
         {#if $loading}
             <Loading></Loading>
         {:else}
-            <div style="{!expand ? "max-" : "max-width: 100%; "}width: {size};">
+            <div style="{!expand ? "max-" : "max-width: 100%; "}width: {size}; overflow: hidden;" class="overflow-hidden">
                 <slot top={top}></slot>
             </div>
         {/if}

@@ -17,7 +17,7 @@ const config = {
 		csp: {
             directives: {
                 'script-src': ['self', "https://apis.google.com"],
-				'style-src': ['self', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
+				'style-src': ['self', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'unsafe-inline'],
 				'img-src': ['self', 'https://lh3.googleusercontent.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers.appspot.com/'],
 				'connect-src': ['self', 'https://identitytoolkit.googleapis.com/', 'https://firestore.googleapis.com/', 'https://securetoken.googleapis.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers.appspot.com/'],
 				'font-src': ['self', 'https://fonts.gstatic.com/'],

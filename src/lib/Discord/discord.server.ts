@@ -1,4 +1,4 @@
-import { DISCORD, GUILD, PRIVATE_KEY } from "$env/static/private";
+import { DISCORD, CHANNEL, PRIVATE_KEY } from "$env/static/private";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import type { DiscordRole } from "$lib/Roles/role";
 import crypto from 'crypto';
@@ -57,11 +57,11 @@ export async function sendSynopsis(name: string, content: string, attachments: {
     if(links.length > 0) message.links = links;
     if(photos.length > 0) message.attachments = photos;
 
-    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/message/" + GUILD));
+    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/message/" + CHANNEL));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/post/message/" + GUILD, {
+    const result = await fetch(DISCORD + "/post/message/" + CHANNEL, {
         method: "POST",
         headers: {
             'content-type': 'application/json',

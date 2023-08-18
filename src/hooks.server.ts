@@ -48,6 +48,8 @@ export const handle = (async ({ event, resolve}) => {
     });
     
     response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+    response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+    response.headers.set('Cross-Origin-Embedder-Policy', 'same-origin');
 
     return response;
 }) satisfies Handle;

@@ -7,7 +7,7 @@
     import EditProfile from "$lib/Members/EditProfile.svelte";
     import KickMember from "$lib/Members/KickMember.svelte";
     import RolePermission from "$lib/Roles/RolePermission.svelte";
-    import { doc, DocumentReference, memoryLocalCache, onSnapshot, type Unsubscribe } from "firebase/firestore";
+    import { doc, DocumentReference, onSnapshot, type Unsubscribe } from "firebase/firestore";
     import { getContext, onDestroy, onMount } from "svelte";
     import type { Unsubscriber, Writable } from "svelte/store";
     import OnDestroy from "../../../../lib/Members/OnDestroy.svelte";

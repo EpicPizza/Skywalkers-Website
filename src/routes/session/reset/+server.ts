@@ -10,7 +10,7 @@ export const POST = (async ({ request, cookies }) => {
         
         await firebaseAdmin.getAuth().revokeRefreshTokens(token.sub); //tldr signs out all devices
 
-        cookies.delete('session');
+        cookies.delete('session', {path: "/"});
 
         return json({"deletion": "success"});
     } else {
