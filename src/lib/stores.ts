@@ -76,6 +76,8 @@ export function createMode() {
     }
 
     const clientInit = () => {
+        serverInit(localStorage.getItem('theme') ?? undefined);
+
         if(get(system)) {
             set(getSystemTheme());
             setCookie('system|' + getSystemTheme());

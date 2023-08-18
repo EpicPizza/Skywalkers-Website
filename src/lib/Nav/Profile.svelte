@@ -45,7 +45,7 @@ import Icon from "$lib/Builders/Icon.svelte";
                     </div>
                 </div>
             </MenuItem>
-            <Line class="my-2 mx-1 -translate-x-1"/>
+            <Line class="my-2"/>
             <div class="flex flex-row">
                 <Tooltip text="Sign Out" class="w-full">
                     <MenuItem on:click={() => { $navmenu = false; user.signOut() }} class="hover:cursor-pointer rounded-md b-menu w-full flex justify-around items-center">
@@ -63,7 +63,7 @@ import Icon from "$lib/Builders/Icon.svelte";
                     </MenuItem>
                 </Tooltip>
             </div>
-            <Line class="my-2 mx-1 -translate-x-1"/>
+            <Line class="my-2"/>
             {#if $verified}
                 <MenuItem on:click={() => { $navmenu = false; }} href="/settings" class="rounded-md b-menu">
                     Team Settings
