@@ -32,7 +32,7 @@ export const POST = (async ({ request, cookies }) => { // TODO: csrf protection
                 .then(
                     (sessionCookie) => {
                         console.log("got cookie");
-                        cookies.set("session", sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: DEV == 'TRUE' ? false : true, path: "/", sameSite: "lax" })
+                        cookies.set("__session", sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: DEV == 'TRUE' ? false : true, path: "/", sameSite: "lax" })
                         console.log(sessionCookie);
                         resolve(json({'Authorization': 'Success'}));
                     },  

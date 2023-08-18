@@ -3,7 +3,7 @@ import { getSpecifiedRoles } from "$lib/Roles/role.server";
 import type { Handle, RequestHandler } from "@sveltejs/kit";
 import type { DocumentReference } from "firebase-admin/firestore";
 
-export const handle = (async ({ event, resolve}) => {
+export const handle = (async ({ event, resolve }) => {
     console.log(event.route);
 
     const theme = event.cookies.get('theme');
@@ -16,7 +16,7 @@ export const handle = (async ({ event, resolve}) => {
         scheme = 'light dark';
     }
 
-    const user = await getUser(event.cookies.get("session") != undefined ? event.cookies.get("session") as string : "");
+    const user = await getUser(event.cookies.get("__session") != undefined ? event.cookies.get("__session") as string : "");
 
     event.locals.user = user;
 
@@ -50,6 +50,7 @@ export const handle = (async ({ event, resolve}) => {
     response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
     response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
     response.headers.set('Cross-Origin-Embedder-Policy', 'same-origin');
+    response.headers.set('Cache-Control', 'no-cache');
 
     return response;
 }) satisfies Handle;

@@ -25,6 +25,10 @@ function getFirebaseAdmin() {
     let firestore: Firestore | undefined = undefined;
     let bucket: Bucket | undefined = undefined;
 
+    const setFirebaseApp = (incomingApp: admin.app.App) => {
+        app = incomingApp;
+    }
+
     const getFirebaseApp = (): admin.app.App => {
         if(app == undefined) { //this get reruns on every change durring preview, but firebase admin still sees the pervious instance made, so this just checks if we can use a previous firebase instance, otherwise it will cause an error because firebase thinks we are reintializing
             console.log( DEV == 'TRUE' ? "regetting" : undefined);
@@ -52,21 +56,15 @@ function getFirebaseAdmin() {
                     }
                 }
             } else {
-                if(admin.apps == null) {
-                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com' }, "Server");
-                } else if(admin.apps.length == 0) {
-                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com' }, "Server");
-                } else {
-                    var found = false;
-                    for(var i = 0; i < admin.apps.length; i++) {
-                        if(admin.apps[i] != null && (admin.apps[i] as admin.app.App).name == "Server") {
-                            app = admin.apps[i] as admin.app.App;
-                            found = true;
-                        }
+                var found = false;
+                for(var i = 0; i < admin.apps.length; i++) {
+                    if(admin.apps[i] != null && (admin.apps[i] as admin.app.App).name == "firebase-frameworks") {
+                        app = admin.apps[i] as admin.app.App;
+                        found = true;
                     }
-                    if(found == false) {
-                        throw new Error("Firebase Admin is being goofy again");
-                    }
+                }
+                if(found == false) {
+                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com', credential: (admin.credential.cert(JSON.parse(ADMIN) as admin.ServiceAccount)) }, "firebase-frameworks");
                 }
             }
         }

@@ -62,6 +62,8 @@ export function firebaseClient() {
     let firestoreEntry: any | undefined = undefined;
 
     const getApp = (): FirebaseApp => {
+        if(!browser) return undefined as any;
+
         if(app == undefined) {
             const firebaseConfig = {
                 apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",

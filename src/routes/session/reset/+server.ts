@@ -3,10 +3,10 @@ import { error, json, type RequestHandler } from "@sveltejs/kit";
 import type { DecodedIdToken } from "firebase-admin/auth";
 
 export const POST = (async ({ request, cookies }) => {
-    const authorized = await verifySession(cookies.get("session"))
+    const authorized = await verifySession(cookies.get("__session"))
 
     if(authorized) {
-        const token: DecodedIdToken = await getToken(cookies.get("session") as string) as DecodedIdToken;
+        const token: DecodedIdToken = await getToken(cookies.get("__session") as string) as DecodedIdToken;
         
         await firebaseAdmin.getAuth().revokeRefreshTokens(token.sub); //tldr signs out all devices
 
