@@ -1,16 +1,20 @@
 {
   "hosting": {
-    "source": ".",
+    "public": "build/public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "minInstances": 1,
-      "maxInstances": 10,
-      "region": "us-west1"
-    }
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "ssrServer"
+      }
+    ]
+  },
+  "functions": {
+    "source": "build/functions"
   },
   "emulators": {
     "hosting": {

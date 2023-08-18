@@ -56,15 +56,21 @@ function getFirebaseAdmin() {
                     }
                 }
             } else {
-                var found = false;
-                for(var i = 0; i < admin.apps.length; i++) {
-                    if(admin.apps[i] != null && (admin.apps[i] as admin.app.App).name == "firebase-frameworks") {
-                        app = admin.apps[i] as admin.app.App;
-                        found = true;
+                if(admin.apps == null) {
+                    app = admin.initializeApp({}, "Server");
+                } else if(admin.apps.length == 0) {
+                    app = admin.initializeApp({}, "Server");
+                } else {
+                    var found = false;
+                    for(var i = 0; i < admin.apps.length; i++) {
+                        if(admin.apps[i] != null && (admin.apps[i] as admin.app.App).name == "Server") {
+                            app = admin.apps[i] as admin.app.App;
+                            found = true;
+                        }
                     }
-                }
-                if(found == false) {
-                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com', credential: (admin.credential.cert(JSON.parse(ADMIN) as admin.ServiceAccount)) }, "firebase-frameworks");
+                    if(found == false) {
+                        throw new Error("Firebase Admin is being goofy again");
+                    }
                 }
             }
         }

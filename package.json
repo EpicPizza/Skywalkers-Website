@@ -17,6 +17,7 @@
 		"@types/mime-types": "^2.1.1",
 		"date-and-time": "^3.0.1",
 		"svelte": "^3.47.0",
+		"svelte-adapter-firebase": "^0.15.0",
 		"svelte-check": "^3.4.6",
 		"tslib": "^2.4.1"
 	},
@@ -28,7 +29,7 @@
 		"file-type": "^18.5.0",
 		"firebase": "^9.9.0",
 		"firebase-admin": "^11.10.1",
-		"firebase-tools": "^12.4.7",
+		"firebase-tools": "^12.4.8",
 		"mime-types": "^2.1.35",
 		"postcss": "^8.4.24",
 		"safe-compare": "^1.1.4",
