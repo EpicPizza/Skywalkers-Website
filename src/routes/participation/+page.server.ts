@@ -17,7 +17,7 @@ export async function load({ locals, params, url }) {
     const users = new Array<{ total: number, member: SecondaryUser }>();
 
     for(let i = 0; i < docs.length; i++) {
-        if(docs[i].data() != undefined) {
+        if(docs[i].data() != undefined && docs[i].data().deleted == false) {
             let hours = docs[i].data() as Hours;
 
             let member = await getMember(docs[i].id);

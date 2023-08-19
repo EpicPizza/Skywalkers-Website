@@ -161,7 +161,7 @@
             <div class="flex flex-row-reverse mr-2">
                 <div class="opacity-75 flex items-center mt-4 ">
                     <Icon scale={0}  class="ml-1 text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" icon=info></Icon>
-                    <p class="ml-2 lg:text-lg">Kicking members will reset their hours.</p>
+                    <p class="ml-2 lg:text-lg">Kicking members will reset their participation.</p>
                 </div>
             </div>
             <div class="flex w-full mt-4 gap-2 flex-row-reverse items-center">

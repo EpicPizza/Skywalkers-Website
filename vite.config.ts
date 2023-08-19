@@ -5,7 +5,7 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
 		rollupOptions: {
-			external: ["firebase-admin"]
-		}
+			external: ["firebase-admin", "gaxios", "node-fetch"]
+		},
 	},
 });

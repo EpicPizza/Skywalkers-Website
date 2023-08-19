@@ -57,9 +57,9 @@ function getFirebaseAdmin() {
                 }
             } else {
                 if(admin.apps == null) {
-                    app = admin.initializeApp({}, "Server");
+                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com' }, "Server");
                 } else if(admin.apps.length == 0) {
-                    app = admin.initializeApp({}, "Server");
+                    app = admin.initializeApp({ storageBucket: 'frc-skywalkers.appspot.com' }, "Server");
                 } else {
                     var found = false;
                     for(var i = 0; i < admin.apps.length; i++) {

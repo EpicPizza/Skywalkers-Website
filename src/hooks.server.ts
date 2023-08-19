@@ -50,7 +50,7 @@ export const handle = (async ({ event, resolve }) => {
     response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
     response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
     response.headers.set('Cross-Origin-Embedder-Policy', 'same-origin');
-    response.headers.set('Cache-Control', 'no-cache');
+    response.headers.set('Cache-Control', 'no-cache, private');
 
     return response;
 }) satisfies Handle;
