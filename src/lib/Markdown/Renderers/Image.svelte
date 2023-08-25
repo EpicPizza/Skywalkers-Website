@@ -4,4 +4,6 @@
     export let text: string = '';
 </script>
 
-<img src={href} {title} alt={text}>
+<!--<img src={href} {title} alt={text}>-->
+
+{href} - {title} - {text}

@@ -99,7 +99,7 @@ export async function load({ params, locals, url }) {
 
     for(let i = 0; i < signups.length; i++) {
         hours.push({
-            time: length,
+            time: 1,
             id: signups[i].id
         })    
     }
@@ -154,7 +154,7 @@ export const actions = {
 
                             console.log(extension(mime));
 
-                            if(attachmentHelpers.checkType(mime) && !attachmentHelpers.isImage(mime)) {
+                            if(attachmentHelpers.checkType(mime) && attachmentHelpers.isSecure(mime)) {
                                 files.push({file: attachments[i] as File, ext: extension(mime) ? extension(mime) as string : "text/plain", mime: mime})
                             } else {
                                 return message(form, "Invalid attachment file type.");
