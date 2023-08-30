@@ -36,12 +36,16 @@ export const POST = (async ({ locals, request }) => {
         }
     }
 
-    if(found == false && id != null) throw error(401, "Discord role not found.")
+    if(found == false && id != null) throw error(401, "Discord role not found.");
 
-    await db.runTransaction( async (transaction) => {
+    const user = locals.user.uid;
+
+    await db.runTransaction(async (transaction) => {
         transaction.update(roleRef, {
             connectTo: id,
-        })
+        });
+
+        firebaseAdmin.addLogWithTransaction("Connected a discord role.", "group", user, transaction);
     })
 
     return json({ success: true });

@@ -274,6 +274,15 @@
             </svelte:fragment>
         </RolePermission>
 
+        <RolePermission permission=VIEW_LOGS bind:permissions {role}>
+            <svelte:fragment slot=title>
+                View Logs
+            </svelte:fragment>
+            <svelte:fragment slot=description>
+                Members will be able to see all logs, which include meetings, synopses, roles, and more.
+            </svelte:fragment>
+        </RolePermission>
+
         <Line class="mb-4"></Line>
 
         <h2 class="uppercase text-sm opacity-75 mb-6">role permissions</h2>

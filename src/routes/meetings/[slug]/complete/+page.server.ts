@@ -306,6 +306,8 @@ export const actions = {
             t.update(meetingRef, {
                 completed: true,
             })
+
+            firebaseAdmin.addLogWithTransaction("Meeting completed.", "event", uid, t);
         })
 
         if(form.data.discord) {

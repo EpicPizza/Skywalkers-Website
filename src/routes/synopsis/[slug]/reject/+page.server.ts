@@ -103,6 +103,8 @@ export const actions = {
             });
 
             t.delete(synopsisRef);
+
+            firebaseAdmin.addLogWithTransaction("Synopsis rejected.", "summarize", uid, t);
         })
 
         const folderPath = `synopses/${params.slug}`;

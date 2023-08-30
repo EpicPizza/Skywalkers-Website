@@ -47,6 +47,7 @@ export const POST = (async ({ locals, request }) => {
     if(roleSnap.data()?.name == 'everyone') throw error(400);
 
     const team = locals.firestoreUser.team;
+    const user = locals.user.uid;
 
     await db.runTransaction(async (transaction) => {
         const role = (await transaction.get(roleSnap.ref)).data() as Role;
@@ -104,6 +105,8 @@ export const POST = (async ({ locals, request }) => {
                 })
             }
         }
+
+        firebaseAdmin.addLogWithTransaction("Added member(s) to a role.", "group", user, transaction);
     });
 
     return json("success");

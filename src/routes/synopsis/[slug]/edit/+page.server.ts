@@ -362,6 +362,8 @@ export const actions = {
             }
 
             t.update(synopsisRef, synopsis);
+
+            firebaseAdmin.addLogWithTransaction("Synopsis edited.", "summarize", uid, t);
         })
 
         return message(form, "Success");

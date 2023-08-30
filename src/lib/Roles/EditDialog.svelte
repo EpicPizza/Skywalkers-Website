@@ -22,6 +22,8 @@
         }
     }
 
+    $: console.log($message);
+
     $: ((open) => { 
         if(!form) return;
         reset();

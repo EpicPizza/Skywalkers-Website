@@ -58,6 +58,8 @@ export const actions = {
             const hours = await hoursRef.get();
 
             if(hours.exists) await hoursRef.delete();
+
+            await firebaseAdmin.addLog("Left the team.", "person", locals.user.uid);
         }
 
         try {

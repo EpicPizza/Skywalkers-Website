@@ -79,7 +79,9 @@ export const actions = {
         ref.update({
             displayName: form.data.name,
             pronouns: form.data.pronouns
-        })
+        });
+
+        await firebaseAdmin.addLog("Edited a member's profile.", "workspaces", locals.user.uid);
 
         return message(form, "Edited Profile");
     },
@@ -117,6 +119,8 @@ export const actions = {
 
         try {
             await quarantineMember(form.data.id);
+
+            await firebaseAdmin.addLog("Kicked a member.", "workspaces", locals.user.uid);
         } catch(e) {
             return message(form, "An unexpected error occurred.");
         }

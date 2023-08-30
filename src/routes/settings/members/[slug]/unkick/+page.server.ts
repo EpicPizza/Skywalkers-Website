@@ -1,3 +1,4 @@
+import { firebaseAdmin } from "$lib/Firebase/firebase.server.js";
 import { getQuarantinedMember, unquarantineMember, type QuarantinedMember } from "$lib/Members/manage.server";
 import { QuarantineMember, UnquarantineMember } from "$lib/Members/members.js";
 import { getRoles } from "$lib/Roles/role.server.js";
@@ -79,6 +80,8 @@ export let actions = {
 
         try {
             await unquarantineMember(params.slug, locals.firestoreUser.roles, newData);
+
+            await firebaseAdmin.addLog("Unkicked member.", "workspaces", locals.user.uid);
         } catch(e: any) {
             if(e.message == 'Insufficient Permission Level') {
                 return message(form, "Insufficient Permission Level");

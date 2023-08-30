@@ -33,10 +33,15 @@ export const actions = {
 
         const db = firebaseAdmin.getFirestore();
         const ref = db.collection('users').doc(locals.user.uid);
+        const uid = locals.user.uid;
 
-        await ref.update({
-            displayName: form.data.name,
-            pronouns: form.data.pronouns,
+        await db.runTransaction(async t => {
+            t.update(ref, {
+                displayName: form.data.name,
+                pronouns: form.data.pronouns,
+            });
+
+            firebaseAdmin.addLogWithTransaction("Edited profile.", "badge", uid, t);
         })
 
         return message(form, "Changes Saved");

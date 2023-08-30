@@ -67,6 +67,7 @@ export async function load({ params, locals, url }) {
         when_end: data.when_end.toDate() as Date,
         thumbnail: data.thumbnail as string,
         completed: data.completed as boolean,
+        link: data.link as string | null,
         id: params.slug as string,
         signups: signups
     }

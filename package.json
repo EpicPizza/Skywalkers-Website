@@ -24,7 +24,6 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@google-cloud/storage": "^7.0.1",
 		"@rgossiaux/svelte-headlessui": "^2.0.0",
 		"@types/safe-compare": "^1.1.0",
 		"autoprefixer": "^10.4.14",
@@ -32,6 +31,8 @@
 		"firebase": "^9.9.0",
 		"firebase-admin": "^11.10.1",
 		"firebase-tools": "^12.4.8",
+		"google-auth-library": "^9.0.0",
+		"googleapis": "^126.0.1",
 		"mime-types": "^2.1.35",
 		"postcss": "^8.4.24",
 		"safe-compare": "^1.1.4",

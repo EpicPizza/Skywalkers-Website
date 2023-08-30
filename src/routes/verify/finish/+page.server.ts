@@ -116,7 +116,9 @@ export const load = async ({ locals }) => { //TODO: secure possible exploit to v
                 entries: [],
                 deleted: false,
                 history: [],
-            })
+            });
+
+            await firebaseAdmin.addLog("Joined the team.", "person", locals.user.uid);
 
             throw redirect(307, "/?invalidateAll=true");
         } else {

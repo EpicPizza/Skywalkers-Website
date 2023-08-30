@@ -70,7 +70,7 @@ export async function load({ locals, url, params }) {
             on: on, 
             beginning: on == 1,
             end: on >= Math.ceil(count / 50),
-            showing: ((on - 1) * 50) + " - " + (count > on * 50 ? on * 50 : count),
+            showing: (((on - 1) * 50) + 1) + " - " + (count > on * 50 ? on * 50 : count),
         }
     };
 }

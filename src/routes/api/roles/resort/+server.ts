@@ -25,7 +25,8 @@ export const POST = (async ({ locals, request }) => {
 
     const db = firebaseAdmin.getFirestore();
 
-    const team = locals.firestoreUser.team
+    const team = locals.firestoreUser.team;
+    const user = locals.user.uid;
 
     const requestUserLevel = locals.firestoreUser.level;
 
@@ -95,6 +96,8 @@ export const POST = (async ({ locals, request }) => {
                 level: userlevel,
             })
         }
+
+        firebaseAdmin.addLogWithTransaction("Changed role order.", "group", user, transaction);
     })  
 
     return json(true);

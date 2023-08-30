@@ -114,6 +114,8 @@ export const actions = {
 
         const hoursRef = db.collection('teams').doc(team).collection('hours').doc(locals.user.uid);
 
+        await firebaseAdmin.addLog("Joined the team.", "person", locals.user.uid);
+
         await hoursRef.set({
             total: 0,
             entries: [],

@@ -95,6 +95,13 @@
                 <p class="text-lg lg:text-xl">Group:</p>
                 <RoleInput roles={data.roles} name=role bind:value={$form.role} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
+            <input hidden name=virtual type="checkbox" bind:checked={$form.virtual}/>
+            <div class="flex gap-2 mt-6 items-center lg:gap-3">
+                <button on:click|preventDefault={() => { $form.virtual = !$form.virtual }} class="p-1 {$form.virtual ? "border-blue-700 dark:border-blue-500 bg-blue-200 dark:bg-blue-900 text-blue-700 dark:text-blue-500" : "border-border-light dark:border-border-dark text-border-light dark:text-border-dark"} border-[1px] rounded-md m-0.5 transition disabled:cursor-not-allowed disabled:opacity-40">
+                    <Icon icon=check></Icon>
+                </button>
+                <p class="text-lg">Create a Google Meet link.</p>
+            </div>
             <Error {allErrors} {message}></Error>
             <div class="flex items-center mt-6 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">

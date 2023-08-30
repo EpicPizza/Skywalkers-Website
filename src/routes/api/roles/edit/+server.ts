@@ -23,6 +23,7 @@ export const POST = (async ({ locals, request }) => {
     const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(role);
 
     const team = locals.firestoreUser.team;
+    const user = locals.user.uid;
 
     let roleCheck = await ref.get();
 
@@ -112,6 +113,8 @@ export const POST = (async ({ locals, request }) => {
                 })
             }
         }
+
+        firebaseAdmin.addLogWithTransaction("Edited a role.", "group", user, transaction);
     })
 
     return json("success");

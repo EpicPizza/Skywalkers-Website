@@ -1,10 +1,15 @@
+import { OWNER } from '$env/static/private';
 import { PUBLIC_DEFAULT_USER } from '$env/static/public';
+import { sendDM } from '$lib/Discord/discord.server';
 import type { FirestoreUser } from '$lib/Firebase/firebase.js';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
+import { editEvent, getEvent } from '$lib/Google/calendar.js';
+import { getCalendar, getClient, getClientWithCrendentials } from '$lib/Google/client';
 import { getUserList, meetingSchema } from '$lib/Meetings/meetings.server.js';
 import { getRoles } from '$lib/Roles/role.server';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
+import { identity } from 'svelte/internal';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import { z } from 'zod';
 
@@ -34,6 +39,7 @@ export async function load({ params, locals }) {
         thumbnail: data.thumbnail as string,
         completed: data.completed as boolean,
         role: data.role as string | undefined,
+        link: data.link as string | null,
         id: params.slug as string,
     }
 
@@ -52,6 +58,7 @@ export async function load({ params, locals }) {
     form.data.ends = meeting.when_end;
     form.data.thumbnail = meeting.thumbnail;
     form.data.role = meeting.role;
+    form.data.virtual = meeting.link == null ? false : true;
 
     const roles = await getRoles(locals.firestoreUser.team);
 
@@ -88,6 +95,8 @@ export const actions = {
         
         const users= await getUserList(db, locals.firestoreUser.team);
 
+        const meeting = await getMeeting(locals.firestoreUser.team, params.slug);
+
         if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
             return message(form, 'User(s) not found.', {
                 status: 404
@@ -96,16 +105,69 @@ export const actions = {
 
         if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
-        await ref.update({
-            name: form.data.name,
-            lead: db.collection('users').doc(form.data.lead),
-            synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
-            mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
+        const client = await getClientWithCrendentials();
+
+        if(client == undefined) {
+            await sendDM("Authorization Needed", OWNER);
+
+            return message(form, "Google calendar integration down.");
+        }
+
+        const calendar = await getCalendar();
+
+        if(calendar == undefined) {
+            await sendDM("Authorization Needed", OWNER);
+
+            return message(form, "Google calendar integration down.");
+        }
+
+        const currentEvent = await getEvent(client, meeting.calendar, calendar);
+
+        const eventOptions = {
+            summary: form.data.name,
             location: form.data.location,
-            when_start: form.data.starts,
-            when_end: form.data.ends,
-            thumbnail: form.data.thumbnail,
-            role: form.data.role == undefined ? null : form.data.role,
+            start: {
+                dateTime: form.data.starts,
+                timeZone: "America/Los_Angeles"
+            },
+            end: {
+                dateTime: form.data.ends,
+                timeZone: "America/Los_Angeles"
+            },
+            conferenceData: undefined as unknown,
+        }
+
+        if(form.data.virtual && !currentEvent.conferenceData) {
+            eventOptions.conferenceData = {
+                createRequest: {
+                    requestId: crypto.randomUUID(),
+                    conferenceSolutionKey: { type: "hangoutsMeet" },
+                },
+            }
+        } else {
+            eventOptions.conferenceData = form.data.virtual ? currentEvent.conferenceData : null;
+        }
+    
+        const event = await editEvent(client, meeting.calendar, calendar, eventOptions);
+
+        const user = locals.user.uid;
+
+        await db.runTransaction(async t => {
+            t.update(ref, {
+                name: form.data.name,
+                lead: db.collection('users').doc(form.data.lead),
+                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
+                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
+                location: form.data.location,
+                when_start: form.data.starts,
+                when_end: form.data.ends,
+                thumbnail: form.data.thumbnail,
+                role: form.data.role == undefined ? null : form.data.role,
+                calendar: event.id,
+                link: event.link ?? null,
+            });
+
+            firebaseAdmin.addLogWithTransaction("Meeting edited.", "event", user, t);
         })
 
         if(url.searchParams.get('redirect') == 'completed') {
@@ -114,4 +176,28 @@ export const actions = {
             throw redirect(307, "/meetings/" + params.slug + "?edited=true");
         }
     }
+}
+
+async function getMeeting(team: string, id: string) {
+    const ref = firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(id);
+
+    const data = (await ref.get()).data();
+
+    if(data == undefined) throw error(404, "Meeting Not Found");
+
+    const meeting = {
+        name: data.name as string,
+        lead: data.lead as DocumentReference,
+        synopsis: data.synopsis as DocumentReference | null,
+        mentor: data.mentor as DocumentReference | null,
+        location: data.location as string,
+        when_start: data.when_start.toDate() as Date,
+        when_end: data.when_end.toDate() as Date,
+        thumbnail: data.thumbnail as string,
+        completed: data.completed as boolean,
+        calendar: data.calendar as string,
+        id: id as string,
+    }
+
+    return meeting;
 }

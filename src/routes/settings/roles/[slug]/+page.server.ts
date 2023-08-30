@@ -32,6 +32,7 @@ export const actions = {
         const db = firebaseAdmin.getFirestore();
 
         const team = locals.firestoreUser.team;
+        const user = locals.user.uid;
 
         const ref = db.collection('teams').doc(team).collection('roles').doc(params.slug);
 
@@ -49,6 +50,8 @@ export const actions = {
                     name: form.data.name,
                     color: form.data.color,
                 })
+
+                firebaseAdmin.addLogWithTransaction("Edited a role.", "group", user, transaction);
             })
         } catch(e) {
             console.log(e);

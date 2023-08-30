@@ -5,6 +5,16 @@ import crypto from 'crypto';
 import { attachmentHelpers } from '$lib/Meetings/meetings.server';
 import { error } from "@sveltejs/kit";
 
+interface DiscordUser {
+    id: string,
+    nickname: boolean,
+    color: string | null,
+    username: string,
+    discrim: string,
+    avatar: string,
+    bot: boolean
+}
+
 export async function getRoles() {
     const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/role"));
 
@@ -28,6 +38,24 @@ export async function getRoles() {
     }
 
     return roles as DiscordRole[];
+}
+
+export async function getUsers() {
+    const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/member"));
+
+    console.log(request);
+
+    const result = await fetch(DISCORD + "/server/member", {
+        method: "GET",
+        headers: {
+            'content-type': 'application/json',
+            'Authorization': request,
+        },
+    })
+
+    const users = await result.json();
+
+    return users as DiscordUser[];
 }
 
 export async function sendSynopsis(name: string, content: string, attachments: {url: string, type: string, name: string, location: string, code: string, ext: string }[], link: string) {
@@ -62,6 +90,28 @@ export async function sendSynopsis(name: string, content: string, attachments: {
     console.log(request);
 
     const result = await fetch(DISCORD + "/post/message/" + CHANNEL, {
+        method: "POST",
+        headers: {
+            'content-type': 'application/json',
+        },
+        body: request
+    })
+
+    if(result.status != 200) {
+        throw error(501, "Discord synopsis not sent");
+    }
+}
+
+export async function sendDM(content: string, id: string) {
+    let message: any = {
+        content: content,
+    }
+
+    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/dm/" + id));
+
+    console.log(request);
+
+    const result = await fetch(DISCORD + "/post/dm/" + id, {
         method: "POST",
         headers: {
             'content-type': 'application/json',

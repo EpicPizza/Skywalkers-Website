@@ -34,6 +34,7 @@ export const POST = (async ({ locals, request }) => {
     if(roleSnap.data()?.level as number >= locals.firestoreUser.level) throw error(403);
 
     const team = locals.firestoreUser.team;
+    const user = locals.user.uid;
 
     await db.runTransaction(async (transaction) => { //transaction may be unnecessary rn, but will add on more later.
         const doc = await transaction.get(userRef);
@@ -68,6 +69,8 @@ export const POST = (async ({ locals, request }) => {
                 permissions: permissions,
                 level: level,
             })
+
+            firebaseAdmin.addLogWithTransaction("Removed a member from a role.", "group", user, transaction);
         }
     });
 

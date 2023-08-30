@@ -1,21 +1,23 @@
 import admin from 'firebase-admin'
-import { ADMIN, DEV } from '$env/static/private';
+import { ADMIN, DEV, OWNER } from '$env/static/private';
 import FirebaseAdmin from 'firebase-admin';
 const firebaseAuth = FirebaseAdmin.auth;
 import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
 import { AuthCredential } from 'firebase/auth';
-import { type Firestore, getFirestore as getFirebaseFirestore, DocumentReference } from 'firebase-admin/firestore';
+import { type Firestore, getFirestore as getFirebaseFirestore, DocumentReference, Transaction, type DocumentData } from 'firebase-admin/firestore';
 import { getSpecifiedRoles } from '$lib/Roles/role.server';
 import type { FirestoreUser, SecondaryUser } from './firebase';
 import type { Storage } from 'firebase-admin/lib/storage/storage';
 import { getStorage } from 'firebase-admin/storage';
-import type { Bucket } from '@google-cloud/storage';
 import Stream from 'stream';
 import * as https from 'https';
 import path from 'path';
 import { getDownloadURL } from 'firebase-admin/storage';
 import { fileTypeFromBuffer } from 'file-type';
 import { error } from '@sveltejs/kit';
+import { getCalendar, getClient, getClientWithCrendentials } from '$lib/Google/client';
+import { editEvent, getEvent } from '$lib/Google/calendar';
+import { sendDM } from '$lib/Discord/discord.server';
 
 export let firebaseAdmin = getFirebaseAdmin();
 
@@ -23,7 +25,7 @@ function getFirebaseAdmin() {
     let app: admin.app.App | undefined = undefined;
     let auth: Auth | undefined = undefined;
     let firestore: Firestore | undefined = undefined;
-    let bucket: Bucket | undefined = undefined;
+    let bucket: ReturnType<(ReturnType<typeof getStorage>["bucket"])> | undefined = undefined;
 
     const setFirebaseApp = (incomingApp: admin.app.App) => {
         app = incomingApp;
@@ -89,12 +91,16 @@ function getFirebaseAdmin() {
     const getFirestore = (): Firestore => {
         if(firestore == undefined) {
             firestore = getFirebaseFirestore(getFirebaseApp());
+
+            if(DEV == 'TRUE') {
+                initFirstore(firestore);
+            }
         }
 
         return firestore;
     }
 
-    const getBucket = (): Bucket => {
+    const getBucket = (): ReturnType<(ReturnType<typeof getStorage>["bucket"])> => {
         if(bucket == undefined) {
             bucket = getStorage(getFirebaseApp()).bucket();
         }
@@ -102,11 +108,41 @@ function getFirebaseAdmin() {
         return bucket;
     }
 
+    const addLog = async (content: string, icon: string, id: string) => {
+        const db = firebaseAdmin.getFirestore();
+
+        const ref = db.collection('logs');
+
+        await ref.add({
+            content,
+            icon,
+            id,
+            timestamp: new Date(),
+        })
+    }
+
+    const addLogWithTransaction = (content: string, icon: string, id: string, transaction: Transaction) => {
+        const db = firebaseAdmin.getFirestore();
+
+        const ref = db.collection('logs');
+
+        const doc = crypto.randomUUID();
+
+        transaction.create(ref.doc(doc), {
+            content,
+            icon,
+            id,
+            timestamp: new Date(),
+        })
+    }
+
     return {
         getApp: getFirebaseApp,
         getAuth: getAuth,
         getFirestore: getFirestore,
         getBucket: getBucket,
+        addLog: addLog,
+        addLogWithTransaction: addLogWithTransaction,
     }
 }
 
@@ -221,4 +257,58 @@ export async function getPhotoURL(url: string, id: string) {
     const photoURL = await getDownloadURL(ref);
 
     return photoURL;
+}
+
+async function initFirstore(firestore: Firestore) {
+    const ref = firestore.collection('teams').doc('111111').collection('meetings'); //fine since just in development
+
+    ref.onSnapshot(async snapshot => {
+        console.log("checking for calendar events")
+
+        const docs = Array.from(snapshot.docChanges(), change => (change.type == 'modified' ? change.doc : undefined ));
+
+        console.log(docs);
+
+        for(let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+
+            if(!doc || !doc.exists || doc.data() == undefined) continue;
+
+            await editAttendees(doc.data());
+        }
+    })
+}
+
+async function editAttendees(data: ReturnType<DocumentData["data"]>) {
+    const client = await getClientWithCrendentials();
+
+    if(client == undefined) {
+        if(DEV == 'TRUE') {
+            return;
+        }
+
+        await sendDM("Authorization Needed", OWNER);
+
+        process.exit();
+    }
+
+    const calendar = await getCalendar();
+
+    if(calendar == undefined) {
+        if(DEV == 'TRUE') {
+            return;
+        }
+
+        await sendDM("Authorization Needed", OWNER);
+
+        process.exit();
+    }
+
+    const id = data.calendar;
+
+    const users = await firebaseAdmin.getAuth().getUsers(Array.from(data.signups, (x) => ({ uid: x as string })));
+
+    const attendees = Array.from(users.users, x => ({ email: x.email as string }));
+
+    await editEvent(client, id, calendar, { attendees: attendees });
 }

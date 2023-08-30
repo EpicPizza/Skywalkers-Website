@@ -44,10 +44,14 @@
         const unsubscribeUser = client.subscribe(async (user) => {
             if(user == undefined || 'preload' in user || user.team == undefined) return;
 
-            await runTransaction(client.getFirestore(), async transaction => {
-                if(selected.length != 0) {
-                    transaction.update(doc(client.getFirestore(), "teams", user.team), selected.reduce((a, v) => ({ ...a, [v]: deleteField()}), {}));
-                }   
+            await fetch("/settings/codes", {
+                method: "POST",
+                headers: {
+                    'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                    codes: selected,
+                })
             })
 
             selected = [];

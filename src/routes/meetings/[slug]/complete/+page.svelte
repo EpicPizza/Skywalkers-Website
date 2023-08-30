@@ -178,8 +178,10 @@
                 </div>
             </div>
             <div class="flex gap-2 mt-6 items-center lg:gap-3">
-                <div><input class="appearance-none -mb-2 bg-transparent bg-gray-200 checked:bg-blue-500 w-8 h-8 lg:w-9 lg:h-9 rounded-md transition hover:cursor-pointer" bind:checked={$form.discord} type=checkbox/><Icon class="absolute max-h-none translate-x-1 lg:translate-x-0.5 -translate-y-[27px] lg:-translate-y-[33px] pointer-events-none transition-opacity text-white {$form.discord ? "opacity-100" : "opacity-0"} text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[2rem] lg:w-[2rem] lg:h-[2rem]" scale={0} icon=check></Icon></div>
-                <p class="text-lg lg:text-xl">Send synopsis message to discord.</p>
+                <button on:click|preventDefault={() => { $form.discord = !$form.discord }} class="p-1 {$form.discord ? "border-blue-700 dark:border-blue-500 bg-blue-200 dark:bg-blue-900 text-blue-700 dark:text-blue-500" : "border-border-light dark:border-border-dark text-border-light dark:text-border-dark"} border-[1px] rounded-md m-0.5 transition disabled:cursor-not-allowed disabled:opacity-40">
+                    <Icon icon=check></Icon>
+                </button>
+                <p class="text-lg">Send synopsis message to discord.</p>
             </div>
             <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: 1 }); $form.hours = $form.hours; }}></PersonDialog>
             <Error {allErrors} {message}></Error>

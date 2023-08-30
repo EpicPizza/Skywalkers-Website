@@ -13,6 +13,7 @@ export const meetingSchema = z.object({
     thumbnail: z.string({ invalid_type_error: "Thumbnail must be a stirng.", required_error: "Thumbnail field must be filled."}).url({ message: "Thumbnail must be a link or an icon."}).or(z.string({ invalid_type_error: "Thumbnail must be a stirng.", required_error: "Thumbnail field must be filled."}).url({ message: "Thumbnail must be a link or an icon."}).startsWith('icon:', { message: "Thumbnail must be a link or an icon."})),
     starts: z.date({ invalid_type_error: "Unknown start time.", required_error: "Start time must be filled."}),
     ends: z.date({ invalid_type_error: "Unknown end time.", required_error: "End time must be filled."}),
+    virtual: z.boolean(),
 })
 
 export const duplicateSchema = z.object({

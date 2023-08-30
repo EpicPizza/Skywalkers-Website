@@ -30,6 +30,7 @@ export const POST = (async ({ locals, request }) => {
     if(roleCheck.data()?.level as number >= locals.firestoreUser.level) throw(403);
 
     const team = locals.firestoreUser.team;
+    const user = locals.user.uid;
 
     await db.runTransaction(async (transaction) => {
         const userDocs = (await transaction.get(db.collection('users').where('team', '==', team))).docs;
@@ -100,6 +101,8 @@ export const POST = (async ({ locals, request }) => {
                 })
             }
         }   
+
+        firebaseAdmin.addLogWithTransaction("Deleted a role.", "group", user, transaction);
     })
 
     return json("success");

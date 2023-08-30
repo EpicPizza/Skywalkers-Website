@@ -30,6 +30,8 @@ export const actions = {
             return message(form, "Role quantity limit met.")
         }
 
+        const user = locals.user.uid;
+
         try {
             await db.runTransaction(async (transaction) => {
                 const collection = db.collection('teams').doc(team).collection('roles');
@@ -59,7 +61,9 @@ export const actions = {
                     permissions: [],
                     level: 1,
                     members: [],
-                })
+                });
+
+                firebaseAdmin.addLogWithTransaction("Created a role.", "group", user, transaction);
             })
         } catch(e) {
             console.log(e);

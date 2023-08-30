@@ -80,65 +80,117 @@ export const actions = {
 
         const ref = db.collection('teams').doc(locals.firestoreUser.team);
 
-        const doc = (await ref.get()).data();
+        if((await ref.get()).exists == false) throw error(500);
 
-        if(doc == undefined) throw error(500);
+        const team = locals.firestoreUser.team;
+        const uid = locals.user.uid;
 
-        const oldCodes = new Map<string, Code>(Object.entries(doc));
+        const validateResult = await (async () => {
+            const doc = (await ref.get()).data();
 
-        let codes = new Map<string, Code>();
+            if(doc == undefined) throw error(500);
 
-        if(emails != undefined && form.data.emails != undefined) {
-            console.log(oldCodes);
-            console.log(emails);
-            
-            try {
-                oldCodes.forEach((code) => {
-                    if(emails.includes(code.access)) {
-                        throw "exists " + code.access;
+            const oldCodes = new Map<string, Code>(Object.entries(doc));
+
+            let codes = new Map<string, Code>();
+
+            if(emails != undefined && form.data.emails != undefined) {
+                try {
+                    oldCodes.forEach((code) => {
+                        if(emails.includes(code.access)) {
+                            throw "exists " + code.access;
+                        }
+                    })
+                } catch(e) {
+                    if(typeof e == 'string' && e.startsWith("exists") && e.length > 7) {
+                        return message(form, "Existing code with email " + e.substring(7, e.length) + " found.");
+                    } else {
+                        throw e;
                     }
-                })
-            } catch(e) {
-                if(typeof e == 'string' && e.startsWith("exists") && e.length > 7) {
-                    return message(form, "Existing code with email " + e.substring(7, e.length) + " found.");
-                } else {
-                    throw e;
+                }
+
+                const { users } = await firebaseAdmin.getAuth().getUsers(emails.reduce((k,v) => [... k, {'email': v}] as any, []));
+
+                for(let i = 0; i < users.length; i++) {
+                    const userDoc = await db.collection('users').doc(users[i].uid).get();
+
+                    let data = userDoc.data();
+
+                    if(data != undefined && data.team == team) {
+                        return message(form, "Existing user with email " + users[i].email + " found.");
+                    }   
                 }
             }
+        })();
 
-            const { users } = await firebaseAdmin.getAuth().getUsers(emails.reduce((k,v) => [... k, {'email': v}] as any, []));
+        console.log(validateResult);
 
-            for(let i = 0; i < users.length; i++) {
-                const userDoc = await db.collection('users').doc(users[i].uid).get();
+        if(validateResult != undefined) return validateResult;
 
-                let data = userDoc.data();
+        console.log(validateResult);
 
-                if(data != undefined && data.team == locals.firestoreUser.team) {
-                    return message(form, "Existing user with email " + users[i].email + " found.");
-                }   
+        await db.runTransaction(async t => {
+            const doc = (await t.get(ref)).data();
+
+            if(doc == undefined) throw error(500);
+
+            const oldCodes = new Map<string, Code>(Object.entries(doc));
+
+            let codes = new Map<string, Code>();
+
+            if(emails != undefined && form.data.emails != undefined) {
+                console.log(oldCodes);
+                console.log(emails);
+                
+                try {
+                    oldCodes.forEach((code) => {
+                        if(emails.includes(code.access)) {
+                            throw "exists " + code.access;
+                        }
+                    })
+                } catch(e) {
+                    if(typeof e == 'string' && e.startsWith("exists") && e.length > 7) {
+                        return message(form, "Existing code with email " + e.substring(7, e.length) + " found.");
+                    } else {
+                        throw e;
+                    }
+                }
+
+                const { users } = await firebaseAdmin.getAuth().getUsers(emails.reduce((k,v) => [... k, {'email': v}] as any, []));
+
+                for(let i = 0; i < users.length; i++) {
+                    const userDoc = await t.get(db.collection('users').doc(users[i].uid));
+
+                    let data = userDoc.data();
+
+                    if(data != undefined && data.team == team) {
+                        return message(form, "Existing user with email " + users[i].email + " found.");
+                    }   
+                }
+
+                for(let i = 0; i < emails.length; i++) {
+                    const code = getNewCode(oldCodes);
+
+                    codes.set(code, {role: form.data.role, id: crypto.randomUUID(), access: emails[i]});
+                }
+
+                t.update(ref, Object.fromEntries(codes));
+
+            } else {
+
+                for(let i = 0; i < form.data.count; i++) {
+                    const code = getNewCode(oldCodes);
+        
+                    codes.set(code, {role: form.data.role, id: crypto.randomUUID(), access: "anyone"});
+                }
+        
+
+                t.update(ref, Object.fromEntries(codes));
             }
 
-            for(let i = 0; i < emails.length; i++) {
-                const code = getNewCode(oldCodes);
-
-                codes.set(code, {role: form.data.role, id: crypto.randomUUID(), access: emails[i]});
-            }
-
-            await ref.update(Object.fromEntries(codes));
-    
-            return message(form, "Generated Codes");
-        } else {
-
-            for(let i = 0; i < form.data.count; i++) {
-                const code = getNewCode(oldCodes);
-    
-                codes.set(code, {role: form.data.role, id: crypto.randomUUID(), access: "anyone"});
-            }
-    
-            await ref.update(Object.fromEntries(codes));
-    
-            return message(form, "Generated Codes");
-        }
+            firebaseAdmin.addLogWithTransaction("Generated code(s).", "vpn_key", uid, t);
+        })
+        return message(form, "Generated Codes");
     },
     edit: async ({ request, locals }) => {
         if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -162,12 +214,18 @@ export const actions = {
 
         const oldCodes = new Map<string, Code>(Object.entries(doc));
 
+        const uid = locals.user.uid;
+
         if(form.data.email == undefined) {
             if(oldCodes.get(form.data.code) == undefined) return message(form, "Code not found.");
 
-            await ref.update({
-                [form.data.code + ".access"]: "anyone",
-                [form.data.code + ".role"]: form.data.role, 
+            await db.runTransaction(async t => {
+                t.update(ref, {
+                    [form.data.code + ".access"]: "anyone",
+                    [form.data.code + ".role"]: form.data.role, 
+                });
+
+                firebaseAdmin.addLogWithTransaction("Edited a code.", "vpn_key", uid, t);
             })
         } else {
             try {
@@ -203,9 +261,13 @@ export const actions = {
                 }   
             }
 
-            await ref.update({
-                [form.data.code + ".access"]: form.data.email,
-                [form.data.code + ".role"]: form.data.role, 
+            await db.runTransaction(async t => {
+                t.update(ref, {
+                    [form.data.code + ".access"]: form.data.email,
+                    [form.data.code + ".role"]: form.data.role, 
+                });
+
+                firebaseAdmin.addLogWithTransaction("Edited a code.", "vpn_key", uid, t);
             })
         }
 

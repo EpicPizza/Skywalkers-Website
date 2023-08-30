@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getContext, onMount, setContext } from "svelte";
     import "../app.css";
-    import { createMode, createVerified } from '$lib/stores';
+    import { createMode, createPersistentWritable, createVerified } from '$lib/stores';
     import Nav from '$lib/Nav/Nav.svelte'
     import { firebaseClient } from "$lib/Firebase/firebase";
     import Warning from '$lib/Builders/Warning.svelte';

@@ -3,7 +3,7 @@
     import { Menu, MenuButton, MenuItem, MenuItems } from "@rgossiaux/svelte-headlessui";
     import format from "date-and-time";
     import meridiem from 'date-and-time/plugin/meridiem';
-    import { add, deleteMeeting, remove } from "$lib/Meetings/meetings.js";
+    import { add, deleteMeeting, deleteMeetings, remove } from "$lib/Meetings/meetings.js";
     import { getContext, onDestroy, onMount } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase.js";
     import Loading from "$lib/Builders/Loading.svelte";
@@ -232,7 +232,7 @@
                 const n = get({ subscribe });
 
                 for(let i = 0; i < n.length; i++) {
-                    await remove(n[i], client);
+                    await remove(n[i], warning, client);
                 }
 
                 warning.set({
@@ -245,7 +245,7 @@
 
                 for(let i = 0; i < n.length; i++) {
                     try {
-                        await add(n[i], client);
+                        await add(n[i], warning, client);
                     } catch(e) {
                         console.log(e);
                     }
@@ -259,13 +259,7 @@
             delete: async () => {
                 const n = get({ subscribe });
 
-                for(let i = 0; i < n.length; i++) {
-                    try {
-                        await deleteMeeting(n[i], client);
-                    } catch(e) {
-                        console.log(e);
-                    }
-                }
+                await deleteMeetings(n, client);
 
                 warning.set({
                     message: "Done deleting meetings.",
@@ -439,9 +433,9 @@
                                     event.stopPropagation(); 
 
                                     if(meeting.signedup) {
-                                        await remove(meeting.id, client);
+                                        await remove(meeting.id, warning, client);
                                     } else {
-                                        await add(meeting.id, client);
+                                        await add(meeting.id, warning, client);
                                     }
                                 }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                     {#if meeting.signedup}

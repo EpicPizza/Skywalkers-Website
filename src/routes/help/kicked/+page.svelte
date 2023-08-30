@@ -18,7 +18,7 @@
                 If you get kicked...
             {/if}
         </h1>
-        <p class="opacity-75 mt-2">Last updated 8/16/2023</p>
+        <p class="opacity-75 mt-2">Last updated 8/30/2023</p>
         <Line class="my-4 mb-6"></Line>
 
         <h2 class="font-bold opacity-80 text-lg mb-3">What happens now:</h2>
@@ -32,9 +32,6 @@
 
         <!-- svelte-ignore a11y-img-redundant-alt -->
         <img class="w-full mt-6 border-border-light dark:border-border-dark border-[1px] rounded-xl" alt="Options before unkicking person. Shows warning that since they can't manage roles, the person they are unkicking can't have any roles." src="/kicked_process.png"/>
-
-        <h2 class="font-bold opacity-80 text-lg mb-3 mt-10">What about the data?</h2>
-        <p class="leading-7 mb-4">Any unidentifiable resources will remain untouched, as they never included any profile data (it always gets fetched along with the main resource). Any profile/role data gets moved to seperate limited access part of the database. The orginal user object in the database gets deleted. If the kicked member requests to have their account deleted, the moved profile/role data will get deleted. The moved profile/role data also gets deleted when the kicked member joins with a new code. Participation will be reset and stay reset even if the person is unkicked from the team. When someone is kicked, their participation is stored in history before they are reset, although as of now, it is not straightforward to recover them. Deleting the account deletes this history.</p>
     </div>
 </div>
 

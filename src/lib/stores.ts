@@ -3,6 +3,7 @@ import { writable, type Readable, type Writable, type Unsubscriber } from "svelt
 import { get } from 'svelte/store';
 import type { firebaseClient } from '$lib/Firebase/firebase';
 import type { DocumentReference } from "firebase/firestore";
+import { browser } from "$app/environment";
 
 //here for reference, instead these stores are made with setContext in root layout (or said otherwise).
 
@@ -141,6 +142,33 @@ export function createMode() {
         getSystemTheme: getSystemTheme,
         subscribeSystem: system.subscribe,
         subscribe,
+    }
+}
+
+export function createPersistentWritable(key: string, initial: string) {
+    const { set, subscribe } = writable<string>(initial);
+
+    const clientInit = () => {
+        set(localStorage.getItem(key) ?? initial);
+    }
+
+    const setPersistent = (value: string) => {
+        localStorage.setItem(key, value);
+        set(value);
+    }
+
+    const updatePersistent = (callback: (value: string) => string) => {
+        const value = callback(get({ subscribe }));
+
+        localStorage.setItem(key, value);
+        set(value);
+    }
+
+    return {
+        set: setPersistent,
+        subscribe,
+        update: updatePersistent,
+        clientInit,
     }
 }
 

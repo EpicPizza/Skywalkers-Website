@@ -1,6 +1,11 @@
+import { OWNER } from "$env/static/private";
+import { sendDM } from "$lib/Discord/discord.server";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
+import { createEvent } from "$lib/Google/calendar";
+import { getCalendar, getClient, getClientWithCrendentials } from "$lib/Google/client";
 import { duplicateSchema } from "$lib/Meetings/meetings.server.js";
 import { error, json, redirect } from "@sveltejs/kit";
+import { message } from "sveltekit-superforms/server";
 import type { z } from "zod";
 
 export const PATCH = async ({ locals, request }) => {
@@ -41,14 +46,73 @@ export const PATCH = async ({ locals, request }) => {
         }
 
         if(meetings[i].starts.valueOf() < today.valueOf()) return json("Past meetings cannot be made.");
+
+        meetings[i].ends.setFullYear(meetings[i].starts.getFullYear());
+        meetings[i].ends.setMonth(meetings[i].starts.getMonth());
+        meetings[i].ends.setDate(meetings[i].starts.getDate());
+
         if(meetings[i].ends.valueOf() <= meetings[i].starts.valueOf()) return json("Start time must be before end time.");
 
-        await colRef.add({
-            ...doc.data(),
-            when_start: meetings[i].starts,
-            when_ends: meetings[i].ends,
-            completed: false,
-            signups: [],
+        const id = crypto.randomUUID();
+
+        const eventOptions = {
+            summary: doc.data()?.name,
+            location: doc.data()?.location,
+            description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
+            start: {
+                dateTime: meetings[i].starts as Date,
+                timeZone: "America/Los_Angeles"
+            },
+            end: {
+                dateTime: meetings[i].ends as Date,
+                timeZone: "America/Los_Angeles"
+            },
+            conferenceData: undefined as unknown,
+        }
+
+        if(doc.data()?.link) {
+            eventOptions.conferenceData = {
+                createRequest: {
+                    requestId: crypto.randomUUID(),
+                    conferenceSolutionKey: { type: "hangoutsMeet" },
+                },
+            }
+        }
+
+        const client = await getClientWithCrendentials();
+
+        if(client == undefined) {
+            await sendDM("Authorization Needed", OWNER);
+
+            return json("Google calendar integration down.");
+        }
+
+        const calendar = await getCalendar();
+
+        if(calendar == undefined) {
+            await sendDM("Authorization Needed", OWNER);
+
+            return json("Google calendar integration down.");
+        }
+    
+        const event = await createEvent(client, calendar, eventOptions);
+
+        console.log(doc.data());
+
+        const user = locals.user.uid;
+
+        await db.runTransaction(async t => {
+            t.create(colRef.doc(id), {
+                ...doc.data(),
+                when_start: meetings[i].starts,
+                when_end: meetings[i].ends,
+                completed: false,
+                signups: [],
+                calendar: event.id,
+                link: event.link ?? null,
+            });
+
+            firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
         })
     }
 
