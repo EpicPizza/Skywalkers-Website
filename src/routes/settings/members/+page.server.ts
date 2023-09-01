@@ -86,47 +86,5 @@ export const actions = {
         await firebaseAdmin.addLog("Edited a member's profile.", "workspaces", locals.user.uid);
 
         return message(form, "Edited Profile");
-    },
-    kick: async function({ request, locals }) {
-        if(locals.user == undefined) throw error(403, "Sign In Required");
-        if(locals.firestoreUser == undefined) throw error(403);
-
-        const form = await superValidate(request, QuarantineMember);
-
-        console.log('Valid', form.valid);
-
-        if(!form.valid) {
-            return message(form, "A validation error occurred.");
-        }
-
-        console.log("Permissions", JSON.stringify(locals.firestoreUser.permissions));
-
-        if(!locals.firestoreUser.permissions.includes('KICK_MEMBERS')) {
-            return message(form, "Insufficient permissions.");
-        }
-
-        const db = firebaseAdmin.getFirestore();
-
-        const ref = db.collection('users').doc(form.data.id);
-
-        const doc = await ref.get();
-
-        if(!doc.exists || doc.data() == undefined) {
-            return message(form, "User not found.");
-        }
-
-        if(doc.data()?.level >= locals.firestoreUser.level) {
-            return message(form, "Insufficient permission level.");
-        }
-
-        try {
-            await quarantineMember(form.data.id);
-
-            await firebaseAdmin.addLog("Kicked a member.", "workspaces", locals.user.uid);
-        } catch(e) {
-            return message(form, "An unexpected error occurred.");
-        }
-
-        return message(form, "Member kicked.");
     }
 }

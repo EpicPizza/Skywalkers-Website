@@ -75,7 +75,7 @@ export const actions = {
             });
         }
 
-        if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
+        if(!(form.data.role == undefined || form.data.role == '') && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
         const id = crypto.randomUUID();
 
@@ -136,7 +136,7 @@ export const actions = {
                 when_end: form.data.ends,
                 thumbnail: form.data.thumbnail,
                 completed: false,
-                role: form.data.role == undefined ? null : form.data.role,
+                role: form.data.role ?? null,
                 signups: [],
                 calendar: event.id,
                 link: event.link ?? null,

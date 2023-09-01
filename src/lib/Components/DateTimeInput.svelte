@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import type { Unsubscriber, Writable } from 'svelte/store';
     import { onDestroy } from 'svelte';
+    import { createEventDispatcher } from 'svelte/types/runtime/internal/lifecycle';
 
     export {style as class};
     export let date: Date;
@@ -10,6 +11,8 @@
 
     let stringdate: string;
     let style = "";
+
+    let dispatch = createEventDispatcher();
 
     $: date = trytoparse(stringdate);
 
@@ -34,4 +37,4 @@
     })
 </script>
 
-<input name={name} type="datetime-local" bind:value={stringdate} class={style}/>
+<input on:keypress={(e) => { if(e.key == 'Enter') { dispatch("enter") } }} name={name} type="datetime-local" bind:value={stringdate} class={style}/>

@@ -6,6 +6,7 @@ import { getRoles } from '$lib/Roles/role.server';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import type { z } from 'zod';
+import { unlink } from '$lib/Discord/link.server';
 
 export async function load({ request, locals, params, depends }) {
     depends("member-" + params.slug);
@@ -118,6 +119,8 @@ export const actions = {
         }
 
         try {
+            await unlink(form.data.id);
+
             await quarantineMember(form.data.id);
 
             await firebaseAdmin.addLog("Kicked a member.", "workspaces", locals.user.uid);

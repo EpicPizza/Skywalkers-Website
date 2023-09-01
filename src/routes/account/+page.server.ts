@@ -6,6 +6,7 @@ import { runTransaction } from 'firebase/firestore';
 import safeCompare from 'safe-compare';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import { z } from 'zod';
+import { unlink } from '$lib/Discord/link.server';
 
 const connect = z.object({
     id: z.string().min(1).max(100).optional(),
@@ -176,40 +177,7 @@ export const actions = {
 
             return message(form, "Code Sent");
         } else {
-            const db = firebaseAdmin.getFirestore();
-
-            const ref = db.collection('users').doc(locals.user.uid).collection('settings').doc('discord');
-
-            const doc = await ref.get();
-
-            let queryRef: undefined | DocumentReference = undefined;
-            if(doc.exists && (doc.data()?.id != null || doc.data()?.verify != null)) {
-                const id = doc.data()?.id;
-
-                queryRef = db.collection('linked').doc(doc.data()?.verify ? doc.data()?.verify.id : id);
-            }
-
-            const user = locals.user.uid;
-
-            await db.runTransaction(async t => {
-                const doc = await t.get(ref);
-
-                if(queryRef) t.delete(queryRef);
-
-                if(doc.exists) {
-                    t.update(ref, {
-                        verify: null,
-                        id: null,
-                    });
-                } else {
-                    t.create(ref, {
-                        verify: null,
-                        id: null,
-                    });
-                }
-
-                firebaseAdmin.addLogWithTransaction("Unlinked their discord account.", "link", user, t);
-            })
+            await unlink(locals.user.uid);
         }
     }
 }

@@ -7,6 +7,7 @@
     export let roles: Role[];
     export let name: string;
     export let value: string | undefined;
+    export let optional = false;
 
     let style: string;
     export { style as class };
@@ -51,6 +52,13 @@
     </svelte:fragment>
 
     <div slot=content class="py-2 h-[calc(100dvh-17rem)] overflow-auto overflow-y-visible">
+        {#if optional}
+            {#key selected}
+                <button on:click={() => {selected = undefined;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-20' : 'bg-opacity-5'} {selected == undefined  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
+                    Leave Blank
+                </button>
+            {/key}
+        {/if}
         {#each roles as role (role)}
             {#if role.name != 'everyone'}
                 <button on:click={() => { if(selected == undefined || selected.id != role.id) { selected = role; } else { selected = undefined; } }} class="flex w-full items-center transition rounded-md p-2 mb-1 bg-black dark:bg-white {selected != undefined && selected.id == role.id ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"}">

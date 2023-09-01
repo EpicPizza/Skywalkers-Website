@@ -57,7 +57,7 @@ export async function load({ params, locals }) {
     form.data.starts = meeting.when_start;
     form.data.ends = meeting.when_end;
     form.data.thumbnail = meeting.thumbnail;
-    form.data.role = meeting.role;
+    form.data.role = meeting.role ?? "";
     form.data.virtual = meeting.link == null ? false : true;
 
     const roles = await getRoles(locals.firestoreUser.team);
@@ -103,7 +103,7 @@ export const actions = {
             });
         }
 
-        if(form.data.role != undefined && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
+        if(!(form.data.role == undefined || form.data.role == '') && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
         const client = await getClientWithCrendentials();
 
@@ -162,7 +162,7 @@ export const actions = {
                 when_start: form.data.starts,
                 when_end: form.data.ends,
                 thumbnail: form.data.thumbnail,
-                role: form.data.role == undefined ? null : form.data.role,
+                role: (form.data.role ?? null) == "" ? null : (form.data.role ?? null),
                 calendar: event.id,
                 link: event.link ?? null,
             });

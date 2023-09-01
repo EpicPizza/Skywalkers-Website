@@ -90,6 +90,14 @@ async function init() {
 
         oAuth2Client.setCredentials(tokens);
 
+        try {
+            await oAuth2Client.getTokenInfo((await oAuth2Client.getAccessToken()).token ?? "");
+        } catch(e) {
+            console.log(e);
+
+            return false;
+        }
+
         return true;
     } else {
         return false;

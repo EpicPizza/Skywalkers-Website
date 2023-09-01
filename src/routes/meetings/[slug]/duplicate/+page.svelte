@@ -14,6 +14,7 @@
     const { form, enhance, delayed, allErrors, message, tainted } = superForm(data.form, {
         clearOnSubmit: 'errors-and-message',
         delayMs: 500,
+        dataType: 'json',
         timeoutMs: 8000,
     });
 
@@ -92,7 +93,7 @@
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Group:</p>
-                <RoleInput roles={data.roles} name=role bind:value={$form.role} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                <RoleInput optional roles={data.roles} name=role bind:value={$form.role} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
             <input hidden name=virtual type="checkbox" bind:checked={$form.virtual}/>
             <div class="flex gap-2 mt-6 items-center lg:gap-3">

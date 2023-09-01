@@ -1,6 +1,7 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { quarantineMember } from "$lib/Members/manage.server";
 import { error, redirect } from "@sveltejs/kit";
+import { unlink } from '$lib/Discord/link.server';
 
 export const actions = {
     default: async function({ locals }) {
@@ -28,6 +29,8 @@ export const actions = {
             return { success: true };
         } else if(!(!doc.exists || doc.data() == undefined)) {
             try {
+                await unlink(locals.user.uid);
+
                 await quarantineMember(locals.user.uid);
             } catch(e) {
                 console.log(e);
@@ -53,12 +56,6 @@ export const actions = {
         }
 
         if(locals.firestoreUser && locals.firestoreUser.team) {
-            const hoursRef = db.collection('teams').doc(locals.firestoreUser.team).collection('hours').doc(locals.user.uid);
-
-            const hours = await hoursRef.get();
-
-            if(hours.exists) await hoursRef.delete();
-
             await firebaseAdmin.addLog("Left the team.", "person", locals.user.uid);
         }
 
