@@ -15,6 +15,7 @@
 
     export let isOpen = false;
     export let width = "32rem";
+    export let top = false;
 
     $: $dialogOpen = isOpen;
 
@@ -22,12 +23,12 @@
 </script>
 
 {#if isOpen}
-    <div in:fade out:fade="{{ delay: 100 }}" use:portal class="fixed w-screen h-screen top-0 left-0 bg-white dark:bg-black opacity-60 z-40"></div>
+    <div in:fade out:fade="{{ delay: 100 }}" use:portal class="fixed w-screen h-screen top-0 left-0 bg-white dark:bg-black opacity-60 {top ? "z-[60]" : "z-40"}"></div>
 {/if}
 
 {#if isOpen}
     <Dialog open={isOpen} bind:initialFocus={initialFocus} static>
-        <div in:fly="{{ delay: 100, y: 200 }}" out:fly="{{ y: 200 }}" style="width: {width};" class="fixed max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 overflow-scroll rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl z-50">
+        <div in:fly="{{ delay: 100, y: 200 }}" out:fly="{{ y: 200 }}" style="width: {width};" class="fixed max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 overflow-scroll rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl {top ? "z-[70]" : "z-50"}">
             <div class="h-full w-full relative">
                 <DialogTitle><slot name="title"></slot></DialogTitle>
         

@@ -19,6 +19,7 @@
     import { page } from "$app/stores";
     import Role from "$lib/Components/Role.svelte";
     import Ellipse from "$lib/Builders/Ellipse.svelte";
+    import DatePicker from "$lib/Builders/DatePicker.svelte";
 
     format.plugin(meridiem);
 
@@ -69,10 +70,12 @@
                 start: async () => {
                     const n = get({ subscribe });
 
+                    selectedMeetings = [];
+
                     for(let i = 0; i < n.length; i++) {
                         for(let j = 0; j < data.meetings.length; j++) {
                             if(data.meetings[j].id == n[i]) {
-                                selectedMeetings.push(data.meetings[j]);
+                                selectedMeetings.push(structuredClone(data.meetings[j]));
                             }
                         }
                     }
@@ -114,6 +117,34 @@
                     }
 
                     reset();
+                },
+                add: () => {
+                    for(let i = 0; i < selectedMeetings.length; i++) {
+                        let start = selectedMeetings[i].when_start;
+                        let end = selectedMeetings[i].when_end;
+
+                        start.setDate(start.getDate() + 1);
+                        end.setDate(end.getDate() + 1);
+
+                        start = start;
+                        end = end;
+                    }
+
+                    selectedMeetings = selectedMeetings;
+                },
+                remove: () => {
+                    for(let i = 0; i < selectedMeetings.length; i++) {
+                        let start = selectedMeetings[i].when_start;
+                        let end = selectedMeetings[i].when_end;
+
+                        start.setDate(start.getDate() - 1);
+                        end.setDate(end.getDate() - 1);
+
+                        start = start;
+                        end = end;
+                    }
+
+                    selectedMeetings = selectedMeetings;
                 }
             }
         }
@@ -186,7 +217,7 @@
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "M/D/YY, h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "dddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
                     {#if typeof meeting.role != 'boolean'}
                         <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                         <Role id={meeting.role} let:role>
@@ -286,26 +317,36 @@
     </div>
 {/if}
 
-<Dialog width=40rem bind:isOpen={open}>
+<Dialog width=35rem bind:isOpen={open}>
     <h1 class="text-2xl" slot=title>Duplicate Meeting(s)</h1>
 
     <div slot=content>
         <Line class="my-4"></Line>
-        <div class="flex flex-col gap-3 overflow-x-scroll">
+        <div class="flex flex-col gap-3 overflow-x-scroll -mt-1">
+            <div class="flex flex-row-reverse">
+                <div class="flex items-center gap-2">
+                    <p>Adjust all times: </p>
+                    <button class="b-accent" on:click={selected.actions.duplicate.remove}><Icon icon=arrow_back></Icon></button>
+                    <button class="b-accent" on:click={selected.actions.duplicate.add}><Icon icon=arrow_forward></Icon></button>
+                </div>
+            </div>
             {#each selectedMeetings as meeting}
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center ">
                     <p class="whitespace-nowrap overflow-hidden overflow-ellipsis mr-1.5 w-full text-lg min-w-[120px]">{meeting.name}: </p>
-                    <div class="flex items-center">
-                        <DateTimeInput name=time bind:date={meeting.when_start} class="w-[215px] min-w-[215px] rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
-                        <p class="mx-1"> - </p>
-                        <TimeInput name=time bind:date={meeting.when_end} class="w-[120px] min-w-[120px] rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                    <div class="flex gap-1 items-center min-w-[280px] max-w-[75%]">
+                        <DatePicker bind:startTime={meeting.when_start} bind:endTime={meeting.when_end} let:openDialog>
+                            <p class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700">{format.format(meeting.when_start, "ddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                            <button class="-ml-[1.5rem] -translate-x-[0.3rem]" on:click={(e) => { e.preventDefault(); openDialog(); }}>
+                                <Icon scale=1.25rem icon=schedule></Icon>
+                            </button>   
+                        </DatePicker>             
                     </div>
                 </div>
             {/each}
         </div>
         <Line class="my-4"></Line>
         <div class="flex flex-row-reverse gap-2">
-            <button on:click={selected.actions.duplicate.finish} class="b-green">Duplicate</button>
+            <button disabled={delayed} on:click={selected.actions.duplicate.finish} class="b-green disabled:opacity-75 disabled:cursor-not-allowed">Duplicate</button>
             <button on:click={() => { open = !open; }} class="b-default">Cancel</button>
             {#if delayed}
                 <div class="scale-75 flex items-center h-[2.125rem] overflow-hidden">

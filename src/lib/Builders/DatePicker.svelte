@@ -141,6 +141,7 @@
     let endHours: HTMLInputElement;
     let endMinutes: HTMLInputElement;
     let save: HTMLButtonElement;
+    let cancel: HTMLButtonElement;
 
     $: {
         if(!open) {
@@ -151,9 +152,15 @@
     onMount(() => {
         reset();
     })
+
+    function openDialog() {
+        open = true;
+    }
 </script>
 
-<Dialog bind:initialFocus={dateInput} bind:isOpen={open} width=22rem>
+<slot {openDialog}/>
+
+<Dialog bind:initialFocus={cancel} bind:isOpen={open} width=22rem top>
     <h1 class="text-2xl">Date Picker</h1>
     <Line class="my-4"></Line>
     <div class="flex items-center">
@@ -162,21 +169,25 @@
         <button on:click={() => { date.setDate(date.getDate() + 1); date = date; }} class="b-accent h-[38px] flex items-center justify-around ml-2"><Icon scale=1.5rem icon=arrow_forward></Icon></button>
     </div>
     <p class="text-center py-1 opacity-75 italic">{format.format(date, "dddd, MMMM D")}</p>
-    <div class="flex items-center mt-4 gap-2">
-        <input bind:this={startHours} on:keypress={(e) => { if(e.key == 'Enter') { startMinutes.focus(); } }} value={start.getHours() >= 12 ? (start.getHours() - 12 == 0 ? '12' : start.getHours() - 12) : (start.getHours() == 0 ? '12' : start.getHours())} on:change={handleStartHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-        <p class="font-lg font-bold -mx-1">:</p>
-        <input bind:this={startMinutes} on:keypress={(e) => { if(e.key == 'Enter') { endHours.focus(); } }} value={start.getMinutes() < 10 ? "0" + start.getMinutes() : start.getMinutes()} on:change={handleStartMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-        <button on:click={() => { start.setHours(start.getHours() >= 12 ? (start.getHours() - 12) : (start.getHours() + 12)); start = start; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{start.getHours() >= 12 && start.getHours() != 24 ? "pm" : "am"}</button>
+    <div class="flex items-center mt-4 gap-1 sm:gap-2 sm:flex-row flex-col">
+        <div class="flex items-center gap-2">
+            <input bind:this={startHours} on:keypress={(e) => { if(e.key == 'Enter') { startMinutes.focus(); } }} value={start.getHours() >= 12 ? (start.getHours() - 12 == 0 ? '12' : start.getHours() - 12) : (start.getHours() == 0 ? '12' : start.getHours())} on:change={handleStartHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
+            <p class="font-lg font-bold -mx-1">:</p>
+            <input bind:this={startMinutes} on:keypress={(e) => { if(e.key == 'Enter') { endHours.focus(); } }} value={start.getMinutes() < 10 ? "0" + start.getMinutes() : start.getMinutes()} on:change={handleStartMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
+            <button on:click={() => { start.setHours(start.getHours() >= 12 ? (start.getHours() - 12) : (start.getHours() + 12)); start = start; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{start.getHours() >= 12 && start.getHours() != 24 ? "pm" : "am"}</button>
+        </div>
         <p class="font-lg font-bold">-</p>
-        <input bind:this={endHours} on:keypress={(e) => { if(e.key == 'Enter') { endMinutes.focus(); } }} value={end.getHours() >= 12 ? (end.getHours() - 12 == 0 ? '12' : end.getHours() - 12)  : (end.getHours() == 0 ? '12' : end.getHours())} on:change={handleEndHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-        <p class="font-lg font-bold -mx-1">:</p>
-        <input bind:this={endMinutes} on:keypress={(e) => { if(e.key == 'Enter') { save.focus(); } }} value={end.getMinutes() < 10 ? "0" + end.getMinutes() : end.getMinutes()} on:change={handleEndMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-        <button on:click={() => { end.setHours(end.getHours() >= 12 ? (end.getHours() - 12) : (end.getHours() + 12)); end = end; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{end.getHours() >= 12 && end.getHours() != 24 ? "pm" : "am"}</button>
+        <div class="flex items-center gap-2">
+            <input bind:this={endHours} on:keypress={(e) => { if(e.key == 'Enter') { endMinutes.focus(); } }} value={end.getHours() >= 12 ? (end.getHours() - 12 == 0 ? '12' : end.getHours() - 12)  : (end.getHours() == 0 ? '12' : end.getHours())} on:change={handleEndHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
+            <p class="font-lg font-bold -mx-1">:</p>
+            <input bind:this={endMinutes} on:keypress={(e) => { if(e.key == 'Enter') { save.focus(); } }} value={end.getMinutes() < 10 ? "0" + end.getMinutes() : end.getMinutes()} on:change={handleEndMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
+            <button on:click={() => { end.setHours(end.getHours() >= 12 ? (end.getHours() - 12) : (end.getHours() + 12)); end = end; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{end.getHours() >= 12 && end.getHours() != 24 ? "pm" : "am"}</button>
+        </div>
     </div>
     <p class="text-center pt-1 opacity-75 italic">{format.format(start, "h:mm a")} - {format.format(end, "h:mm a")}</p>
     <Line class="my-4"></Line>
     <div class="flex flex-row-reverse gap-2">
         <button bind:this={save} on:click={submit} class="b-green">Save</button>
-        <button on:click={() => { open = !open; reset(); }} class="b-default">Cancel</button>
+        <button bind:this={cancel} on:click={() => { open = !open; reset(); }} class="b-default">Cancel</button>
     </div>
 </Dialog>

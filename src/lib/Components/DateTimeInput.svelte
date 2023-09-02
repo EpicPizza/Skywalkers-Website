@@ -3,7 +3,7 @@
     import { onMount } from 'svelte';
     import type { Unsubscriber, Writable } from 'svelte/store';
     import { onDestroy } from 'svelte';
-    import { createEventDispatcher } from 'svelte/types/runtime/internal/lifecycle';
+    import { createEventDispatcher } from 'svelte';
 
     export {style as class};
     export let date: Date;

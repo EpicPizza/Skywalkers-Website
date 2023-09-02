@@ -11,6 +11,11 @@
     import Error from "$lib/Builders/Error.svelte";
     import { goto } from "$app/navigation";
     import RoleInput from "$lib/Components/RoleInput.svelte";
+    import DatePicker from "$lib/Builders/DatePicker.svelte";
+    import format from "date-and-time";
+    import meridiem from "date-and-time/plugin/meridiem";
+
+    format.plugin(meridiem);
 
     export let data;
     
@@ -43,6 +48,8 @@
             setEnds = true;
         }
     }
+
+    let open = false;
 </script>
 
 <svelte:head>
@@ -77,12 +84,12 @@
                 <input name=location bind:value={$form.location} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
-                <p class="text-lg lg:text-xl">Starts:</p>
-                <TimeInput name=starts bind:date={$form.starts} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
-            </div>
-            <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
-                <p class="text-lg lg:text-xl">Ends:</p>
-                <TimeInput name=ends bind:date={$form.ends} class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700"/>
+                <DatePicker bind:startTime={$form.starts} bind:endTime={$form.ends} bind:open/>
+                <p class="text-lg lg:text-xl">When:</p>
+                <p class="lg:p-1 lg:pl-2 lg:text-lg w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700">{format.format($form.starts, "ddd, MMM DD")}: {format.format($form.starts, "h:mm a")} - {format.format($form.ends, "h:mm a")}</p>
+                <button class="-ml-[1.5rem] -translate-x-[0.3rem]" on:click={(e) => { e.preventDefault(); open = true; }}>
+                    <Icon scale=1.25rem icon=schedule></Icon>
+                </button>                
             </div>
             <div class="flex gap-1 mt-4 items-center min-w-[350px] max-w-[75%]">
                 <p class="text-lg lg:text-xl">Thumbnail:</p>
