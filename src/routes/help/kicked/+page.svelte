@@ -18,7 +18,7 @@
                 If you get kicked...
             {/if}
         </h1>
-        <p class="opacity-75 mt-2">Last updated 8/30/2023</p>
+        <p class="opacity-75 mt-2">Last updated 9/2/2023</p>
         <Line class="my-4 mb-6"></Line>
 
         <h2 class="font-bold opacity-80 text-lg mb-3">What happens now:</h2>
@@ -28,7 +28,7 @@
         <img class="w-full mt-6 border-border-light dark:border-border-dark border-[1px] rounded-xl" alt="Kicked indicator on the top right screen next to profile picture." src="/kicked.png"/>
 
         <h2 class="font-bold opacity-80 text-lg mb-3 mt-10">The rest of the team:</h2>
-        <p class="leading-7">The kicked member appears as <span class="font-bold underline">User Not Found</span> to the rest of the team. Any resources they created will not be deleted, although participation does get reset. When a member unkicks the kicked member, the roles they return with cannot have a higher permission than then the person unkicking. They will have to either remove the higher level permissions or let another person unkick them. They may also have to remove roles if they do not have the permission to manage roles.</p>
+        <p class="leading-7">The kicked member appears as <span class="font-bold underline">User Not Found</span> to the rest of the team. Any resources they created will not be deleted, although participation does get reset. When a member unkicks the kicked member, the roles they return with cannot have a higher permission than the person unkicking. They will have to either remove the higher level permissions or let another person unkick them. They may also have to remove roles if they do not have the permission to manage roles.</p>
 
         <!-- svelte-ignore a11y-img-redundant-alt -->
         <img class="w-full mt-6 border-border-light dark:border-border-dark border-[1px] rounded-xl" alt="Options before unkicking person. Shows warning that since they can't manage roles, the person they are unkicking can't have any roles." src="/kicked_process.png"/>
