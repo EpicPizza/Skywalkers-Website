@@ -122,7 +122,7 @@
         <Line class="mt-4"></Line>
     </div>
 
-    <p class="mt-4">Run the discord slash command <strong>/settings</strong> on the Skywalkers Bot to get a code. Then enter the code here to finish linking.</p>
+    <p class="mt-4">Run the discord slash command <strong>/link</strong> on the Skywalkers Bot to get a code. Then enter the code here to finish linking.</p>
 
     <form use:enhance method=POST class="mt-6">
         <div class="w-[5.375rem]">

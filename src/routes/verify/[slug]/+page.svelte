@@ -20,7 +20,7 @@
 {:else if $client.team == undefined}
     <form method=POST use:enhance>
         <h1 class="text-3xl text-center font-light">Skywalkers Team Website</h1>
-        <p class="mt-4 text-center">Join to finish verification as <span class="font-bold underline">{$client.email}</span>. If you want to use a different email than the one we used to email you this link, contact website manager for help.</p>
+        <p class="mt-4 text-center">Join to finish verification as <span class="font-bold underline">{$client.email}</span>. If you want to use a different email than the one this is restricted to, contact website manager for help.</p>
         <button class="w-full h-12 border-zinc-200 border-[1px] rounded-full mt-4 flex flex-row items-center justify-around bg-green-500 dark:border-zinc-700">
             <span class="text-white tracking-wide font-bold text-xl">Join</span>
         </button>

@@ -86,10 +86,10 @@
 <div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
     <div class="w-[36rem] max-w-[36rem] lg:w-[44rem] lg:max-w-[44rem] overflow-clip">
         <div class="w-full flex justify-between">
-            <button on:click={() => { history.back(); }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
+            <a href="/meetings/{data.meeting.id}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
                 <p>Back</p>
-            </button>
+            </a>
         </div>
         <div class="sticky top-20 z-10">
             <div class="p-4 lg:p-6 bg-accent-light dark:bg-accent-dark text-accent-text-light dark:text-accent-text-dark rounded-2xl flex items-center">

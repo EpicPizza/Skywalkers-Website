@@ -433,7 +433,7 @@
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "dddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "ddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
                     {#if typeof meeting.role != 'boolean'}
                         <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                         <Role id={meeting.role} let:role>

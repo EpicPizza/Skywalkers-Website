@@ -157,7 +157,7 @@
             <div class="-translate-y-[1px]">
                 <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=schedule></Icon>
             </div>
-            <p class="text-lg lg:text-xl">{format.format(data.meeting.when_start, "M/D/YY, h:mm a")} - {format.format(data.meeting.when_end, "h:mm a")}</p>
+            <p class="text-lg lg:text-xl">{format.format(data.meeting.when_start, "ddd, M/D/YY: h:mm a")} - {format.format(data.meeting.when_end, "h:mm a")}</p>
         </div>
         {#if data.meeting.link}
             <div class="mt-6 flex gap-2 items-center">

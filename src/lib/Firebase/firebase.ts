@@ -67,7 +67,7 @@ export function firebaseClient() {
         if(app == undefined) {
             const firebaseConfig = {
                 apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
-                authDomain: "frc-skywalkers.firebaseapp.com",
+                authDomain: "skywalkers.alexest.net",
                 projectId: "frc-skywalkers",
                 storageBucket: "frc-skywalkers.appspot.com",
                 messagingSenderId: "86129312478",
