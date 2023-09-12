@@ -132,7 +132,7 @@
                     </div>
                 {:else}
                     <div class="flex justify-around">
-                        <p>No Members</p>
+                        <p>No Members Participated</p>
                     </div>
                 {/each}
             </div>  
