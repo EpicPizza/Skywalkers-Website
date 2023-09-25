@@ -187,6 +187,25 @@
     function pageLeave(a: any = undefined) {
         selected.reset();
     }
+
+    function showTime(meetings: typeof data["meetings"], index: number) {
+        if(index == 0) {
+            return true;
+        }
+
+        if(index > meetings.length - 1) return false;
+
+        const current = meetings[index];
+        const previous = meetings[index - 1];
+
+        return current.when_start.getDate() != previous.when_start.getDate() || current.when_start.getMonth() != previous.when_start.getMonth() || current.when_start.getFullYear() != previous.when_start.getFullYear();
+    }
+
+    function isToday(date: Date) {
+        let today = new Date();
+
+        return (!(date.getDate() != today.getDate() || date.getMonth() != today.getMonth() || date.getFullYear() != today.getFullYear()))
+    }
 </script>
 
 <svelte:head>
@@ -204,9 +223,19 @@
         </div>
     </div>
     <div class="p-4 pb-2">
-        {#each data.meetings as meeting (meeting.id)}
+        {#each data.meetings as meeting, i (meeting.id)}
+            <div animate:flip>
+            {#if showTime(data.meetings, i)}
+                <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
+                    {#if isToday(data.meetings[i].when_start)}
+                        Today
+                    {:else}
+                        {format.format(meeting.when_start, "dddd, MMMM DD")}
+                    {/if}
+                </p>
+            {/if}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <svelte:element aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} animate:flip on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
+            <svelte:element  style="background-color: {typeof meeting.role != 'boolean' ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
                 <div class="ml-4">
                     {#if meeting.thumbnail.startsWith("icon:")}
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
@@ -217,20 +246,14 @@
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "dddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
                     {#if typeof meeting.role != 'boolean'}
                         <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                        <Role id={meeting.role} let:role>
-                            {#await role}
-                                <p class="text-left lg:text-lg ml-4">Loading<Ellipse/></p>  
-                            {:then role}
-                                <div class="flex items-center gap-2">
-                                    <p class="text-left lg:text-lg ml-4">Group:</p>
-                                    <div style="background-color: {role.color};" class="h-4 w-4 rounded-full"></div>
-                                    <p class="text-left lg:text-lg -ml-0.5">{role.name}</p>
-                                </div>
-                            {/await}
-                        </Role>
+                        <div class="flex items-center gap-2">
+                            <p class="text-left lg:text-lg ml-4">Group:</p>
+                            <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
+                            <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
+                        </div>
                     {/if}
                 </div>
                 <Menu>    
@@ -261,6 +284,7 @@
                     </MenuItems>
                 </Menu>
             </svelte:element>
+            </div>
         {:else}
             <div class="w-screen absolute left-0 flex justify-around pt-8">
                 <p class="text-2xl text-red-500 dark:text-red-500 font-bold">No Meetings Found</p>

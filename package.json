@@ -9,7 +9,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"deploy": "firebase deploy",
-		"serve": "vite build && firebase deploy"
+		"replace": "replace \"return !!\\(proto2 && proto2\\.constructor\\.name === \\\"AbortSignal\" \"return !!(proto2 && proto2.constructor.name === \\\"AbortSignal2\" build/functions/ssrServer/index.js",
+		"serve": "vite build && replace \"return !!\\(proto2 && proto2\\.constructor\\.name === \\\"AbortSignal\" \"return !!(proto2 && proto2.constructor.name === \\\"AbortSignal2\" build/functions/ssrServer/index.js && firebase logout && firebase login && firebase deploy"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
@@ -17,6 +18,7 @@
 		"@sveltejs/kit": "^1.22.3",
 		"@types/mime-types": "^2.1.1",
 		"date-and-time": "^3.0.1",
+		"replace": "^1.2.2",
 		"svelte": "^3.47.0",
 		"svelte-adapter-firebase": "^0.15.0",
 		"svelte-check": "^3.4.6",
@@ -28,7 +30,7 @@
 		"@types/safe-compare": "^1.1.0",
 		"autoprefixer": "^10.4.14",
 		"file-type": "^18.5.0",
-		"firebase": "^9.9.0",
+		"firebase": "^10.4.0",
 		"firebase-admin": "^11.10.1",
 		"firebase-tools": "^12.4.8",
 		"google-auth-library": "^9.0.0",

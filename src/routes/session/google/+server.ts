@@ -18,7 +18,7 @@ async function getAuth() {
         prompt: 'consent',
         code_challenge: await hash(),
         code_challenge_method: CodeChallengeMethod.S256,
-        login_hint: "skywalkers.operations@gmail.com"
+        login_hint: EMAIL
     });
 }
 

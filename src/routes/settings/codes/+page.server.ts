@@ -229,8 +229,8 @@ export const actions = {
             })
         } else {
             try {
-                oldCodes.forEach((code) => {
-                    if(code.access == form.data.email) {
+                oldCodes.forEach((code, key) => {
+                    if(code.access == form.data.email && key != form.data.code) {
                         throw "exists " + code.access;
                     }
                 })

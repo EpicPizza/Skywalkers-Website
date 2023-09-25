@@ -79,7 +79,6 @@ export async function sendSynopsis(name: string, content: string, attachments: {
 
     let message: any = {
         content: content,
-        thread: name,
     }
 
     if(links.length > 0) message.links = links;

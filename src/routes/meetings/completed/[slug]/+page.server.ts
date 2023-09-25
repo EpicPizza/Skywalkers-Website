@@ -1,4 +1,6 @@
 import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
+import type { Role } from '$lib/Roles/role.js';
+import { getRole } from '$lib/Roles/role.server';
 import { error, redirect } from '@sveltejs/kit';
 import type { DocumentSnapshot } from 'firebase-admin/firestore';
 
@@ -25,7 +27,7 @@ export async function load({ locals, url, params }) {
         location: string,
         thumbnail: string,
         when_start: Date,
-        role: string | boolean,
+        role: Role | boolean,
         when_end: Date,
     }
 
@@ -45,6 +47,8 @@ export async function load({ locals, url, params }) {
                 }
             }
 
+            const role = await getRole(firestoreMeetings[i].data().role == null ? "------" : firestoreMeetings[i].data().role as string, locals.firestoreUser.team);
+
             meetings.push({
                 name: firestoreMeetings[i].data().name as string,
                 id: firestoreMeetings[i].id as string,
@@ -52,7 +56,7 @@ export async function load({ locals, url, params }) {
                 thumbnail: firestoreMeetings[i].data().thumbnail as string,
                 when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
                 when_end: firestoreMeetings[i].data().when_end.toDate() as Date,
-                role: firestoreMeetings[i].data().role == null ? false : firestoreMeetings[i].data().role as string,
+                role: role ?? false,
                 signedup: signedup,
             })
         }

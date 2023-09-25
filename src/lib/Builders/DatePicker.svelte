@@ -18,11 +18,13 @@
     export let startTime: Date;
     export let endTime: Date;
 
-    function reset() {
+    function reset(random: any = undefined) {
         start = new Date(startTime.valueOf());
         end = new Date(endTime.valueOf());
         date = new Date(startTime.valueOf());
     }
+
+    $: reset(startTime);
 
     function handleEndMinutes(e: Event) {
         const value = (e.target as any).value as string;
@@ -142,12 +144,6 @@
     let endMinutes: HTMLInputElement;
     let save: HTMLButtonElement;
     let cancel: HTMLButtonElement;
-
-    $: {
-        if(!open) {
-            reset();
-        }
-    }
 
     onMount(() => {
         reset();
