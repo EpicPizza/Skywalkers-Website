@@ -90,7 +90,13 @@
 
         selected = undefined;
     }   
+
+    function openDialog() {
+        open = true;
+    }
 </script>
+
+<slot {openDialog}/>
 
 <Dialog bind:isOpen={open} bind:initialFocus>
     <h1 class="text-2xl" slot=title>Choose a Person</h1>

@@ -436,8 +436,8 @@
     <div class="p-4 pb-0 flex justify-between items-center">
         <p class="ml-1">Showing {data.meetingsShown} {order} Meeting{data.meetingsShown == 1 ? "" : "s"}</p>
         <div class="flex gap-2">
-            <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
-            <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-accent" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
+            <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-secondary" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
+            <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-secondary" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
         </div>
     </div>
     <div class="p-4 pb-2">
@@ -568,10 +568,10 @@
 
 {#if $selected.length == 0}
     <div transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
-        <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+        <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-500 text-black text-dcursor-not-allowed"} transition flex justify-around items-center">
             Active
         </svelte:element>
-        <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+        <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-500 text-black text-dcursor-not-allowed"} transition flex justify-around items-center">
             Completed
         </svelte:element>
     </div>

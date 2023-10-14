@@ -216,10 +216,10 @@
     <div class="p-4 pb-0 flex justify-between items-center">
         <p class="ml-1">Showing {data.page.showing} / {data.page.total.count} Completed Meetings</p>
         <div class="flex gap-2 ml-4">
-            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/1"  class="b-primary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
-            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/{data.page.on - 1}"  class="b-primary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
-            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/meetings/completed/{data.page.on + 1}" class="b-primary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
-            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/meetings/completed/{data.page.total.pages}"  class="b-primary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
+            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/1"  class="b-secondary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
+            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/{data.page.on - 1}"  class="b-secondary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
+            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/meetings/completed/{data.page.on + 1}" class="b-secondary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
+            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/meetings/completed/{data.page.total.pages}"  class="b-secondary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
         </div>
     </div>
     <div class="p-4 pb-2">
@@ -294,11 +294,11 @@
     {#if data.meetings.length != 0}
         <div class="flex justify-around md:block md:float-right p-4 pt-0">
             <div class="flex gap-2 items-center">
-                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/1"  class="b-primary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
-                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/{data.page.on - 1}"  class="b-primary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
+                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/1"  class="b-secondary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
+                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/meetings/completed/{data.page.on - 1}"  class="b-secondary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
                 <p class="mx-2">{data.page.showing} / {data.page.total.count}</p>
-                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/meetings/completed/{data.page.on + 1}" class="b-primary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
-                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/meetings/completed/{data.page.total.pages}"  class="b-primary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
+                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/meetings/completed/{data.page.on + 1}" class="b-secondary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
+                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/meetings/completed/{data.page.total.pages}"  class="b-secondary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
             </div>
         </div>
     {/if}
@@ -313,10 +313,10 @@
 
 {#if $selected.length == 0}
     <div transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark w-full flex px-1.5 gap-1.5">
-        <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+        <svelte:element this={data.completed ? "a" : "div"} href={data.completed ? "/meetings" : undefined} class="w-full text-center lg:text-lg my-1.5 rounded-md {data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-500 text-black text-dcursor-not-allowed"} transition flex justify-around items-center">
             Active
         </svelte:element>
-        <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-light dark:bg-accent-dark dark:text-accent-text-dark text-accent-text-light text-dcursor-not-allowed"} transition flex justify-around items-center">
+        <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-500 text-black text-dcursor-not-allowed"} transition flex justify-around items-center">
             Completed
         </svelte:element>
     </div>

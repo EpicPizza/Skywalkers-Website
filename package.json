@@ -3,14 +3,16 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
+		"dev": "npm run config-dev && vite dev",
+		"build": "npm run config-prod && vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"deploy": "firebase deploy",
+		"deploy": "firebase logout && firebase login && firebase deploy",
 		"replace": "replace \"return !!\\(proto2 && proto2\\.constructor\\.name === \\\"AbortSignal\" \"return !!(proto2 && proto2.constructor.name === \\\"AbortSignal2\" build/functions/ssrServer/index.js",
-		"serve": "vite build && replace \"return !!\\(proto2 && proto2\\.constructor\\.name === \\\"AbortSignal\" \"return !!(proto2 && proto2.constructor.name === \\\"AbortSignal2\" build/functions/ssrServer/index.js && firebase logout && firebase login && firebase deploy"
+		"config-prod": "replace 'frc-skywalkers-dev.fire' 'frc-skywalkers.fire' svelte.config.js && replace 'frc-skywalkers-dev.app' 'frc-skywalkers.app' svelte.config.js && replace '          const firebaseConfig = {\n                apiKey: \"AIzaSyDUStXNyzY5sOm23Mxh0I40lRQdoNkux58\",\n                authDomain: \"frc-skywalkers-dev.firebaseapp.com\",\n                projectId: \"frc-skywalkers-dev\",\n                storageBucket: \"frc-skywalkers-dev.appspot.com\",\n                messagingSenderId: \"570673802109\",\n                appId: \"1:570673802109:web:a9f00bc816ba5d47477a14\"\n            };' '         const firebaseConfig = {\n                apiKey: \"AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE\",\n                authDomain: \"skywalkers.alexest.net\",\n                projectId: \"frc-skywalkers\",\n                storageBucket: \"frc-skywalkers.appspot.com\",\n                messagingSenderId: \"86129312478\",\n                appId: \"1:86129312478:web:b06670457b876827e1784f\",\n                measurementId: \"G-GMZX3PY5H6\"\n            }' src/lib/Firebase/firebase.ts",
+		"config-dev": "replace 'frc-skywalkers.fire' 'frc-skywalkers-dev.fire' svelte.config.js && replace 'frc-skywalkers.app' 'frc-skywalkers-dev.app' svelte.config.js && replace '         const firebaseConfig = {\n                apiKey: \"AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE\",\n                authDomain: \"skywalkers.alexest.net\",\n                projectId: \"frc-skywalkers\",\n                storageBucket: \"frc-skywalkers.appspot.com\",\n                messagingSenderId: \"86129312478\",\n                appId: \"1:86129312478:web:b06670457b876827e1784f\",\n                measurementId: \"G-GMZX3PY5H6\"\n            }' '          const firebaseConfig = {\n                apiKey: \"AIzaSyDUStXNyzY5sOm23Mxh0I40lRQdoNkux58\",\n                authDomain: \"frc-skywalkers-dev.firebaseapp.com\",\n                projectId: \"frc-skywalkers-dev\",\n                storageBucket: \"frc-skywalkers-dev.appspot.com\",\n                messagingSenderId: \"570673802109\",\n                appId: \"1:570673802109:web:a9f00bc816ba5d47477a14\"\n            };' src/lib/Firebase/firebase.ts",
+		"serve": "npm run build && npm run replace && npm run deploy"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",

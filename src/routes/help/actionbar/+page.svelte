@@ -1,8 +1,6 @@
 <script lang=ts>
-    import { page } from "$app/stores";
     import Line from "$lib/Builders/Line.svelte";
     import Footer from "$lib/Nav/Footer.svelte";
-    import postcss from "postcss";
 </script>
 
 <svelte:head>

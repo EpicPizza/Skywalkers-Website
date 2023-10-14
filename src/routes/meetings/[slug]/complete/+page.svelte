@@ -79,7 +79,7 @@
         <Line class="mb-4"></Line>
         <h1 class="text-2xl lg:text-3xl pb-4">Complete Meeting:</h1>
         <div class="p-4 border-border-light dark:border-border-dark border-[1px] rounded-3xl">
-            <div class="p-4 lg:p-6 bg-accent-light dark:bg-accent-dark text-accent-text-light dark:text-accent-text-dark rounded-2xl flex items-center">
+            <div class="p-4 lg:p-6 bg-accent-500 text-black rounded-2xl flex items-center">
                 {#if data.meeting.thumbnail.startsWith("icon:")}
                     <Icon scale={0} class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]" icon={data.meeting.thumbnail.substring(5, data.meeting.thumbnail.length)}/>
                 {/if}

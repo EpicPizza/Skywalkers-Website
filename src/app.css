@@ -12,7 +12,7 @@ html {
 }
 
 .b:disabled {
-    @apply opacity-75;
+    @apply opacity-50;
 }
 
 .b-menu {
@@ -32,15 +32,15 @@ html {
 }
 
 .b-primary {
-    @apply text-primary-text-light dark:text-primary-text-dark bg-primary-light dark:bg-primary-dark border-primary-light dark:border-primary-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
+    @apply text-white dark:text-black bg-primary-700 dark:bg-primary-300 border-primary-700 dark:border-primary-300 hover:opacity-90 disabled:opacity-50 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
 }
 
 .b-secondary {
-    @apply text-secondary-text-light dark:text-secondary-text-dark bg-secondary-light dark:bg-secondary-dark border-secondary-light dark:border-secondary-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
+    @apply dark:text-white text-black bg-secondary-200 dark:bg-secondary-800 border-secondary-200 dark:border-secondary-800 hover:opacity-90 disabled:opacity-50 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
 }
 
 .b-accent {
-    @apply text-accent-text-light dark:text-accent-text-dark bg-accent-light dark:bg-accent-dark border-accent-light dark:border-accent-dark hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
+    @apply bg-accent-500 dark:text-black border-accent-500 hover:opacity-90 disabled:opacity-80 border-[1px] transition px-2 py-1 rounded-md font-medium disabled:cursor-not-allowed;
 }
 
 .b-clear {

@@ -72,7 +72,7 @@ export function firebaseClient() {
                 storageBucket: "frc-skywalkers-dev.appspot.com",
                 messagingSenderId: "570673802109",
                 appId: "1:570673802109:web:a9f00bc816ba5d47477a14"
-              };
+            };;
     
             app = initializeApp(firebaseConfig);
         }

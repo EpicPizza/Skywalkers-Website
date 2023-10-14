@@ -30,7 +30,7 @@
         <Line class="my-4 mt-2"></Line>
         {#key data.logs}
             {#each data.logs as log}
-                <div class="bg-accent-light dark:bg-accent-dark1 w-full rounded-lg bg-opacity-25 dark:bg-opacity-25 mb-4 flex items-center px-6 gap-6">
+                <div class="bg-accent-300 dark:bg-accent-700 w-full rounded-lg bg-opacity-25 dark:bg-opacity-25 mb-4 flex items-center px-6 gap-6">
                     <Icon scale=2rem class="opacity-90" icon={log.icon}></Icon>
                     <div class="h-full py-4 flex flex-col gap-1">
                         <Member id={log.id} silent let:member>
