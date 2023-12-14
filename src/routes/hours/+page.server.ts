@@ -10,29 +10,20 @@ export async function load({ locals, params, url }) {
 
     const db = firebaseAdmin.getFirestore();
 
-    const hoursRef = db.collection("teams").doc(locals.firestoreUser.team).collection('hours');
+    const hoursRef = db.collection("teams").doc(locals.firestoreUser.team).collection('hours').orderBy('total', 'desc');
 
     const docs = (await hoursRef.get()).docs;
 
-    const users = new Array<{ total: number, member: SecondaryUser }>();
+    const users = new Array<{ total: number, member: string }>();
 
     for(let i = 0; i < docs.length; i++) {
         if(docs[i].data() != undefined && docs[i].data().deleted == false) {
             let hours = docs[i].data() as Hours;
 
-            let member = await getMember(docs[i].id);
-
-            if(docs[i].id == locals.user.uid) {
-                users.unshift({
-                    total: hours.total,
-                    member: member,
-                })
-            } else {
-                users.push({
-                    total: hours.total,
-                    member: member,
-                })
-            }
+            users.push({
+                total: hours.total,
+                member: docs[i].id,
+            })
         }
     }
 

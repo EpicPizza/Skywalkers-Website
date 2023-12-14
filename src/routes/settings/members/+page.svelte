@@ -80,7 +80,7 @@
     <title>Skywalkers | Members</title>
 </svelte:head>
 
-<Background bottom=4.5rem>
+<Background>
     <Page size=44rem expand let:top>
         <div class="flex justify-between min-w-full items-center">
             <div class="flex items-end">

@@ -28,6 +28,8 @@
 
     let dispatch = createEventDispatcher();
 
+    export let multiple = false;
+
     export let optional = false;
 
     export let ignore: string[] = [];
@@ -36,7 +38,7 @@
 
     export let open: boolean = false;
     let search: string = "";
-    let selected: SecondaryUser | undefined;
+    let selected: SecondaryUser[] = [];
 
     let unsubscribe: Unsubscriber;
     
@@ -86,13 +88,59 @@
     })
 
     function handleChoose() {
-        dispatch('choosen', { id: selected ? selected.id : undefined });
+        if(multiple) {
+            dispatch('choosen', { id: selected ? Array.from(selected, (user) => user.id) : undefined });
+        } else {
+            dispatch('choosen', { id: selected.length == 1 ? selected[0].id : undefined });
+        }
 
-        selected = undefined;
+        selected = [];
     }   
 
     function openDialog() {
         open = true;
+    }
+
+    function select(user: SecondaryUser) {
+        if(users == undefined) return;
+        
+        if(multiple) {
+            let found = -1;
+
+            for(let i = 0; i < selected.length; i++) {
+                if(selected[i].id == user.id) {
+                    found = i;
+                }
+            }
+
+            if(found == -1) {
+                selected.push(user);
+            } else {
+                selected.splice(found, 1);
+            }
+        } else {
+            if(selected.length == 0 || selected[0].id != user.id) {
+                selected = [ user ];
+            } else {
+                selected = [];
+            }
+        }
+
+        selected = selected;
+
+        console.log(selected);
+    }
+
+    function isSelected(id: string) {
+        if(selected == undefined) return false;
+
+        for(let i = 0; i < selected.length; i++) {
+            if(selected[i].id == id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 </script>
 
@@ -112,20 +160,22 @@
     <div slot="content" class="pb-2 overflow-auto h-[calc(100dvh-17rem)] /* <<< skull emoji */">
         {#if optional}
             {#key selected}
-                <button on:click={() => {selected = undefined;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-20' : 'bg-opacity-5'} {selected == undefined  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
+                <button on:click={() => {selected = [];}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-20' : 'bg-opacity-5'} {selected == undefined  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
                     Leave Blank
                 </button>
             {/key}
         {/if}
         {#each users as user}
             {#if (search == "" || user.displayName.toLowerCase().includes(search.toLowerCase())) && !ignore.includes(user.id)}
-                <button on:click={() => {selected = user;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && selected.id == user.id ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && selected.id == user.id  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
-                    <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
-                    <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
-                        <h1 class="text-left">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
-                        <h2 class="text-left text-sm opacity-80">{user.role.substring(0, 1).toUpperCase() + user.role.substring(1, user.role.length)} <span class="opacity-50">- {user.id}</span></h2>
-                    </div>
-                </button>
+                {#key selected}
+                    <button on:click={() => { select(user); }} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && isSelected(user.id) ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && isSelected(user.id)  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
+                        <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
+                        <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
+                            <h1 class="text-left">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
+                            <h2 class="text-left text-sm opacity-80">{user.role.substring(0, 1).toUpperCase() + user.role.substring(1, user.role.length)} <span class="opacity-50">- {user.id}</span></h2>
+                        </div>
+                    </button>
+                {/key}
             {/if}
         {:else}
             <div class="w-full h-16 flex items-center justify-around">
@@ -147,8 +197,12 @@
         </div>
         {#if selected != undefined}
             <div class="flex items-center bg-zinc-200 dark:bg-zinc-600 rounded-full p-1 pr-3">
-                <img referrerpolicy="no-referrer" class="inline-block h-[1.625rem] w-[1.625rem] rounded-full" alt="{selected.displayName} Profile" src={selected.photoURL}>
-                <span class="text-[1rem] ml-1.5">{selected.displayName}{selected.pronouns == "" ? "" : " (" + selected.pronouns + ")"}</span>
+                {#if selected.length == 1}
+                    <img referrerpolicy="no-referrer" class="inline-block h-[1.625rem] w-[1.625rem] rounded-full" alt="{selected[0].displayName} Profile" src={selected[0].photoURL}>
+                    <span class="text-[1rem] ml-1.5">{selected[0].displayName}{selected[0].pronouns == "" ? "" : " (" + selected[0].pronouns + ")"}</span>
+                {:else}
+                    <span class="text-[1rem] ml-1.5">{!multiple && selected.length == 0 ? "none" : selected.length} choosen</span>
+                {/if}  
             </div>
         {/if}
     </div>

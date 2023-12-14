@@ -40,7 +40,13 @@ export async function load({ locals, params, url, depends }) {
 
     const form = await superValidate(AddHours);
 
-    return { hours: data, forms: { add: form }, id: params.slug, name: user?.displayName ?? "Deleted User", };
+    type Hours = {
+        deleted: boolean,
+        entries: { id: string, latest: number, total: number, history: { date: number, hours: number, id: string, indicator: { color: string, icon: string }, link: string, reason: string }[] }[],
+        total: number,
+    }
+
+    return { hours: data as Hours, forms: { add: form }, id: params.slug, name: user?.displayName ?? "Deleted User", };
 }
 
 export const actions = {

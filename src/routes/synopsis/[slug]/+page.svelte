@@ -83,7 +83,7 @@
     <title>Skywalkers | Synopsis</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
+<div class="min-h-[calc(100dvh)] p-8 pt-[88px] flex justify-around">
     <div class="w-[36rem] max-w-[36rem] lg:w-[44rem] lg:max-w-[44rem] overflow-clip">
         <div class="w-full flex justify-between">
             <a href="/meetings/{data.meeting.id}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
@@ -91,7 +91,7 @@
                 <p>Back</p>
             </a>
         </div>
-        <div class="sticky top-20 z-10">
+        <div class="sticky top-24 z-10">
             <div class="p-4 lg:p-6 bg-accent-500 text-black rounded-2xl flex items-center">
                 {#if data.meeting.thumbnail.startsWith("icon:")}
                     <Icon scale={0} class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]" icon={data.meeting.thumbnail.substring(5, data.meeting.thumbnail.length)}/>
@@ -128,7 +128,7 @@
                     <div class="flex items-center gap-2.5 {entry.time == 0 ? "opacity-25" : ""}">
                         <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}'s Profile" src={entry.member.photoURL}/>
                         <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis {entry.member.photoURL == '/unknown.webp' ? "italic" : ""}">{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}</p>
-                        <!--<a href="/hours/{entry.member.id}" class="bg-black  dark:bg-white bg-opacity-10 ml-1 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.time} hour{entry.time == 1 ? "" : 's'}</a>-->
+                        <a href="/hours/{entry.member.id}" class="bg-black  dark:bg-white bg-opacity-10 ml-1 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.time} hour{entry.time == 1 ? "" : 's'}</a>
                     </div>
                 {:else}
                     <div class="flex justify-around">

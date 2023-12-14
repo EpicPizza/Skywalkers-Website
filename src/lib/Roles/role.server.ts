@@ -46,6 +46,30 @@ export async function getRoles(team: string) {
     return roles;
 }
 
+export async function getRoleWithMembers(id: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+    
+    console.log("get");
+
+    const doc = await db.collection('teams').doc(team).collection('roles').doc(id).get();
+
+    console.log("got");
+    
+    let data = doc.data();
+
+    if(data == undefined) return false;
+
+    return {
+        color: data.color as string,
+        permissions: data.permissions as string[],
+        level: data.level as number,
+        name: data.name as string,
+        connectTo: data.connectTo as string | null,
+        members: await getMembers(data.members as DocumentReference[]),
+        id: doc.id,
+    }
+}
+
 export async function getSpecifiedRoles(refs: DocumentReference[], team: string | undefined = undefined) {
     const roles = new Array<Role>();
 

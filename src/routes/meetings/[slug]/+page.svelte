@@ -26,18 +26,6 @@
 
     let loading; //signup button
 
-    if(data.status.created) {
-        warning.set({
-            color: 'green',
-            message: 'Meeting successfully created'
-        })
-    } else if(data.status.edited) {
-        warning.set({
-            color: 'green',
-            message: 'Meeting successfully edited',
-        })
-    }
-
     onMount(() => {
         if($client == undefined || $client.team == undefined) return;
         unsubscribe = client.doc<any>(doc(client.getFirestore(), "teams", $client.team, "meetings", data.meeting.id), "loading").subscribe(async (value) => {
@@ -120,7 +108,7 @@
     <title>Skywalkers | Meeting Listing</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
+<div class="min-h-[calc(100dvh)] p-8 pt-[88px] flex justify-around">
     <div class="w-[36rem] lg:w-[44rem] min-h-full relative">
         <div class="w-full flex justify-between">
             <a href="/meetings{data.meeting.completed ? "/completed" : ""}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
@@ -216,7 +204,7 @@
                 <h1 class="text-xl lg:text-2xl ml-1 mb-1">Sign Up List:</h1>
                 {#if data.meeting.completed == false}
                     {#if signedup}
-                        {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
+                        {#if !(data.meeting.role && !data.meeting.role.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
                             <button class="b-secondary lg:text-lg" on:click={() => { remove(data.meeting.id, warning, client ) }}>Leave</button>
                         {/if}
                     {:else}
@@ -240,7 +228,7 @@
                 </div>
             {/each}
         </div>
-        {#if ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP')) && data.meeting.completed == false && ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
+        {#if (data.meeting.role && !data.meeting.role.permissions.includes('LEAVE_SIGNUP')) && data.meeting.completed == false && ($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
             <div class="opacity-75 flex items-center mt-3">
                 <Icon scale={0}  class="ml-1 text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.75rem] lg:w-[1.75rem] lg:h-[1.75rem]" icon=info></Icon>
                 <p class="ml-2 lg:text-lg">If you sign up, you cannot undo it.</p>

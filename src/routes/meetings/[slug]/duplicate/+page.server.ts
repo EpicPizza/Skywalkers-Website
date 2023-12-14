@@ -36,6 +36,7 @@ export async function load({ params, locals }) {
         link: data.link as string | null,
         completed: data.completed as boolean,
         id: params.slug as string,
+        role: data.role,
     }
 
     form.data.starts = meeting.when_start;
@@ -47,6 +48,7 @@ export async function load({ params, locals }) {
     form.data.mentor = meeting.mentor == null ? "" : meeting.mentor.id;
     form.data.synopsis = meeting.synopsis == null ? "" : meeting.synopsis.id;
     form.data.virtual = !!meeting.link;
+    form.data.role = meeting.role || undefined;
 
     const roles = await getRoles(locals.firestoreUser.team);
 

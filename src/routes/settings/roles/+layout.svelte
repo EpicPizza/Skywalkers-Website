@@ -236,9 +236,9 @@
 
 <svelte:window bind:innerWidth={windowWidth}></svelte:window>
 
-<div class="min-h-[calc(100dvh-4rem)] w-full">
-    <div class="sm:flex min-h-[calc(100dvh-4rem)] md:min-w-[768px] md:absolute md:left-1/2 md:-translate-x-1/2">
-        <div class="{$sidebar ? "left-0" : "-left-44"} transition-all absolute z-30 sm:relative sm:left-0 bg-backgroud-light dark:bg-backgroud-dark max-h-[calc(100dvh-4rem)] min-h-[calc(100dvh-4rem)] min-w-[11rem] max-w-[11rem] sm:max-h-[calc(100dvh-4rem)] sm:m-h-full p-3 pt-0 border-border-light dark:border-border-dark border-r-[1px] md:border-l-[1px] flex flex-col justify-between">
+<div class="min-h-[calc(100dvh)] w-full pt-[82px] p-2 pattern">
+    <div class="sm:flex min-h-[calc(100dvh-90px)] md:min-w-[768px] md:absolute md:left-1/2 md:-translate-x-1/2 rounded-xl border-[1px] border-border-light dark:border-border-dark overflow-hidden">
+        <div class="{$sidebar ? "left-[7px]" : "-left-44"} rounded-l-xl -translate-y-[1px] transition-all absolute z-30 sm:relative sm:left-0 bg-backgroud-light dark:bg-backgroud-dark {small ? "border-[1px] max-h-[calc(100dvh-90px)] min-h-[calc(100dvh-90px)]" : "max-h-[calc(100dvh-91px)] min-h-[calc(100dvh-91px)] -mb-[1px]"} min-w-[11rem] max-w-[11rem] sm:m-h-full p-3 pt-0 border-border-light dark:border-border-dark border-r-[1px] flex flex-col justify-between">
             <div class="relative overflow-auto flex-grow pt-3">
                 <SortableList list={data.roles} disable={loading} class="relative after:pointer-events-none after:w-full after:h-1 after:bg-black after:dark:bg-white after:absolute after:-top-[3px] after:rounded-md" {ignore} softIgnore={data.roles.length - 1} on:sort={handleSort} let:item={role}>
                     <Role on:click={() => { if(small) { handleClick(); } }} role={role}></Role>
@@ -247,7 +247,7 @@
             {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= 0)}
                 <Create form={data.forms.create}></Create>
             {/if}
-            <button on:click|stopPropagation={handleClick} class="block sm:hidden z-10 absolute m-2 p-2 left-44 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-shadow-light dark:shadow-shadow-dark shadow-md">
+            <button on:click|stopPropagation={handleClick} class="block sm:hidden z-10 {$sidebar ? "" : "translate-x-2"} absolute m-2 p-2 left-44 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-shadow-light dark:shadow-shadow-dark shadow-md">
                 <Icon style="transition-duration: 0.4s; transition-property: all; {$sidebar ? "transform: rotate(180deg);" : "transform: rotate(0deg);"}" class="transition" icon=chevron_right></Icon>
             </button>
             {#if loading}
@@ -256,7 +256,7 @@
                 </div>
             {/if}
         </div>
-        <div bind:this={rolePage} on:scroll={() => { $sidebar = false; }} class="w-full min-h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-auto sm:max-w-[592px] border-border-light dark:border-border-dark md:border-r-[1px]">
+        <div bind:this={rolePage} on:scroll={() => { $sidebar = false; }} class="w-full bg-backgroud-light dark:bg-backgroud-dark min-h-[calc(100dvh-92px)] max-h-[calc(100dvh-92px)] overflow-auto sm:max-w-[592px] border-border-light dark:border-border-dark">
             <slot></slot>
         </div>
     </div>

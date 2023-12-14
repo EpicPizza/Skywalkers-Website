@@ -9,7 +9,7 @@
     <title>Skywalkers | Help</title>
 </svelte:head>
 
-<div class="flex justify-around p-8 pt-12 min-h-[calc(100dvh-4rem)]">
+<div class="flex justify-around p-8 pt-[7.875rem] min-h-[calc(100dvh-4rem)]">
     <div class="max-w-[42rem]">
         <h1 class="font-bold text-4xl tracking-wide">The Verification Process</h1>
         <p class="mt-2 opacity-75">Last updated 7/26/2023</p>

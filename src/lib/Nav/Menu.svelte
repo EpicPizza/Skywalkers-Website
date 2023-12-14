@@ -6,6 +6,8 @@
     import { fade, slide, fly } from "svelte/transition";
     import { quintOut } from 'svelte/easing';
     import type { Writable } from "svelte/store";
+    import { tweened } from 'svelte/motion';
+    import { cubicOut } from 'svelte/easing';
 
     let verified = getContext('verified') as ReturnType<typeof createVerified>;
 
@@ -39,13 +41,29 @@
         unsubscribeMode();
     });
 
-    let width: number;
+    let windowHeight: number;
+
+    $: height = windowHeight - 72;
+
+    const offset = tweened(0, {
+		duration: 200,
+		easing: cubicOut
+	});
+
+    $: {
+        if($navmenu) {
+            offset.set(height);
+        } else {
+            offset.set(0);
+        }
+    }
+
 </script>
 
-<svelte:window on:keydown={keypress} bind:innerWidth={width}></svelte:window>
+<svelte:window on:keydown={keypress} bind:innerHeight={windowHeight}></svelte:window>
 
-{#if $navmenu}
-    <div transition:fly="{{ opacity: 1, duration: 300, easing: quintOut, x: -width}}" class="h-[calc(100dvh-4rem)] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-full left-0 flex flex-col items-center justify-between p-4">
+<div class="w-full overflow-hidden" style="height: {$offset}px">
+    <div class="h-[calc(100dvh-72px)] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-full left-0 flex flex-col items-center justify-between p-4 rounded-xl">
         <div class="w-full overflow-auto">
             <div class="w-full">
                 <hr>
@@ -64,7 +82,7 @@
             <ThemeSwitcher></ThemeSwitcher>
         </div>
     </div>
-{/if}
+</div>
 
 <style lang=postcss>
     hr {

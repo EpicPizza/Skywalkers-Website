@@ -15,7 +15,7 @@
     <title>Skywalkers | Logs</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
+<div class="min-h-[calc(100dvh-4rem)] p-8 pt-[6.5rem] flex justify-around">
     <div class="w-[36rem] min-h-full relative">
         <div class="flex justify-between">
             <h1 class="text-3xl font-light">Logs</h1>

@@ -8,7 +8,7 @@
 </svelte:head>
 
 
-<div class="flex justify-around p-8 pt-12 min-h-[calc(100dvh-4rem)]">
+<div class="flex justify-around p-8 pt-[7.875rem] min-h-[calc(100dvh-4rem)]">
     <div class="max-w-[42rem]">
         <h1 class="font-bold text-4xl tracking-wide">The Meeting Action Bar</h1>
         <p class="opacity-75 mt-2">Published 8/30/2023</p>

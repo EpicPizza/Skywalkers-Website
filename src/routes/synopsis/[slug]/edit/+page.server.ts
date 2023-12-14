@@ -8,7 +8,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import type { z } from 'zod';
-import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
+import { fileTypeFromBlob, fileTypeFromBuffer, fileTypeFromFile, fileTypeFromStream } from 'file-type';
 import { getDownloadURL } from 'firebase-admin/storage';
 import path from 'path';
 import { extension, lookup } from 'mime-types';
@@ -114,7 +114,7 @@ export const actions = {
             for(let i = 0; i < attachments.length; i++) {
 
                 if(attachments[i] instanceof File && (attachments[i] as File).size != 0) {
-                    const type = await fileTypeFromBuffer(await (attachments[i] as File).arrayBuffer());
+                    const type = await fileTypeFromBlob(attachments[i] as File);
 
                     console.log(type);
 

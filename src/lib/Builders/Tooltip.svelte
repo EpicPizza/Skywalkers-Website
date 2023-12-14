@@ -100,7 +100,7 @@
         {#if bottom}
             <div class="h-2 w-2 rotate-45 rounded-sm bg-black -mb-[0.3rem]"></div>
         {/if}
-        <span class="bg-black text-sm text-white p-1 rounded-md w-fit">{text}</span>
+        <span class="bg-black text-sm text-white p-1 px-1.5 rounded-md w-fit">{text}</span>
         {#if !bottom}
             <div class="h-2 w-2 rotate-45 rounded-sm bg-black -mt-[0.3rem]"></div>
         {/if}

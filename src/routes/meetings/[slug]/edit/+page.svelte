@@ -56,7 +56,7 @@
     <title>Skywalkers | Edit Meeting</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
+<div class="min-h-[calc(100dvh)] p-8 pt-[88px] flex justify-around">
     <div class="w-[36rem] lg:w-[44rem]">
         <div class="w-full flex justify-between">
             <button on:click={() => { history.back() }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">

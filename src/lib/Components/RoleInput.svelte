@@ -54,7 +54,7 @@
     <div slot=content class="py-2 h-[calc(100dvh-17rem)] overflow-auto overflow-y-visible">
         {#if optional}
             {#key selected}
-                <button on:click={() => {selected = undefined;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-20' : 'bg-opacity-5'} {selected == undefined  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
+                <button on:click={() => {selected = undefined;}} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected == undefined ? 'bg-opacity-10' : 'bg-opacity-0'} {selected == undefined  ? 'dark:bg-opacity-10' : 'dark:bg-opacity-0'} w-full transition rounded-lg mb-1">
                     Leave Blank
                 </button>
             {/key}

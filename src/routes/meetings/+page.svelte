@@ -43,6 +43,8 @@
     let unsubscribeClient: Unsubscriber | undefined = undefined;
     let unsubscribeFirestore: Unsubscribe | undefined = undefined;
 
+    let schedule = $page.url.searchParams.get("schedule");
+
     let today = new Date();
     today.setHours(0);
     today.setMinutes(0);
@@ -99,7 +101,7 @@
 
             const db = client.getFirestore();
 
-            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
 
             startListener(ref, true);
         })
@@ -184,12 +186,12 @@
             if(newOrder == 'Upcoming') {
                 order = newOrder;
 
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
                 startListener(ref);
             } else {
                 order = newOrder;
 
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number));
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
                 startListener(ref);
             }
         })
@@ -432,7 +434,7 @@
 
 <svelte:window on:scroll={menuCheck} on:resize={menuCheck} bind:innerHeight={windowHeight}></svelte:window>
 
-<div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 { !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) ? "pb-[4.5rem] lg:pb-16" : ""} overflow-x-auto">
+<div class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 { !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) ? "pb-[4.5rem] lg:pb-16" : ""} overflow-x-auto">
     <div class="p-4 pb-0 flex justify-between items-center">
         <p class="ml-1">Showing {data.meetingsShown} {order} Meeting{data.meetingsShown == 1 ? "" : "s"}</p>
         <div class="flex gap-2">

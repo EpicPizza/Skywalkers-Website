@@ -27,6 +27,7 @@ function getFirebaseAdmin() {
     let auth: Auth | undefined = undefined;
     let firestore: Firestore | undefined = undefined;
     let bucket: ReturnType<(ReturnType<typeof getStorage>["bucket"])> | undefined = undefined;
+    let interval: NodeJS.Timeout | undefined = undefined; 
 
     const setFirebaseApp = (incomingApp: admin.app.App) => {
         app = incomingApp;
@@ -39,12 +40,12 @@ function getFirebaseAdmin() {
                 if(admin.apps == null) {
                     app = admin.initializeApp({
                         credential: (admin.credential.cert(JSON.parse(ADMIN) as admin.ServiceAccount)),
-                        storageBucket: 'frc-skywalkers.appspot.com'
+                        storageBucket: 'frc-skywalkers-dev.appspot.com'
                     }, "Server");
                 } else if(admin.apps.length == 0) {
                     app = admin.initializeApp({
                         credential: (admin.credential.cert(JSON.parse(ADMIN) as admin.ServiceAccount)),
-                        storageBucket: 'frc-skywalkers.appspot.com'
+                        storageBucket: 'frc-skywalkers-dev.appspot.com'
                     }, "Server");
                 } else {
                     var found = false;
@@ -248,6 +249,8 @@ export async function getPhotoURL(url: string, id: string) {
     try {
         await ref.save(photo);
     } catch(e) {
+        console.log(e);
+
         throw error(501, "Failed to upload profile picture.");
     }
 

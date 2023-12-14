@@ -58,8 +58,8 @@
     <title>Skywalkers | Complete Meeting</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-4rem)] p-8 flex justify-around">
-    <div class="w-[36rem] lg:w-[44rem]">
+<div class="min-h-[calc(100dvh)] p-4 sm:p-8 pt-[88px] sm:pt-[88px] flex justify-around">
+    <div class="w-[36rem] lg:w-[44rem] overflow-hidden">
         <div class="w-full flex justify-between">
             <button on:click={() => { willReset = true; history.back(); }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
@@ -85,7 +85,7 @@
                 {/if}
                 <div class="ml-4 lg:ml-5 grow">
                     <div class="text-2xl lg:text-3xl lg:mb-1">{data.meeting.name}</div>
-                    <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
+                    <div class="text-lg lg:text-xl opacity-80 whitespace-nowrap">At {data.meeting.location}</div>
                 </div>
                 <a href="/meetings/{data.meeting.id}/edit?redirect=completed" class="mb-auto">
                     <button on:click={() => { $tainted = {}; }}>
@@ -149,7 +149,7 @@
             </div>
             <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
             <FileChooser name=attachments/>
-            <p class="text-lg lg:text-xl mb-3 mt-4">Participation:</p>
+            <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
             <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
                     <Member id={member.id} let:member={user}>
@@ -160,10 +160,10 @@
                                 <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}'s Profile" src={user.photoURL}/>
                                 <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
                                 <div class="flex gap-1.5">
-                                    <!--<button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
-                                    <input step="0.25" class="w-16 p-2 py-1 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
-                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>-->
-                                    <button class="b-accent w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
+                                    <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
+                                    <input step="0.25" class="w-16 p-2 py-0.5 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
+                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
+                                    <button class="b-accent w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
                                 </div>
                             </div>
                         {/await}
@@ -183,7 +183,7 @@
                 </button>
                 <p class="text-lg">Send synopsis message to discord.</p>
             </div>
-            <PersonDialog bind:open ignore={idList} on:choosen={(event) => { $form.hours.push({ id: event.detail.id, time: 1 }); $form.hours = $form.hours; }}></PersonDialog>
+            <PersonDialog multiple bind:open ignore={idList} on:choosen={(event) => { console.log(event.detail.id); for(let i = 0; i < event.detail.id.length; i++) { $form.hours.push({ id: event.detail.id[i], time: data.meeting.length }); } $form.hours = $form.hours; }}></PersonDialog>
             <Error {allErrors} {message}></Error>
             <div class="flex items-center mt-7 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">

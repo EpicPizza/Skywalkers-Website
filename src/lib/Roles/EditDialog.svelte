@@ -14,6 +14,8 @@
     let editForm: SuperValidated<any>;
     export { editForm as form };
 
+    console.log(role.id);
+
     const { tainted, allErrors, reset, message, form, enhance, delayed } = superForm(editForm);
 
     $: {
@@ -21,8 +23,6 @@
             open = false;
         }
     }
-
-    $: console.log($message);
 
     $: ((open) => { 
         if(!form) return;
@@ -41,7 +41,7 @@
     <h1 class="text-2xl" slot=title>Edit Role</h1>
 
     <div slot=content class="mt-4">
-        <form method="POST" use:enhance>
+        <form method="POST" action="?/edit" use:enhance>
             <Line class="mb-4"></Line>
             <div class="flex items-center">
                 <h2 class="text-lg mr-2">Name:</h2>

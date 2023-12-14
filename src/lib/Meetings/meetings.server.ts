@@ -16,6 +16,20 @@ export const meetingSchema = z.object({
     virtual: z.boolean(),
 })
 
+export const recurringSchema = z.object({
+    name: z.string({ invalid_type_error: "Name must be a string.", required_error: "Name field must be filled."}).min(1, { message: "Name must be at least one character."}).max(100, { message: "Name cannot be more than a hundred characters."}),
+    location: z.string({ invalid_type_error: "Location must be a string.", required_error: "Location field must be filled."}).min(1, { message: "Location must be at least one character."}).max(100, { message: "Location cannot be more than a hundred characters."}),
+    role: z.string({ invalid_type_error: "Role id must be a string.", required_error: "Role field must be filled."}).min(0, { message: "Role id must be at least one character."}).max(100, { message: "Role id cannot be more than a hundred characters."}).optional(),
+    thumbnail: z.string({ invalid_type_error: "Thumbnail must be a stirng.", required_error: "Thumbnail field must be filled."}).url({ message: "Thumbnail must be a link or an icon."}).or(z.string({ invalid_type_error: "Thumbnail must be a stirng.", required_error: "Thumbnail field must be filled."}).url({ message: "Thumbnail must be a link or an icon."}).startsWith('icon:', { message: "Thumbnail must be a link or an icon."})),
+    starts: z.date({ invalid_type_error: "Unknown start time.", required_error: "Start time must be filled."}),
+    ends: z.date({ invalid_type_error: "Unknown end time.", required_error: "End time must be filled."}),
+    recurring: z.union([z.literal("Weekly"), z.literal("Biweekly"), z.literal("Monthly")], { invalid_type_error: "Recurring type must be selected.", required_error: "Recurring type must be selected."}),
+    day: z.union([z.literal("Monday"), z.literal("Tuesday"), z.literal("Wednesday"), z.literal("Thursday"), z.literal("Friday"), z.literal("Saturday"), z.literal("Sunday")], { invalid_type_error: "A day must be selected.", required_error: "A day must be selected."}),
+    week: z.union([z.literal("First Week of the Month"), z.literal("Second Week of the Month"), z.literal("Third Week of the Month"), z.literal("Fourth Week of the Month")], { invalid_type_error: "A week must be selected.", required_error: "A week must be selected."}),
+    virtual: z.boolean(),
+})
+
+
 export const duplicateSchema = z.object({
     meetings: z.object({
         id: z.string().min(1).max(100),

@@ -99,7 +99,7 @@ export async function load({ params, locals, url }) {
 
     for(let i = 0; i < signups.length; i++) {
         hours.push({
-            time: 1,
+            time: meeting.length,
             id: signups[i].id
         })    
     }
@@ -201,6 +201,8 @@ export const actions = {
             return message(form, "Meeting not found.");
         }
 
+        const signups = meeting.data()?.signups as string[];
+
         if(!locals.firestoreUser.permissions.includes('ADD_SYNOPSES') && meeting.data()?.synopsis.id != locals.user.uid && meeting.data()?.lead.id != locals.user.uid) throw error(403, "Unauthorized.");
 
         let users = await getUserList(db, locals.firestoreUser.team);
@@ -217,6 +219,23 @@ export const actions = {
                     console.log(user.displayName);
                     names.push(user.displayName);
                 }
+            }
+        }
+
+        for(let j = 0; j < signups.length; j++) {
+            let found = false;
+
+            for(let i = 0; i < form.data.hours.length; i++) {
+                if(form.data.hours[i].id == signups[j]) {
+                    found = true;
+                }
+            }
+
+            if(found == false) {
+                form.data.hours.push({
+                    id: signups[j],
+                    time: 0,
+                })
             }
         }
 

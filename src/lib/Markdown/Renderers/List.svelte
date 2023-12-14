@@ -4,17 +4,17 @@
 </script>
   
 {#if ordered}
-    <ol {start}><slot></slot></ol>
+    <ol {start} class="mb-4"><slot></slot></ol>
 {:else}
-    <ul><slot></slot></ul>
+    <ul class="mb-4"><slot></slot></ul>
 {/if}
 
 <style lang="postcss">
     ol {
-        @apply list-disc;
+        @apply list-decimal;
     }
 
     ul {
-        @apply list-decimal;
+        @apply list-disc;
     }
 </style>

@@ -3,8 +3,8 @@ import { sendDM } from "$lib/Discord/discord.server";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { createEvent } from "$lib/Google/calendar.js";
 import { getCalendar, getClient, getClientWithCrendentials } from "$lib/Google/client.js";
-import { getUserList, meetingSchema } from "$lib/Meetings/meetings.server";
-import { getRoles } from "$lib/Roles/role.server.js";
+import { getUserList, meetingSchema, recurringSchema } from "$lib/Meetings/meetings.server";
+import { getRole, getRoleWithMembers, getRoles } from "$lib/Roles/role.server.js";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { message, superValidate } from "sveltekit-superforms/server";
 
@@ -16,6 +16,7 @@ export async function load({ params, locals }) {
     if(!locals.firestoreUser.permissions.includes('CREATE_MEETINGS')) throw error(403, "Unauthorized.");
 
     const form = await superValidate(meetingSchema);
+    const recurring = await superValidate(recurringSchema);
 
     //some sensible defaults
 
@@ -26,20 +27,32 @@ export async function load({ params, locals }) {
     form.data.starts.setMinutes(0);
     form.data.starts.setMilliseconds(0);
 
+    recurring.data.starts = new Date();
+    recurring.data.starts.setHours(17);
+    recurring.data.starts.setMinutes(0);
+    recurring.data.starts.setMilliseconds(0);
+
     form.data.ends = new Date();
     form.data.ends.setHours(20);
     form.data.ends.setMinutes(0);
     form.data.ends.setMilliseconds(0);
 
+    recurring.data.ends = new Date();
+    recurring.data.ends.setHours(20);
+    recurring.data.ends.setMinutes(0);
+    recurring.data.ends.setMilliseconds(0);
+
     form.data.thumbnail = "icon:event";
+
+    recurring.data.thumbnail = "icon:event";
 
     const roles = await getRoles(locals.firestoreUser.team);
 
-    return { form: form, roles: roles, };
+    return { forms: { onetime: form, recurring: recurring }, roles: roles, };
 }
 
 export const actions = {
-    default: async ({ request, locals }) => {
+    onetime: async ({ request, locals }) => {
         if(locals.user == undefined) { throw error(403, 'Sign In Required'); }
 
         if(!locals.team || locals.firestoreUser == undefined) throw redirect(307, "/verify");
@@ -77,6 +90,10 @@ export const actions = {
 
         if(!(form.data.role == undefined || form.data.role == '') && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
+        const role = await getRoleWithMembers(form.data.role ?? "000000", locals.firestoreUser.team);
+
+        if(role == false && form.data.role) return message(form, "Role not found.");
+
         const id = crypto.randomUUID();
 
         const eventOptions = {
@@ -91,6 +108,7 @@ export const actions = {
                 dateTime: form.data.ends,
                 timeZone: "America/Los_Angeles"
             },
+            recurrence: undefined as unknown,
             conferenceData: undefined as unknown,
         }
 
@@ -124,6 +142,7 @@ export const actions = {
         const event = await createEvent(client, calendar, eventOptions);
 
         const user = locals.user.uid;
+        const team = locals.firestoreUser.team;
 
         await db.runTransaction(async t => {
             t.create(ref.doc(id), {

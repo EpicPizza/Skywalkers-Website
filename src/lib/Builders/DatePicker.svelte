@@ -7,7 +7,7 @@
     export let open = false;
     import format from 'date-and-time';
     import meridiem from "date-and-time/plugin/meridiem";
-    import { onMount } from "svelte";
+    import { createEventDispatcher, onMount } from "svelte";
 
     format.plugin(meridiem);
 
@@ -19,10 +19,12 @@
     export let endTime: Date;
     export let hideTimes: boolean = false;
 
+    const dispatch = createEventDispatcher();
+
     function reset(random: any = undefined) {
-        start = new Date(startTime.valueOf());
-        end = new Date(endTime.valueOf());
-        date = new Date(startTime.valueOf());
+        start = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
+        end = new Date(endTime ? endTime.valueOf() : new Date().valueOf());
+        date = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
     }
 
     $: reset(startTime);
@@ -136,6 +138,8 @@
 
         startTime = new Date(finalStart.valueOf());
         endTime = new Date(finalEnd.valueOf());
+
+        dispatch('submit');
     }
 
     let dateInput: HTMLInputElement;

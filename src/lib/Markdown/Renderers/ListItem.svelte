@@ -1,3 +1,3 @@
-<li class="list-item ml-10">
+<li class="list-item ml-5">
     <slot></slot>
 </li>

@@ -11,13 +11,39 @@
     let width: number;
 
     $: $navmode = width <= 640 ? false : true; //false - reduced, true - full; used to disable menu on expand
+
+    //{ $navigating ? "strobe" : "normal" }
 </script>
 
 <svelte:window bind:innerWidth={width}></svelte:window>
 
+{#if $navigating} 
+    <div id="loading_bar" class="h-[3px] fixed bg-accent-500 animate-spin"></div>
+{/if}
+
+<style lang=postcss>
+    @keyframes load {
+        0% {
+            width: 25%;
+            transform: translate(-25vw, 0px);
+        }
+        50% {
+            width: 75%;
+            transform: translate(0vw, 0px);
+        }
+        100% {
+            width: 10%;
+            transform: translate(100vw, 0px);
+        }
+    }
+
+    #loading_bar {
+        animation: load 2s linear 0.5s infinite;
+    }
+</style>
+
 <!--Made real Nav absolute so it can have higher z-index than menu, allowing profile menu to appear over main menu.-->
-<div class="h-16 w-full"></div>
-<nav class="w-full h-16 fixed select-none min-w-[300px] z-40 border-b-[1px] shadow-shadow-light dark:shadow-shadow-dark bg-backgroud-light { $navigating ? "strobe" : "normal" } shadow-lg dark:bg-backgroud-dark dark:shadow-lg top-0">
+<nav class="w-full fixed select-none p-1 min-w-[300px] z-40 border-b-[1px] shadow-shadow-light dark:shadow-shadow-dark bg-backgroud-light border-border-light dark:border-border-dark shadow-lg dark:bg-backgroud-dark dark:shadow-lg top-0">
     <div class="pl-2 pr-2 h-16">
         <div class="hidden sm:contents h-full">
             <div class="w-full h-full flex items-center justify-between">
@@ -33,12 +59,3 @@
     <Menu></Menu>
 </nav>
 
-<style lang=postcss>
-    .strobe {
-        @apply after:transition after:delay-500 after:animate-strobe border-b-[1px] border-border-light dark:border-border-dark after:h-[3px] after:w-full after:bg-red-500 after:absolute after:-translate-y-[2px] after:bg-opacity-100 after:opacity-0;
-    }
-
-    .normal {
-        @apply after:animate-strobe border-b-[1px] border-border-light dark:border-border-dark after:h-[3px] after:w-full after:bg-red-500 after:absolute after:-translate-y-[2px] after:bg-opacity-0;
-    }
-</style>

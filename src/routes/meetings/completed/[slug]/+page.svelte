@@ -212,7 +212,7 @@
     <title>Skywalkers | {data.completed ? "Completed" : "Active"} Meetings</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh-7rem)] lg:min-h-[calc(100dvh-7.5rem)] w-full bg-zinc-100 dark:bg-zinc-900 overflow-x-auto">
+<div class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 overflow-x-auto">
     <div class="p-4 pb-0 flex justify-between items-center">
         <p class="ml-1">Showing {data.page.showing} / {data.page.total.count} Completed Meetings</p>
         <div class="flex gap-2 ml-4">

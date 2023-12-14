@@ -34,7 +34,7 @@
 
 <AddMemberDialog {role} bind:open></AddMemberDialog>
 
-<div in:slide style="background: {role.color};" class="w-full p-4 absolute z-20 top-12 right-0 h-[calc(100dvh-7rem)]">
+<div in:slide style="background: {role.color};" class="w-full p-4 absolute z-20 top-12 right-0 h-[calc(100dvh-140px)]">
     <div class="p-4 pt-0 w-full h-full overflow-scroll bg-backgroud-light dark:bg-backgroud-dark rounded-xl relative">
         <div class="flex justify-between items-center h-[4.125rem]">
             <h1 class="text-2xl font-bold">{role.name}</h1>
