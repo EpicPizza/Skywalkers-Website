@@ -13,3 +13,5 @@ vite.config.ts.timestamp-*
 .firebase
 client_secret.json
 firebase-debug.log
+client_secret_dev.json
+client_secret_prod.json
