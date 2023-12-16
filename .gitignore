@@ -12,6 +12,8 @@ vite.config.ts.timestamp-*
 .VSCodeCounter
 .firebase
 client_secret.json
+client_secret_prod.json
+client_secret_dev.json
 firebase-debug.log
 client_secret_dev.json
 client_secret_prod.json
