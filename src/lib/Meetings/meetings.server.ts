@@ -45,6 +45,7 @@ export const completeSchema = z.object({
         time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be negative." }).max(12, { message: "Max hours contributed is 12." }),
         id: z.string().min(1).max(100),
     }).array(),
+    attachments: z.coerce.string().max(100).array().max(10),
     discord: z.boolean(),
 })
 
@@ -55,8 +56,11 @@ export const editSchema = z.object({
         time: z.number({ invalid_type_error: "Time must be a number.", required_error: "Hours contributed cannot be negative." }).nonnegative({ message: "Hours contributed cannot be negative." }).max(12, { message: "Max hours contributed is 12." }),
         id: z.string().min(1).max(100),
     }).array(),
-    attachments: z.object({
+    new: z.coerce.string().max(100).array().max(10),
+    old: z.object({
         name: z.string({ invalid_type_error: "Name must be a string.", required_error: "A name is required for the attachment." }).min(1, {message: "Attachment name too small."}).max(100, { message: "Attachment name too long." }),
+        description: z.string({ invalid_type_error: "Uh must be a string.", required_error: "A uh is required for the attachment." }).min(1, {message: "Uh name too small."}).max(100, { message: "Uh name too long." }),
+        image: z.string({ invalid_type_error: "Uh must be a string.", required_error: "A uh is required for the attachment." }).min(1, {message: "Uh name too small."}).max(100, { message: "Uh name too long." }),
         remove: z.boolean({ invalid_type_error: "Remove value must be a boolean", required_error: "You must say whether you want an attachment to be removed." }) 
     }).array()
 })

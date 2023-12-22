@@ -1,29 +1,28 @@
 <script lang=ts>
-    import Icon from "$lib/Builders/Icon.svelte";
-    import { Menu, MenuButton, MenuItem, MenuItems } from "@rgossiaux/svelte-headlessui";
-    import format from "date-and-time";
-    import meridiem from 'date-and-time/plugin/meridiem';
-    import { add, deleteMeeting, deleteMeetings, remove } from "$lib/Meetings/meetings.js";
-    import { getContext, onDestroy, onMount } from "svelte";
-    import type { firebaseClient } from "$lib/Firebase/firebase.js";
-    import Loading from "$lib/Builders/Loading.svelte";
-    import { writable, type Unsubscriber, type Writable, get } from "svelte/store";
-    import { collection, limit, orderBy, query, where, type Unsubscribe, onSnapshot, Query } from "firebase/firestore";
-    import { flip } from "svelte/animate";
-    import type { DocumentData } from "firebase-admin/firestore";
-    import type { Warning } from "$lib/stores.js";
-    import { slide } from "svelte/transition";
-    import { page } from "$app/stores";
-    import { goto } from "$app/navigation";
-    import Dialog from "$lib/Builders/Dialog.svelte";
-    import Line from "$lib/Builders/Line.svelte";
-    import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
-    import TimeInput from "$lib/Components/TimeInput.svelte";
-    import { superForm } from "sveltekit-superforms/client";
     import { browser } from "$app/environment";
-    import Role from "$lib/Components/Role.svelte";
-    import Ellipse from "$lib/Builders/Ellipse.svelte";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
     import DatePicker from "$lib/Builders/DatePicker.svelte";
+    import Icon from "$lib/Builders/Icon.svelte";
+    import Line from "$lib/Builders/Line.svelte";
+    import Loading from "$lib/Builders/Loading.svelte";
+    import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
+    import { remove, add, deleteMeetings, deleteMeeting } from "$lib/Meetings/meetings";
+    import { Menu, MenuButton, MenuItems, MenuItem } from "@rgossiaux/svelte-headlessui";
+    import Dialog from "$lib/Builders/Dialog.svelte";
+    import format from "date-and-time";
+    import meridiem from "date-and-time/plugin/meridiem";
+    import type { Query, DocumentData } from "firebase/firestore";
+    import type { Unsubscribe } from "firebase/auth";
+    import { query, collection, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+    import type { Warning } from "$lib/stores.js";
+    import { getContext, onMount, onDestroy } from "svelte";
+    import { flip } from "svelte/animate";
+    import { type Writable, type Unsubscriber, writable, get } from "svelte/store";
+    import { slide } from "svelte/transition";
+    import { getDefault } from "$lib/Meetings/helpers.js";
+    import Tooltip from "$lib/Builders/Tooltip.svelte";
+
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
@@ -67,10 +66,10 @@
                 number += 25;
 
                 if(order == 'Upcoming') {
-                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number));
+                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("starts", ">=", today), orderBy("starts"), limit(number));
                     startListener(ref);
                 } else {
-                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number));
+                    const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("starts", "<", today), orderBy("starts", "desc"), limit(number));
                     startListener(ref);
                 }
             } catch(e) {
@@ -101,7 +100,7 @@
 
             const db = client.getFirestore();
 
-            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
+            const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("starts", ">=", today), orderBy("starts"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
 
             startListener(ref, true);
         })
@@ -128,31 +127,28 @@
 
             const meetings = new Array<typeof data.meetings[0]>();
 
+            console.log(firestoreMeetings);
+
             for(let i = 0; i < firestoreMeetings.length; i++) {
-                if(firestoreMeetings[i].data().name != "Default Meeting") {
-                    let signedup = false;
-
-                    for(let j = 0; j < firestoreMeetings[i].data().signups.length; j++) {
-                        if(firestoreMeetings[i].data().signups[j] == $client?.uid) {
-                            signedup = true;
-                        }
-                    }
-
-                    const role = await client.getRole(firestoreMeetings[i].data().role == null ? "000000" : firestoreMeetings[i].data().role as string);
-
-                    meetings.push({
-                        name: firestoreMeetings[i].data().name as string,
-                        id: firestoreMeetings[i].id as string,
-                        lead: firestoreMeetings[i].data().lead.id == $client?.uid,
-                        synopsis: firestoreMeetings[i].data().synopsis == undefined ? false : firestoreMeetings[i].data().synopsis.id == $client?.uid,
-                        location: firestoreMeetings[i].data().location as string,
-                        thumbnail: firestoreMeetings[i].data().thumbnail as string,
-                        when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
-                        when_end: firestoreMeetings[i].data().when_end.toDate() as Date,
-                        role: role ?? false,
-                        signedup: signedup,
-                    })
-                }
+                meetings.push({
+                    name: firestoreMeetings[i].data().name as string,
+                    id: firestoreMeetings[i].id as string,
+                    lead: await client.getUser(firestoreMeetings[i].data().lead.id) ?? getDefault(firestoreMeetings[i].data().lead.id),
+                    synopsis: firestoreMeetings[i].data().synopsis == null ? getDefault("000000") : await client.getUser(firestoreMeetings[i].data().synopsis.id) ?? getDefault(firestoreMeetings[i].data().synopsis.id),
+                    mentor: firestoreMeetings[i].data().mentor == null ? getDefault("000000") : await client.getUser(firestoreMeetings[i].data().mentor.id) ?? getDefault(firestoreMeetings[i].data().mentor.id),
+                    location: firestoreMeetings[i].data().location as string,
+                    thumbnail: firestoreMeetings[i].data().thumbnail as string,
+                    starts: firestoreMeetings[i].data().starts.toDate() as Date,
+                    ends: firestoreMeetings[i].data().ends.toDate() as Date,
+                    role: firestoreMeetings[i].data().role != null ? await client.getRole(firestoreMeetings[i].data().role) ?? null : null,
+                    signups: await Promise.all(Array.from(firestoreMeetings[i].data().signups, async (signup) => { return await client.getUser(signup as string) ?? getDefault("000000") })),
+                    version: firestoreMeetings[i].data().version,
+                    virtual: firestoreMeetings[i].data().virtual,
+                    completed: firestoreMeetings[i].data().completed,
+                    link: firestoreMeetings[i].data().link,
+                    update: firestoreMeetings[i].data().update,
+                    calendar: firestoreMeetings[i].data().calendar,
+                });
             }
 
             data.meetingsShown = meetings.length;
@@ -186,12 +182,12 @@
             if(newOrder == 'Upcoming') {
                 order = newOrder;
 
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", ">=", today), orderBy("when_start"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("starts", ">=", today), orderBy("starts"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
                 startListener(ref);
             } else {
                 order = newOrder;
 
-                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("when_start", "<", today), orderBy("when_start", "desc"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
+                const ref = query(collection(db, "teams", user.team, "meetings"), where("completed", "==", data.completed), where("starts", "<", today), orderBy("starts", "desc"), limit(number), ...(schedule != null ? [ where("schedule", "==", schedule) ] : []));
                 startListener(ref);
             }
         })
@@ -295,8 +291,8 @@
                     for(let i = 0; i < selectedMeetings.length; i++) {
                         meetings.push({
                             id: selectedMeetings[i].id,
-                            starts: selectedMeetings[i].when_start,
-                            ends: selectedMeetings[i].when_end,
+                            starts: selectedMeetings[i].starts,
+                            ends: selectedMeetings[i].ends,
                         })
                     }
 
@@ -326,8 +322,8 @@
                 },
                 add: () => {
                     for(let i = 0; i < selectedMeetings.length; i++) {
-                        let start = selectedMeetings[i].when_start;
-                        let end = selectedMeetings[i].when_end;
+                        let start = selectedMeetings[i].starts
+                        let end = selectedMeetings[i].ends;
 
                         start.setDate(start.getDate() + 1);
                         end.setDate(end.getDate() + 1);
@@ -340,8 +336,8 @@
                 },
                 remove: () => {
                     for(let i = 0; i < selectedMeetings.length; i++) {
-                        let start = selectedMeetings[i].when_start;
-                        let end = selectedMeetings[i].when_end;
+                        let start = selectedMeetings[i].starts;
+                        let end = selectedMeetings[i].ends;
 
                         start.setDate(start.getDate() - 1);
                         end.setDate(end.getDate() - 1);
@@ -418,13 +414,27 @@
         const current = meetings[index];
         const previous = meetings[index - 1];
 
-        return current.when_start.getDate() != previous.when_start.getDate() || current.when_start.getMonth() != previous.when_start.getMonth() || current.when_start.getFullYear() != previous.when_start.getFullYear();
+        return current.starts.getDate() != previous.starts.getDate() || current.starts.getMonth() != previous.starts.getMonth() || current.starts.getFullYear() != previous.starts.getFullYear();
     }
 
     function isToday(date: Date) {
         let today = new Date();
 
         return (!(date.getDate() != today.getDate() || date.getMonth() != today.getMonth() || date.getFullYear() != today.getFullYear()))
+    }
+
+    function includesSignup(signups: SecondaryUser[]) {
+        if($client == undefined) return false;
+
+        console.log(signups);
+
+        for(let i = 0; i < signups.length; i++) {
+            if(signups[i].id == $client.uid) {
+                return true;
+            }
+        }
+
+        return false;
     }
 </script>
 
@@ -447,15 +457,15 @@
             <div animate:flip>
             {#if showTime(data.meetings, i)}
                 <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
-                    {#if isToday(data.meetings[i].when_start)}
+                    {#if isToday(data.meetings[i].starts)}
                         Today
                     {:else}
-                        {format.format(meeting.when_start, "dddd, MMMM DD")}
+                        {format.format(meeting.starts, "dddd, MMMM DD")}
                     {/if}
                 </p>
             {/if}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <svelte:element style="background-color: {typeof meeting.role != 'boolean' ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
+            <svelte:element style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
                 <div class="ml-4">
                     {#if meeting.thumbnail.startsWith("icon:")}
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
@@ -464,15 +474,26 @@
                 <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.location}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
-                    {#if typeof meeting.role != 'boolean'}
-                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                        <div class="flex items-center gap-2">
-                            <p class="text-left lg:text-lg ml-4">Group:</p>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
+                    {#if meeting.role != null}
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-3 h-4/6"></div>
+                        <div class="flex items-center gap-2 ml-4 md:ml-0">
                             <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
                             <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
+                        </div>
+                    {/if}
+                    {#if meeting.signups.length > 0}
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                        <div class="hidden md:flex items-center gap-2 ml-4 md:ml-0">
+                            {#each meeting.signups as signup, i}
+                                <div class="bg-zinc-100 dark:bg-zinc-900 w-10 min-w-[2.5rem] -mr-5 rounded-full" style="z-index: {meeting.signups.length - i + 1};">
+                                    <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
+                                        <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-10 w-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
+                                    </Tooltip>
+                                </div>
+                            {/each}
                         </div>
                     {/if}
                 </div>
@@ -485,18 +506,18 @@
                             <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Go to Page
                             </MenuItem>
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                            {#if !(meeting.role && !meeting.role.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
                                 <MenuItem on:click={async (event) => { 
                                     event.preventDefault(); 
                                     event.stopPropagation(); 
 
-                                    if(meeting.signedup) {
+                                    if(includesSignup(meeting.signups)) {
                                         await remove(meeting.id, warning, client);
                                     } else {
                                         await add(meeting.id, warning, client);
                                     }
                                 }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    {#if meeting.signedup}
+                                    {#if includesSignup(meeting.signups)}
                                         Leave
                                     {:else}
                                         Sign Up
@@ -637,8 +658,8 @@
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center ">
                     <p class="whitespace-nowrap overflow-hidden overflow-ellipsis mr-1.5 w-full text-lg min-w-[120px]">{meeting.name}: </p>
                     <div class="flex gap-1 items-center min-w-[280px] max-w-[75%]">
-                        <DatePicker bind:startTime={meeting.when_start} bind:endTime={meeting.when_end} let:openDialog>
-                            <p class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700">{format.format(meeting.when_start, "ddd, MMM DD")}: {format.format(meeting.when_start, "h:mm a")} - {format.format(meeting.when_end, "h:mm a")}</p>
+                        <DatePicker bind:startTime={meeting.starts} bind:endTime={meeting.ends} let:openDialog>
+                            <p class="w-full rounded-md p-1 bg-zinc-200 dark:bg-zinc-700">{format.format(meeting.starts, "ddd, MMM DD")}: {format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
                             <button class="-ml-[1.5rem] -translate-x-[0.3rem]" on:click={(e) => { e.preventDefault(); openDialog(); }}>
                                 <Icon scale=1.25rem icon=schedule></Icon>
                             </button>   

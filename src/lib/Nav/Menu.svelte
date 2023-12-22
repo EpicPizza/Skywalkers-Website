@@ -63,7 +63,7 @@
 <svelte:window on:keydown={keypress} bind:innerHeight={windowHeight}></svelte:window>
 
 <div class="w-full overflow-hidden" style="height: {$offset}px">
-    <div class="h-[calc(100dvh-72px)] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-full left-0 flex flex-col items-center justify-between p-4 rounded-xl">
+    <div class="h-[calc(100dvh-76px)] mx-[4px] bg-slate-100 dark:bg-zinc-900 min-w-[300px] w-[calc(100%-8px)] left-0 flex flex-col items-center justify-between p-4 rounded-xl">
         <div class="w-full overflow-auto">
             <div class="w-full">
                 <hr>

@@ -3,7 +3,7 @@
     import type { createMode, Warning } from "$lib/stores";
     import { get, type Writable } from "svelte/store";
     import { getContext, onMount } from "svelte";
-    import colors, { current } from 'tailwindcss/colors'
+    import colors from 'tailwindcss/colors'
     import { tweened } from 'svelte/motion';
     import { cubicOut } from "svelte/easing";
     import { fade } from "svelte/transition";

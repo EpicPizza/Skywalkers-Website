@@ -65,7 +65,7 @@
         </div>
         <Error disallowMessage="Changes Saved" allErrors={allErrors} message={message}></Error>
         {#if $tainted}
-            <div transition:slide|local class="flex items-center justify-between mt-6">
+            <div transition:slide class="flex items-center justify-between mt-6">
                 <div class="flex gap-2">
                     <button class="b-default" on:click={(e) => { 
                         e.preventDefault();

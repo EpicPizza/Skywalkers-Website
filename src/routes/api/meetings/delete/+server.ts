@@ -1,10 +1,5 @@
-import { OWNER } from "$env/static/private";
-import { sendDM } from "$lib/Discord/discord.server";
-import { firebaseAdmin } from "$lib/Firebase/firebase.server.js";
-import { deleteEvent } from "$lib/Google/calendar.js";
-import { getCalendar, getClient, getClientWithCrendentials } from "$lib/Google/client";
+import { deleteMeetings } from "$lib/Meetings/helpers.server";
 import { error, json } from "@sveltejs/kit";
-import { message } from "sveltekit-superforms/server";
 import { z } from "zod";
 
 const Delete = z.object({
@@ -17,38 +12,14 @@ export const POST = (async ({ locals, request }) => {
 
     const req = Delete.parse(await request.json());
 
-    const db = firebaseAdmin.getFirestore();
-
-    for(let i = 0; i < req.meetings.length; i++) {
-        const ref = db.collection("teams").doc(locals.firestoreUser.team).collection("meetings").doc(req.meetings[i]);
-
-        const doc = await ref.get();
-
-        if(!doc.exists) {
-            continue;
+    try {
+        await deleteMeetings(req.meetings, locals.user.uid, locals.firestoreUser.team);
+    } catch(e: any) {
+        if('type' in e && e.type == "display") {
+            return json(e.message);
+        } else {
+            console.log(e);
         }
-
-        const id = doc.data()?.calendar;
-
-        const client = await getClientWithCrendentials();
-
-        const calendar = await getCalendar();
-
-        if(client == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return json("Google calendar integration down.");
-        }
-
-        if(calendar == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return json("Google calendar integration down.");
-        }
-
-        await deleteEvent(client, id, calendar);
-
-        await ref.delete();
     }
 
     return json("Meetings Deleted");

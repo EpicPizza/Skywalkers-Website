@@ -1,11 +1,7 @@
-import { OWNER } from "$env/static/private";
-import { sendDM } from "$lib/Discord/discord.server";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { createEvent } from "$lib/Google/calendar";
-import { getCalendar, getClient, getClientWithCrendentials } from "$lib/Google/client";
-import { duplicateSchema } from "$lib/Meetings/meetings.server.js";
-import { error, json, redirect } from "@sveltejs/kit";
-import { message } from "sveltekit-superforms/server";
+import { getToday, createMeeting } from "$lib/Meetings/helpers.server";
+import { duplicateSchema } from "$lib/Meetings/meetings.server";
+import { error, redirect, json } from "@sveltejs/kit";
 import type { z } from "zod";
 
 export const PATCH = async ({ locals, request }) => {
@@ -15,11 +11,7 @@ export const PATCH = async ({ locals, request }) => {
 
     if(!locals.firestoreUser.permissions.includes('CREATE_MEETINGS')) throw error(403, "Unauthorized.");
 
-    let today = new Date();
-    today.setMilliseconds(0);
-    today.setSeconds(0);
-    today.setMinutes(0);
-    today.setHours(0);
+    let today = getToday();
 
     let meetings: z.infer<typeof duplicateSchema>["meetings"];
 
@@ -53,67 +45,32 @@ export const PATCH = async ({ locals, request }) => {
 
         if(meetings[i].ends.valueOf() <= meetings[i].starts.valueOf()) return json("Start time must be before end time.");
 
-        const id = crypto.randomUUID();
+        const data = doc.data();
 
-        const eventOptions = {
-            summary: doc.data()?.name,
-            location: doc.data()?.location,
-            description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
-            start: {
-                dateTime: meetings[i].starts as Date,
-                timeZone: "America/Los_Angeles"
-            },
-            end: {
-                dateTime: meetings[i].ends as Date,
-                timeZone: "America/Los_Angeles"
-            },
-            conferenceData: undefined as unknown,
-        }
+        if(data == undefined) return json("Meeting data could not be fetched.");
 
-        if(doc.data()?.link) {
-            eventOptions.conferenceData = {
-                createRequest: {
-                    requestId: crypto.randomUUID(),
-                    conferenceSolutionKey: { type: "hangoutsMeet" },
-                },
-            }
-        }
-
-        const client = await getClientWithCrendentials();
-
-        if(client == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return json("Google calendar integration down.");
-        }
-
-        const calendar = await getCalendar();
-
-        if(calendar == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return json("Google calendar integration down.");
-        }
-    
-        const event = await createEvent(client, calendar, eventOptions);
-
-        console.log(doc.data());
-
-        const user = locals.user.uid;
-
-        await db.runTransaction(async t => {
-            t.create(colRef.doc(id), {
-                ...doc.data(),
-                when_start: meetings[i].starts,
-                when_end: meetings[i].ends,
+        try {
+            await createMeeting({
+                name: data.name,
+                location: data.location,
+                starts: meetings[i].starts,
+                ends: meetings[i].ends,
+                virtual: data.virtual,
+                lead: data.lead,
+                synopsis: data.synopsis,
+                thumbnail: data.thumbnail,
+                mentor: data.mentor,
+                role: data.role,
                 completed: false,
                 signups: [],
-                calendar: event.id,
-                link: event.link ?? null,
-            });
-
-            firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
-        })
+            }, locals.user.uid, locals.firestoreUser.team);
+        } catch(e: any) {
+            if('type' in e && e.type == "display") {
+                return json(e.message);
+            } else {
+                console.log(e);
+            }
+        }
     }
 
     return json("Meetings Duplicated!");

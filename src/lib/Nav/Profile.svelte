@@ -32,7 +32,7 @@ import Icon from "$lib/Builders/Icon.svelte";
                 {#if $page.data.kicked}
                     <a href="/help/kicked" on:click|stopPropagation={() => {}} class="bg-opacity-30 dark:bg-opacity-20 bg-red-500 dark:text-red-500 text-red-900 p-1 px-2.5 text-lg rounded-md mr-2">Kicked</a>
                 {/if}
-                <img referrerpolicy="no-referrer" alt="profile" src="{$user.photoURL}" class="h-10 w-10 rounded-full">
+                <img referrerpolicy="no-referrer" alt="profile" src="{$user.photoURL}" class="h-10 w-10 min-w-[2.5rem] rounded-full">
             </div>
         </MenuButton>
         <MenuItems class="bg-backgroud-light absolute dark:bg-backgroud-dark border-border-light dark:border-border-dark shadow-shadow-light dark:shadow-shadow-dark shadow-lg translate-y-2 {$navmode == true ? 'right-2' : 'right-0'} box-border border-[1px] rounded-lg overflow-y-auto flex-col flex p-2 max-w-none">

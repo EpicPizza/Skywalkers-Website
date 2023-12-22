@@ -1,10 +1,6 @@
-import { firebaseAdmin } from '$lib/Firebase/firebase.server.js';
-import { completeSchema, duplicateSchema } from '$lib/Meetings/meetings.server.js';
-import type { Role } from '$lib/Roles/role.js';
-import { getRole } from '$lib/Roles/role.server.js';
-import { error, fail, redirect } from '@sveltejs/kit';
-import type { DocumentSnapshot } from 'firebase-admin/firestore';
-import { message, superValidate } from 'sveltekit-superforms/server';
+import { firebaseAdmin } from "$lib/Firebase/firebase.server";
+import { getFetchedMeetings } from "$lib/Meetings/helpers.server";
+import { error, redirect } from "@sveltejs/kit";
 
 export async function load({ locals, url }) {
     if(locals.user == undefined) throw error(401, "Sign In Required");
@@ -18,56 +14,15 @@ export async function load({ locals, url }) {
     today.setMinutes(0);
     today.setMilliseconds(0);
 
-    const firestoreMeetings: any = (await firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('when_start', '>=', today).orderBy('when_start').limit(50).get()).docs;
+    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('starts', '>=', today).orderBy('starts').limit(50);
 
-    interface Meeting {
-        name: string,
-        id: string,
-        location: string,
-        thumbnail: string,
-        when_start: Date,
-        when_end: Date,
-        lead: boolean,
-        role: Role | boolean,
-        synopsis: boolean,
-    }
+    const meetings = await getFetchedMeetings(ref, locals.user.uid, locals.firestoreUser.team);
 
-    interface MeetingPreview extends Meeting {
-        signedup: boolean
-    }
-
-    const meetings = new Array<MeetingPreview>();
-
-    for(let i = 0; i < firestoreMeetings.length; i++) {
-        if(firestoreMeetings[i].data().name != "Default Meeting") {
-            let signedup = false;
-
-            for(let j = 0; j < firestoreMeetings[i].data().signups.length; j++) {
-                if(firestoreMeetings[i].data().signups[j] == locals.user.uid) {
-                    signedup = true;
-                }
-            }
-
-            const role = await getRole(firestoreMeetings[i].data().role == null ? "------" : firestoreMeetings[i].data().role as string, locals.firestoreUser.team);
-
-            meetings.push({
-                name: firestoreMeetings[i].data().name as string,
-                id: firestoreMeetings[i].id as string,
-                lead: firestoreMeetings[i].data().lead.id == locals.user.uid,
-                synopsis: firestoreMeetings[i].data().synopsis == undefined ? false : firestoreMeetings[i].data().lead.id == locals.user.uid,
-                location: firestoreMeetings[i].data().location as string,
-                thumbnail: firestoreMeetings[i].data().thumbnail as string,
-                when_start: firestoreMeetings[i].data().when_start.toDate() as Date,
-                when_end: firestoreMeetings[i].data().when_end.toDate() as Date,
-                role: role ?? false,
-                signedup: signedup,
-            })
-        }
-    }
+    console.log(meetings);
     
     return { 
-        meetings: meetings as MeetingPreview[], 
-        reachedEnd: (await firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('when_start', '>=', today).count().get()).data().count == meetings.length, 
+        meetings: meetings, 
+        reachedEnd: (await firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('starts', '>=', today).count().get()).data().count == meetings.length, 
         meetingsShown: meetings.length, 
         loading: false, 
         completed: false, 

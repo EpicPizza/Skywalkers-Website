@@ -1,5 +1,6 @@
 import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
+import { type FetchedMeeting, getFetchedMeeting } from '$lib/Meetings/helpers.server';
 import { getMember } from '$lib/Members/manage.server.js';
 import { getSpecifiedRoles } from '$lib/Roles/role.server.js';
 import { error, redirect } from '@sveltejs/kit';
@@ -12,22 +13,19 @@ export async function load({ params, locals, url }) {
 
     if(!locals.firestoreUser.permissions.includes('VIEW_MEETINGS')) throw error(403, "Unauthorized.");
 
-    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
-
-    const data = (await ref.get()).data();
-
-    if(data == undefined) throw error(404, "Meeting Not Found");
-
-    const meeting = {
-        name: data.name as string,
-        location: data.location as string,
-        when_start: data.when_start.toDate() as Date,
-        when_end: data.when_end.toDate() as Date,
-        thumbnail: data.thumbnail as string,
-        completed: data.completed as boolean,
-        id: params.slug as string,
-        signups: []
+    let meeting: FetchedMeeting | false = false;
+    
+    try {
+        meeting = await getFetchedMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+    } catch(e: any) {
+        if('type' in e && e.type == "display") {
+            throw error(404, e.message);
+        } else {
+            console.log(e);
+        }
     }
+
+    if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
 
     const synopsisRef = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('synopsis').doc(params.slug);
 
