@@ -6,7 +6,6 @@ import { getFirestore as getFirebaseFirestore, type Firestore, type Unsubscribe,
 import { createVerified } from "$lib/stores";
 import { navigating } from "$app/stores";
 import type { Role } from "$lib/Roles/role";
-import { getContext } from "svelte";
 import { browser } from "$app/environment";
 
 interface Preload {

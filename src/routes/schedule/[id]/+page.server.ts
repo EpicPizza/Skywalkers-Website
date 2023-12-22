@@ -256,9 +256,11 @@ export const actions = {
 
             console.log(requirementmet);
 
-            if(!requirementmet && schedule.require != null) continue;
+            console.log(schedule.require);
 
-            if(schedule.require != null) {
+            if(!(requirementmet || schedule.require == null || schedule.require == "")) continue;
+
+            if(schedule.require != null && schedule.require != "") {
                 let id = membersInSlots[who];
                 membersInSlots.splice(who, 1);
                 membersInSlots.unshift(id);

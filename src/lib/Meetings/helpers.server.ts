@@ -368,6 +368,101 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
     return meeting;
 }
 
+interface NewSchedule extends NewMeeting {
+    schedule: string,
+}
+
+export async function createMeetingFromSchedule({ name, location, starts, ends, virtual, lead, synopsis, mentor, thumbnail, schedule, role, signups }: NewSchedule, user: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    const id = crypto.randomUUID();
+
+    const ref = db.collection('teams').doc(team).collection('meetings');
+    
+    const eventOptions = {
+        summary: name,
+        location: location,
+        description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
+        start: {
+            dateTime: starts,
+            timeZone: "America/Los_Angeles"
+        },
+        end: {
+            dateTime: ends,
+            timeZone: "America/Los_Angeles"
+        },
+        recurrence: undefined as unknown,
+        conferenceData: undefined as unknown,
+    }
+
+    if(virtual) {
+        eventOptions.conferenceData = {
+            createRequest: {
+                requestId: crypto.randomUUID(),
+                conferenceSolutionKey: { type: "hangoutsMeet" },
+            },
+        }
+    }
+
+    console.log(virtual);
+
+    const client = await getClientWithCrendentials();
+
+    if(client == undefined) {
+        try {
+            await sendDM("Authorization Needed", OWNER);
+        } catch(e) {
+            throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
+        }
+
+        throw { message: "Google calendar integration down.", type: "display" };
+    }
+
+    const calendar = await getCalendar();
+
+    if(calendar == undefined) {
+        try {
+            await sendDM("Authorization Needed", OWNER);
+        } catch(e) {
+            throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
+        }
+
+        throw { message: "Google calendar integration down.", type: "display" };
+    }
+
+    const event = await createEvent(client, calendar, eventOptions);
+
+    const meeting = {
+        name: name,
+        lead: lead,
+        synopsis: synopsis,
+        mentor: mentor,
+        location: location,
+        starts: starts,
+        ends: ends,
+        thumbnail: thumbnail,
+        completed: false,
+        role: role,
+        calendar: event.id,
+        link: event.link ?? null,
+        signups: signups,
+        update: signups.length == 0 ? false : true,
+        id: id,
+        version: "v1.0",
+        virtual: virtual,
+        schedule: schedule,
+    } as Meeting;
+
+    await db.runTransaction(async t => {
+        t.create(ref.doc(id), meeting);
+
+        firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
+    })
+
+    return meeting;
+}
+
+
 export async function editMeeting(currentMeeting: Meeting, { name, location, starts, ends, virtual, lead, synopsis, mentor, thumbnail, role, signups }: NewMeeting, user: string, team: string) {
     const db = firebaseAdmin.getFirestore();
 

@@ -253,7 +253,13 @@
         return people.substring(0, people.length - 2);
     }
 
+    let pressed = false;
+
     async function finish() {
+        if(pressed) return;
+
+        pressed = true;
+
         const res = await fetch("/schedule/" + $page.params.id, { method: "POST" });
 
         if(res.status == 406) {
@@ -317,13 +323,13 @@
 <div class="border border-border-light dark:border-border-dark rounded-lg shadow-lg p-4 mb-4 bg-backgroud-light dark:bg-backgroud-dark flex items-center justify-between w-full overflow-hidden">
     <h1 class="text-xl overflow-hidden whitespace-nowrap overflow-ellipsis">{data.schedule.title}</h1>
     <div class="flex items-center gap-1.5">
-        <button on:click={async () => { 
+        <button disabled={pressed} on:click={async () => { 
             if(confirming) {
                 finish();
             } else {
                 open = !open;
             }
-        }} class="h-9 rounded-full {confirming ? "b-green" : "b-accent"} flex items-center gap-1.5 transition">
+        }} class="h-9 rounded-full {confirming ? "b-green" : "b-accent"} flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed">
             {#if confirming}
                 Confirm
             {:else}

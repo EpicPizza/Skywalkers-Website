@@ -4,6 +4,7 @@ import type { FirestoreUser, VerifiedUser } from "$lib/Firebase/firebase.js";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server.js";
 import { createEvent } from "$lib/Google/calendar";
 import { getClientWithCrendentials, getCalendar } from "$lib/Google/client";
+import { createMeeting, createMeetingFromSchedule } from "$lib/Meetings/helpers.server.js";
 import { getMember } from "$lib/Members/manage.server.js";
 import { getRoleWithMembers } from "$lib/Roles/role.server";
 import { error, fail, json, redirect } from "@sveltejs/kit";
@@ -50,69 +51,22 @@ export async function POST({ request, locals, params }) {
         let start = new Date(schedule.first.valueOf() + (schedule.confirm[i].slots[0].day * 1000 * 60 * 60 * 24) + (1000 * 60 * 60) * schedule.confirm[i].slots[0].time);
         let end = new Date(schedule.first.valueOf() + (schedule.confirm[i].slots[0].day * 1000 * 60 * 60 * 24) + (1000 * 60 * 60) * (schedule.confirm[i].slots[schedule.confirm[i].slots.length - 1].time + 1));
 
-        const id = crypto.randomUUID();
-
-        const eventOptions = {
-            summary: schedule.title,
-            location: "Garage",
-            description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
-            start: {
-                dateTime: start,
-                timeZone: "America/Los_Angeles"
-            },
-            end: {
-                dateTime: end,
-                timeZone: "America/Los_Angeles"
-            },
-            recurrence: undefined as unknown,
-            conferenceData: undefined as unknown,
-        }
-
-        const client = await getClientWithCrendentials();
-
-        if(client == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            throw error(406, "Google calendar integration down.");
-        }
-
-        const calendar = await getCalendar();
-
-        if(calendar == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            throw error(406, "Google calendar integration down.");
-        }
-
-        const event = await createEvent(client, calendar, eventOptions);
-
-        const user = locals.user.uid;
-        const team = locals.firestoreUser.team;
-
-        await database.runTransaction(async t => {
-            if(!schedule.confirm) return;
-
-            t.create(database.collection('teams').doc(team).collection('meetings').doc(id), {
-                name: schedule.title,
-                lead: database.collection('users').doc(schedule.confirm[i].members[0]),
-                synopsis: null,
-                mentor: null,
-                location: schedule.location,
-                when_start: start,
-                when_end: end,
-                thumbnail: "icon:view_list",
-                completed: false,
-                role: schedule.group ?? null,
-                signups: schedule.confirm[i].members,
-                calendar: event.id,
-                schedule: params.id,
-                link: event.link ?? null,
-                update: true,
-            });
-
-            firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
-        })
-    } 
+        await createMeetingFromSchedule({
+            name: schedule.title,
+            lead: database.collection('users').doc(schedule.confirm[i].members[0]),
+            synopsis: null,
+            mentor: null,
+            location: schedule.location ?? "",
+            starts: start,
+            ends: end,
+            thumbnail: "icon:view_list",
+            completed: false,
+            role: schedule.group ?? null,
+            signups: schedule.confirm[i].members,
+            virtual: false,
+            schedule: params.id,
+        }, locals.user.uid, locals.firestoreUser.team);
+    }
 
     await ref.update({
         status: true,
