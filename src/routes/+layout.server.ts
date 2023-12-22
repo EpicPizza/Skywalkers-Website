@@ -1,6 +1,8 @@
 export const ssr = true;
 
 export async function load({cookies, request, locals}) {
+    console.log("THIS IS RUNNING");
+
     const mode = cookies.get('theme');
 
     let user;
