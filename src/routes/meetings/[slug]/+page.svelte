@@ -70,17 +70,21 @@
             data.meeting = {
                 name: currentMeeting.name as string,
                 lead: await client.getUser(currentMeeting.lead.id) as SecondaryUser,
-                synopsis: currentMeeting.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis,
-                mentor: currentMeeting.mentor == null ? undefined : mentor == undefined ? "User Not Found" : mentor,
+                synopsis: currentMeeting.synopsis == null ? null : synopsis == undefined ? null : synopsis,
+                mentor: currentMeeting.mentor == null ? null : mentor == undefined ? null : mentor,
                 location: currentMeeting.location as string,
-                when_start: currentMeeting.when_start.toDate() as Date,
-                when_end: currentMeeting.when_end.toDate() as Date,
+                starts: currentMeeting.starts.toDate() as Date,
+                ends: currentMeeting.ends.toDate() as Date,
                 thumbnail: currentMeeting.thumbnail as string,
                 completed: currentMeeting.completed as boolean,
+                update: currentMeeting.update,
                 link: currentMeeting.link as string,
-                role: role,
+                role: role ?? null,
                 id: data.meeting.id,
                 signups: signups,
+                version: currentMeeting.version,
+                virtual: currentMeeting.virtual,
+                calendar: currentMeeting.calendar,
             }
         });
     })
@@ -145,7 +149,7 @@
             <div class="-translate-y-[1px]">
                 <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=schedule></Icon>
             </div>
-            <p class="text-lg lg:text-xl">{format.format(data.meeting.when_start, "ddd, M/D/YY: h:mm a")} - {format.format(data.meeting.when_end, "h:mm a")}</p>
+            <p class="text-lg lg:text-xl">{format.format(data.meeting.starts, "ddd, M/D/YY: h:mm a")} - {format.format(data.meeting.ends, "h:mm a")}</p>
         </div>
         {#if data.meeting.link}
             <div class="mt-6 flex gap-2 items-center">

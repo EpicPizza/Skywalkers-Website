@@ -59,7 +59,7 @@
 </svelte:head>
 
 <div class="min-h-[calc(100dvh)] p-4 sm:p-8 pt-[88px] sm:pt-[88px] flex justify-around">
-    <div class="w-[36rem] lg:w-[44rem] overflow-hidden">
+    <div class="w-[35rem] lg:w-[44rem] overflow-hidden px-2">
         <div class="w-full flex justify-between">
             <button on:click={() => { willReset = true; history.back(); }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
@@ -97,7 +97,7 @@
                 <div class="-translate-y-[1px]">
                     <Icon class="text-[1.75rem] w-[1.75rem] h-[1.75rem] lg:text-[2.25rem] lg:w-[2.25rem] lg:h-[2.25rem]" scale={0} icon=schedule></Icon>
                 </div>
-                <p class="text-lg lg:text-xl">{format.format(data.meeting.when_start, "M/D/YY, h:mm a")} - {format.format(data.meeting.when_end, "h:mm a")}</p>
+                <p class="text-lg lg:text-xl">{format.format(data.meeting.starts, "M/D/YY, h:mm a")} - {format.format(data.meeting.ends, "h:mm a")}</p>
             </div>
             <div class="mt-4 flex gap-2 items-center">
                 <div class="-translate-y-[2px]">
@@ -145,12 +145,12 @@
                     <p class="text-lg lg:text-xl mb-3">Synopsis:</p>
                     <p class="lg:text-lg mt-auto mb-3 {$form.synopsis.length > 10000 ? "text-red-500 dark:text-red-500 font-bold" : "opacity-50"}">{$form.synopsis.length}/10000</p>
                 </div>
-                <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-3xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
+                <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
             </div>
             <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
-            <FileChooser name=attachments/>
+            <FileChooser bind:files={$form.attachments}/>
             <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
-            <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
+            <div class="border-border-light dark:border-border-dark border-[1px] rounded-xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
                     <Member id={member.id} let:member={user}>
                         {#await user}
@@ -183,7 +183,7 @@
                 </button>
                 <p class="text-lg">Send synopsis message to discord.</p>
             </div>
-            <PersonDialog multiple bind:open ignore={idList} on:choosen={(event) => { console.log(event.detail.id); for(let i = 0; i < event.detail.id.length; i++) { $form.hours.push({ id: event.detail.id[i], time: data.meeting.length }); } $form.hours = $form.hours; }}></PersonDialog>
+            <PersonDialog multiple bind:open ignore={idList} on:choosen={(event) => { console.log(event.detail.id); for(let i = 0; i < event.detail.id.length; i++) { $form.hours.push({ id: event.detail.id[i], time: data.length }); } $form.hours = $form.hours; }}></PersonDialog>
             <Error {allErrors} {message}></Error>
             <div class="flex items-center mt-7 gap-4">
                 <button class="b-primary lg:p-1 lg:px-2 lg:text-lg flex items-center gap-1">

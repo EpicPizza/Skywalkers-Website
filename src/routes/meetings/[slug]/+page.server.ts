@@ -1,8 +1,5 @@
-import type { FirestoreUser, SecondaryUser } from '$lib/Firebase/firebase.js';
-import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server.js';
-import { getRole, getSpecifiedRoles } from '$lib/Roles/role.server.js';
-import { error, redirect } from '@sveltejs/kit';
-import type { DocumentReference } from 'firebase-admin/firestore';
+import { type FetchedMeeting, getFetchedMeeting } from "$lib/Meetings/helpers.server";
+import { error, redirect } from "@sveltejs/kit";
 
 export async function load({ params, locals, url }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -11,68 +8,19 @@ export async function load({ params, locals, url }) {
 
     if(!locals.firestoreUser.permissions.includes('VIEW_MEETINGS')) throw error(403, "Unauthorized.");
 
-    const db = firebaseAdmin.getFirestore();
-
-    const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
-
-    const data = (await ref.get()).data();
-
-    if(data == undefined) throw error(404, "Meeting Not Found");
-
-    let signups = new Array<SecondaryUser>();
-
-    for(let i = 0; i < data.signups.length; i++) {
-        const user = (await db.collection('users').doc(data.signups[i]).get()).data();
-
-        if(user != undefined) {
-            signups.push({
-                ...user,
-                roles: await getSpecifiedRoles(user.roles),
-                id: data.signups[i],
-            } as SecondaryUser);
+    let meeting: FetchedMeeting | false = false;
+    
+    try {
+        meeting = await getFetchedMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+    } catch(e: any) {
+        if('type' in e && e.type == "display") {
+            throw error(404, e.message);
+        } else {
+            console.log(e);
         }
     }
 
-    let synopsis; 
-    if(data.synopsis != null) {
-        synopsis = await seralizeFirestoreUser((await data.synopsis.get()).data(), data.synopsis.id)
-    }
-
-    let mentor;
-    if(data.mentor != null) {
-        mentor = await seralizeFirestoreUser((await data.mentor.get()).data(), data.mentor.id)
-    }
-
-    let role;
-    if(data.role != null) {
-        role = await getRole(data.role, locals.firestoreUser.team);
-
-        if(role == undefined) {
-            await ref.update({
-                role: null,
-            })
-        }
-    }
-
-    const meeting = {
-        name: data.name as string,
-        lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
-        //@ts-ignore
-        synopsis: data.synopsis == null ? undefined : synopsis == undefined ? "User Not Found" : synopsis as SecondaryUser,
-        //@ts-ignore
-        mentor: data.mentor == null ? undefined : mentor == undefined ? "User Not Found" :  mentor as SecondaryUser,
-        role: role,
-        location: data.location as string,
-        when_start: data.when_start.toDate() as Date,
-        when_end: data.when_end.toDate() as Date,
-        thumbnail: data.thumbnail as string,
-        completed: data.completed as boolean,
-        link: data.link as string | null,
-        id: params.slug as string,
-        signups: signups
-    }
-
-    if((meeting.lead != undefined && meeting.lead.team != locals.firestoreUser.team) || (typeof meeting.synopsis == 'object' && meeting.synopsis.team != locals.firestoreUser.team) || (typeof meeting.mentor == 'object' && meeting.mentor.team != locals.firestoreUser.team)) throw error(500, "Meeting Requested Inaccessible Resource");
+    if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
 
     return { 
         meeting: meeting,

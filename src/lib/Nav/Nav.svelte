@@ -18,7 +18,7 @@
 <svelte:window bind:innerWidth={width}></svelte:window>
 
 {#if $navigating} 
-    <div id="loading_bar" class="h-[3px] fixed bg-accent-500 animate-spin"></div>
+    <div id="loading_bar" class="h-[3px] z-100 fixed bg-accent-500 animate-spin"></div>
 {/if}
 
 <style lang=postcss>

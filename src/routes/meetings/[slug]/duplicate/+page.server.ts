@@ -1,13 +1,9 @@
-import { OWNER } from "$env/static/private";
-import { sendDM } from "$lib/Discord/discord.server";
-import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { createEvent } from "$lib/Google/calendar";
-import { getCalendar, getClient, getClientWithCrendentials } from "$lib/Google/client";
-import { getUserList, meetingSchema } from "$lib/Meetings/meetings.server";
+import { type Meeting, getMeeting, createFormFromMeeting, validateFormMeeting, createMeetingFromForm } from "$lib/Meetings/helpers.server";
+import { meetingSchema } from "$lib/Meetings/meetings.server";
 import { getRoles } from "$lib/Roles/role.server";
-import { error, fail, redirect } from "@sveltejs/kit";
-import type { DocumentReference } from "firebase/firestore";
-import { message, superValidate } from "sveltekit-superforms/server";
+import { error, redirect, fail } from "@sveltejs/kit";
+import { superValidate, message } from "sveltekit-superforms/server";
+
 
 export async function load({ params, locals }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -16,39 +12,21 @@ export async function load({ params, locals }) {
 
     if(!locals.firestoreUser.permissions.includes('CREATE_MEETINGS')) throw error(403, "Unauthorized.");
 
-    const form = await superValidate(meetingSchema);
-
-    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
-
-    const data = (await ref.get()).data();
-
-    if(data == undefined) throw error(404, "Meeting Not Found");
-
-    const meeting = {
-        name: data.name as string,
-        lead: data.lead as DocumentReference,
-        synopsis: data.synopsis as DocumentReference | null,
-        mentor: data.mentor as DocumentReference | null,
-        location: data.location as string,
-        when_start: data.when_start.toDate() as Date,
-        when_end: data.when_end.toDate() as Date,
-        thumbnail: data.thumbnail as string,
-        link: data.link as string | null,
-        completed: data.completed as boolean,
-        id: params.slug as string,
-        role: data.role,
+    let meeting: Meeting | false = false;
+    
+    try {
+        meeting = await getMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+    } catch(e: any) {
+        if('type' in e && e.type == "display") {
+            throw error(404, e.message);
+        } else {
+            console.log(e);
+        }
     }
 
-    form.data.starts = meeting.when_start;
-    form.data.ends = meeting.when_end;
-    form.data.name = meeting.name;
-    form.data.location = meeting.location;
-    form.data.thumbnail = meeting.thumbnail;
-    form.data.lead = meeting.lead.id;
-    form.data.mentor = meeting.mentor == null ? "" : meeting.mentor.id;
-    form.data.synopsis = meeting.synopsis == null ? "" : meeting.synopsis.id;
-    form.data.virtual = !!meeting.link;
-    form.data.role = meeting.role || undefined;
+    if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
+
+    const form = createFormFromMeeting(meeting);
 
     const roles = await getRoles(locals.firestoreUser.team);
 
@@ -71,99 +49,24 @@ export const actions = {
             return fail(400, { form });
         }
 
-        let today = new Date();
-        today.setMilliseconds(0);
-        today.setSeconds(0);
-        today.setMinutes(0);
-        today.setHours(0);
+        const validated = await validateFormMeeting(form, locals.user.uid, locals.firestoreUser.team);
 
-        if(form.data.starts.valueOf() < today.valueOf()) return message(form, "Past meetings cannot be made.");
-        if(form.data.ends.valueOf() <= form.data.starts.valueOf()) return message(form, "Start time must be before end time.");
+        if(validated === 0) {
+            let id;
 
-        const db = firebaseAdmin.getFirestore();
-
-        const ref = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings');
-        
-        const users= await getUserList(db, locals.firestoreUser.team);
-
-        console.log(form.data);
-
-        if(!users.includes(form.data.lead) || (form.data.mentor != undefined && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != undefined && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
-            return message(form, 'User(s) not found.', {
-                status: 404
-            });
-        }
-
-        if(!(form.data.role == undefined || form.data.role == '') && !(await db.collection('teams').doc(locals.firestoreUser.team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
-
-        const id = crypto.randomUUID();
-
-        const eventOptions = {
-            summary: form.data.name,
-            location: form.data.location,
-            description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
-            start: {
-                dateTime: form.data.starts,
-                timeZone: "America/Los_Angeles"
-            },
-            end: {
-                dateTime: form.data.ends,
-                timeZone: "America/Los_Angeles"
-            },
-            conferenceData: undefined as unknown,
-        }
-
-        if(form.data.virtual) {
-            eventOptions.conferenceData = {
-                createRequest: {
-                    requestId: crypto.randomUUID(),
-                    conferenceSolutionKey: { type: "hangoutsMeet" },
-                },
+            try {
+                id = await createMeetingFromForm(form, locals.user.uid, locals.firestoreUser.team);
+            } catch(e: any) {
+                if('type' in e && e.type == "display") {
+                    return message(form, e.message);
+                } else {
+                    console.log(e);
+                }
             }
+
+            throw redirect(307, "/meetings/" + id + "?created=true");
+        } else {
+            return validated;
         }
-
-        console.log(form.data.virtual, eventOptions);
-
-        const client = await getClientWithCrendentials();
-
-        if(client == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return message(form, "Google calendar integration down.");
-        }
-
-        const calendar = await getCalendar();
-
-        if(calendar == undefined) {
-            await sendDM("Authorization Needed", OWNER);
-
-            return message(form, "Google calendar integration down.");
-        }
-    
-        const event = await createEvent(client, calendar, eventOptions);
-
-        const user = locals.user.uid;
-
-        await db.runTransaction(async t => {
-            t.create(ref.doc(id), {
-                name: form.data.name,
-                lead: db.collection('users').doc(form.data.lead),
-                synopsis: form.data.synopsis == undefined || form.data.synopsis == '' ? null : db.collection('users').doc(form.data.synopsis),
-                mentor: form.data.mentor == undefined || form.data.mentor == '' ? null : db.collection('users').doc(form.data.mentor),
-                location: form.data.location,
-                when_start: form.data.starts,
-                when_end: form.data.ends,
-                thumbnail: form.data.thumbnail,
-                completed: false,
-                role: form.data.role ?? null,
-                signups: [],
-                calendar: event.id,
-                link: event.link ?? null,
-            });
-
-            firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
-        })
-
-        throw redirect(307, "/meetings/" + id + "?created=true");
     }
 }

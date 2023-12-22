@@ -16,6 +16,8 @@ import { meetingIndicator, type Hours } from '$lib/Hours/hours.server';
 import { DOMAIN } from '$env/static/private';
 import meridiem from "date-and-time/plugin/meridiem";
 import format from 'date-and-time';
+import { type FetchedMeeting, getFetchedMeeting } from '$lib/Meetings/helpers.server';
+import { getQueueById, type Queue } from '$lib/Upload/helpers.server';
 
 format.plugin(meridiem);
 
@@ -49,18 +51,26 @@ export async function load({ params, locals, url }) {
     form.data.synopsis = data.synopsis;
     form.data.hours = hours;
 
-    form.data.attachments = [];
+    form.data.old = [];
     for(let i = 0; i < urls.length; i++) {
-        form.data.attachments.push({ name: urls[i].name, remove: false });
+        form.data.old.push({ name: urls[i].name + "." + urls[i].ext, image: attachmentHelpers.isImage(urls[i].type) ? "true" : "false", description: urls[i].ext + ", added", remove: false });
     }
 
-    const meetingRef = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
+    let meeting: FetchedMeeting | false = false;
+    
+    try {
+        meeting = await getFetchedMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+    } catch(e: any) {
+        if('type' in e && e.type == "display") {
+            throw error(404, e.message);
+        } else {
+            console.log(e);
+        }
+    }
 
-    const meeting = (await meetingRef.get()).data();
+    if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
 
-    if(meeting == undefined) throw error(404, "Meeting Not Found");
-
-    const length = (meeting.when_end.toDate().valueOf() - meeting.when_start.toDate().valueOf()) / 1000 / 60 / 60;
+    const length = (meeting.ends.valueOf() - meeting.starts.valueOf()) / 1000 / 60 / 60;
 
     console.log(length);
     
@@ -90,73 +100,26 @@ export const actions = {
 
         if(synopsisData == undefined) throw error(401, "Synopsis not found.");
 
-        const meetingRef = teamRef.collection('meetings').doc(params.slug);
-
-        const meeting = await meetingRef.get();
-
-        if(meeting.data == undefined) throw error(401, "Meeting not found.");
-
+        let meeting: FetchedMeeting | false = false;
+    
+        try {
+            meeting = await getFetchedMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+        } catch(e: any) {
+            if('type' in e && e.type == "display") {
+                throw error(404, e.message);
+            } else {
+                console.log(e);
+            }
+        }
+    
+        if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
+        
         const formData = await request.formData();
 
         const form = await superValidate(formData, editSchema);
 
         if(!form.valid) {
             return fail(400, { form });
-        }
-
-        let attachments = formData.getAll('attachments');
-
-        let files = new Array<{file: File, ext: string, mime: string}>();
-
-        console.log(attachments);
-
-        if(attachments) {
-            for(let i = 0; i < attachments.length; i++) {
-
-                if(attachments[i] instanceof File && (attachments[i] as File).size != 0) {
-                    const type = await fileTypeFromBlob(attachments[i] as File);
-
-                    console.log(type);
-
-                    if(!type || !attachmentHelpers.checkType(type.mime)) {
-                        if(type != undefined) {
-                            return message(form, "Invalid attachment file type.");
-                        } else {
-                            const mime = lookup((attachments[i] as File).name);
-
-                            if(!mime) {
-                                return message(form, "Invalid attachment file type.");
-                            }
-
-                            console.log(extension(mime));
-
-                            if(attachmentHelpers.checkType(mime) && attachmentHelpers.isSecure(mime)) {
-                                files.push({file: attachments[i] as File, ext: extension(mime) ? extension(mime) as string : "text/plain", mime: mime})
-                            } else {
-                                return message(form, "Invalid attachment file type.");
-                            }
-                        }
-                    } else {
-                        files.push({file: attachments[i] as File, ext: type.ext, mime: type.mime});
-                    }
-                }
-            }
-        }
-
-        for(let i = 0; i < files.length; i++) {
-            for(let j = 0; j < files.length; j++) {
-                if(path.parse(files[i].file.name).base == path.parse(files[j].file.name).base && j != i) {
-                    return message(form, "Cannot have attachments with duplicate names.");
-                }
-            }
-
-            if(files[i].file.size / 1024 / 1024 > 100) {
-                return message(form, path.parse(files[i].file.name).base + " is too large.");
-            }
-
-            if(files[i].file.name.length > 100) {
-                return message(form, path.parse(files[i].file.name).base + " has a name too long.");
-            }
         }
 
         for(let i = 0; i < form.data.hours.length; i++) {
@@ -167,28 +130,15 @@ export const actions = {
 
         let urls: {url: string, type: string, name: string, location: string, code: string, ext: string }[] = synopsisData.urls as any;
 
+        console.log(form.data);
+
         let confirmedurls: {url: string, type: string, name: string, location: string, code: string, ext: string }[] = [];
+        let willdelete: string[] = []
         for(let i = 0; i < urls.length; i++) {
-            for(let j = 0; j < form.data.attachments.length; j++) {
-                if(urls[i].name == form.data.attachments[j].name && form.data.attachments[j].remove) {
-                    const path = `synopses/${params.slug}/${urls[i].location}`;
-
-                    console.log(path);
-
-                    await new Promise((resolve) => {
-                        firebaseAdmin.getBucket().deleteFiles({
-                            prefix: path,
-                        }, (err, files) => {
-                            if(err) {
-                                console.log(err);
-            
-                                throw error(501, "An unexpected error occurred, please contact us for further help.");
-                            }
-            
-                            resolve(null);
-                        })
-                    })
-                } else if(urls[i].name == form.data.attachments[j].name) {
+            for(let j = 0; j < form.data.old.length; j++) {
+                if(urls[i].name + "." + urls[i].ext == form.data.old[j].name && form.data.old[j].remove) {
+                    willdelete.push(`synopses/${params.slug}/${urls[i].location}`);
+                } else if(urls[i].name + "." + urls[i].ext == form.data.old[j].name) {
                     confirmedurls.push(urls[i]);
                 }
             }
@@ -196,51 +146,55 @@ export const actions = {
 
         urls = confirmedurls;
 
-        if(urls.length + files.length > 10) {
+        if(urls.length + form.data.new.length > 10) {
             return message(form, "Cannot have more than 10 attachments.");
         }
 
-        for(let i = 0; i < files.length; i++) {     
+        let queues: Queue[] = [];
+
+        console.log(form.data.new);
+
+        for(let i = 0; i < form.data.new.length; i++) {     
+            const queue = await getQueueById(form.data.new[i]);
+
+            if(!queue) return message(form, "File not found.");
+
+            if(!queue.finished) return message(form, "Please make sure all files have finished uploading.");
+
+            if(!queue.type) return message(form, "Malformed file found.");
+
+            queues.push(queue);
+        }
+
+        console.log(queues);
+
+        for(let i = 0; i < queues.length; i++) {     
             const code = attachmentHelpers.getCode(urls);    
 
-            const ref = firebaseAdmin.getBucket().file(`synopses/${params.slug}/${code}.${files[i].ext}`);
+            const desRef = firebaseAdmin.getBucket().file(`synopses/${params.slug}/${code}.${queues[i].type?.ext ?? "txt"}`);
+            const locRef = firebaseAdmin.getBucket().file(`uploads/${queues[i].location}/complete`);
+            //const locFol = firebaseAdmin.getBucket().file(`uploads/${queues[i].location}`);
 
             try {
-                await ref.save(attachmentHelpers.arrayBufferToBuffer(await files[i].file.arrayBuffer()));
-                await ref.setMetadata({ contentType: files[i].mime, contentDispoition: 'attachment; filename=utf-8\'\'"' + path.parse(files[i].file.name).name + '.' + files[i].ext + '"'});
+                await locRef.copy(desRef);
+                await desRef.setMetadata({ contentDispoition: 'inline; filename*=utf-8\'\'"' + queues[i].name + '.' + queues[i].type?.ext ?? "txt" + '"'});
+               //await locFol.delete();
             } catch(e) {
                 console.log(e);
 
                 return message(form, "Failed to upload attachment. Please try again.");
             }
 
-            urls.push({url: await getDownloadURL(ref), type: files[i].mime, name: path.parse(files[i].file.name).name, code: code, ext: files[i].ext, location: `${code}.${files[i].ext}` });
+            urls.push({url: await getDownloadURL(locRef), type: queues[i].type?.mime ?? "text/plain", name: queues[i].name, code: code, ext: queues[i].type?.ext ?? "txt", location: `${code}.${queues[i].type?.ext ?? "txt"}` });
         }
+
+        console.log(urls);
 
         const team = locals.firestoreUser.team;
         const uid = locals.user.uid;
-
-        let data = meeting.data() as any;
-
-        let role;
-        if(data.role != null) {
-            role = await getRole(data.role, locals.firestoreUser.team);
-        }
-
-        const meetingObject = {
-            name: data.name as string,
-            lead: await seralizeFirestoreUser((await data.lead.get()).data(), data.lead.id),
-            role: role,
-            location: data.location as string,
-            when_start: data.when_start.toDate() as Date,
-            when_end: data.when_end.toDate() as Date,
-            thumbnail: data.thumbnail as string,
-            completed: data.completed as boolean,
-            id: params.slug as string,
-            signups: []
-        }
-
+        
         await db.runTransaction(async t => {
+            if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
             const synopsis = {
                 synopsis: form.data.synopsis,
                 hours: [] as { member: DocumentReference, time: number }[],
@@ -300,7 +254,7 @@ export const actions = {
                         id: params.slug,
                         history: [{ 
                             total: form.data.hours[i].time, 
-                            link: DOMAIN + "/synopsis/" + form.data.id, reason: meetingObject.name + " - " + format.format(meetingObject.when_start, "M/D/Y"), 
+                            link: DOMAIN + "/synopsis/" + form.data.id, reason: meeting.name + " - " + format.format(meeting.starts, "M/D/Y"), 
                             id: uid, 
                             date: new Date().valueOf(), 
                             indicator: meetingIndicator 
@@ -365,6 +319,26 @@ export const actions = {
 
             firebaseAdmin.addLogWithTransaction("Synopsis edited.", "summarize", uid, t);
         })
+
+        for(let i = 0; i < willdelete.length; i++) {
+            const path = willdelete[i];
+
+            console.log(path);
+
+            await new Promise((resolve) => {
+                firebaseAdmin.getBucket().deleteFiles({
+                    prefix: path,
+                }, (err, files) => {
+                    if(err) {
+                        console.log(err);
+    
+                        throw error(501, "An unexpected error occurred, please contact us for further help.");
+                    }
+    
+                    resolve(null);
+                })
+            })
+        }
 
         return message(form, "Success");
     }

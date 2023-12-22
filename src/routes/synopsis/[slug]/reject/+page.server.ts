@@ -2,6 +2,7 @@ import { DOMAIN } from '$env/static/private';
 import type { SecondaryUser } from '$lib/Firebase/firebase';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server';
 import type { Hours } from '$lib/Hours/hours.server';
+import { type FetchedMeeting, getFetchedMeeting } from '$lib/Meetings/helpers.server';
 import type { Role } from '$lib/Roles/role';
 import { getRole } from '$lib/Roles/role.server';
 import { error, redirect } from '@sveltejs/kit';
@@ -48,10 +49,6 @@ export const actions = {
         const db = firebaseAdmin.getFirestore();
 
         const meetingRef = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
-    
-        const meetingData = (await meetingRef.get()).data();
-    
-        if(meetingData == undefined) throw error(404, "Meeting Not Found");
 
         const synopsisRef = db.collection('teams').doc(locals.firestoreUser.team).collection('synopsis').doc(params.slug);
     

@@ -48,8 +48,8 @@
     <title>Skywalkers | Edit Synopsis</title>
 </svelte:head>
 
-<div class="min-h-[calc(100dvh)] p-8 pt-[88px] flex justify-around">
-    <div class="w-[36rem] lg:w-[44rem]">
+<div class="min-h-[calc(100dvh)] p-4 sm:p-8 pt-[88px] sm:pt-[88px] flex justify-around">
+    <div class="w-[35rem] lg:w-[44rem] overflow-hidden px-2">
         <div class="w-full flex justify-between">
             <button on:click={() => { willReset = true; history.back(); }} class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
                 <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
@@ -78,36 +78,25 @@
                     <p class="text-lg lg:text-xl mb-3">Synopsis:</p>
                     <p class="lg:text-lg mt-auto mb-3 {$form.synopsis.length > 10000 ? "text-red-500 dark:text-red-500 font-bold" : "opacity-50"}">{$form.synopsis.length}/10000</p>
                 </div>
-                <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-3xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
+                <textarea placeholder="Write Synopsis Here" name=synopsis bind:value={$form.synopsis} class="p-5 lg:text-lg w-full rounded-xl bg-zinc-200 dark:bg-zinc-700 h-52"/>
             </div>
-            <p class="text-lg lg:text-xl mb-3 mt-4">New Attachments:</p>
-            <FileChooser name=attachments/>
-            {#if $form.attachments.length != 0}
-                <p class="text-lg lg:text-xl mb-3 mt-4">Previous Attachments:</p>
-                <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 pb-2">
-                    {#each $form.attachments as attachment}
-                        <button on:click|preventDefault={() => { attachment.remove = !attachment.remove }} class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 transition-opacity {attachment.remove ? "opacity-50" : ""}">
-                            <p>{attachment.name}</p>
-                            <button on:click|preventDefault|stopPropagation={() => { attachment.remove = !attachment.remove }} class="w-6 h-6 transition bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 hover:bg-opacity-20 hover:dark:bg-opacity-20 flex rounded-full justify-around items-center"><Icon scale=1.1rem icon={attachment.remove ? "add" : "remove"}></Icon></button>
-                        </button>
-                    {/each}
-                </div>
-            {/if}
+            <p class="text-lg lg:text-xl mb-3 mt-4">Attachments:</p>
+            <FileChooser bind:files={$form.new} bind:old={$form.old}/>
             <p class="text-lg lg:text-xl mb-3 mt-4">Hours:</p>
-            <div class="border-border-light dark:border-border-dark border-[1px] rounded-3xl p-4 flex flex-col gap-4">
+            <div class="border-border-light dark:border-border-dark border-[1px] rounded-xl p-4 flex flex-col gap-4">
                 {#each $form.hours as member, i (member.id)}
-                    <Member silent id={member.id} let:member={user}>
+                    <Member id={member.id} let:member={user}>
                         {#await user}
                             <p class="h-9 flex items-center">Loading<Ellipse/></p>
                         {:then user}
                             <div class="flex items-center gap-2.5">
                                 <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}'s Profile" src={user.photoURL}/>
-                                <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis {user.photoURL == "/unknown.webp" ? "italic" : ""}">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
+                                <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
                                 <div class="flex gap-1.5">
-                                    <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
-                                    <input step="0.25" class="w-16 p-2 py-1 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
-                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
-                                    <button class="b-accent w-9 h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
+                                    <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
+                                    <input step="0.25" class="w-16 p-2 py-0.5 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
+                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
+                                    <button class="b-accent w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
                                 </div>
                             </div>
                         {/await}

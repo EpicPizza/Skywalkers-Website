@@ -25,18 +25,6 @@ export interface Warning {
     message: string,
 }
 
-export interface Meeting {
-    lead: DocumentReference,
-    location: string,
-    mentor: DocumentReference,
-    name: string,
-    synopsis: DocumentReference,
-    when_end: Date,
-    when_start: Date, 
-    thumbnail: string,
-    id: string,
-}
-
 export function createMode() {
     const { subscribe, set, update }: Writable<'dark' | 'light'> = writable('light');
     const system = writable(false);
