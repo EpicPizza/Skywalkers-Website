@@ -340,7 +340,7 @@
     </div>
 </div>
 
-<div class="flex flex-col-reverse sm:flex-row gap-4 sm:h-[calc(100dvh-12rem)] pb-4 sm:pb-0">
+<div class="flex flex-col-reverse sm:flex-row gap-4 h-fit sm:h-[calc(100dvh-12rem)] pb-4 sm:pb-0">
     <div class="w-full overflow-x-auto border relative border-border-light dark:border-border-dark rounded-lg shadow-lg bg-backgroud-light dark:bg-backgroud-dark">
         <table class="my-6 mb-8 ml-2 mr-20">
             <tr>

@@ -52,10 +52,10 @@ export const actions = {
         const validated = await validateFormMeeting(form, locals.user.uid, locals.firestoreUser.team);
 
         if(validated === 0) {
-            let id;
+            let meeting;
 
             try {
-                id = await createMeetingFromForm(form, locals.user.uid, locals.firestoreUser.team);
+                meeting = await createMeetingFromForm(form, locals.user.uid, locals.firestoreUser.team);
             } catch(e: any) {
                 if('type' in e && e.type == "display") {
                     return message(form, e.message);
@@ -64,7 +64,9 @@ export const actions = {
                 }
             }
 
-            throw redirect(307, "/meetings/" + id + "?created=true");
+            if(!meeting) throw error(500, "Huh, the meeting isn't here.");
+
+            throw redirect(307, "/meetings/" + meeting.id + "?created=true");
         } else {
             return validated;
         }

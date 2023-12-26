@@ -34,7 +34,10 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@egjs/svelte-grid": "^1.15.0",
+		"@notionhq/client": "^2.2.14",
 		"@rgossiaux/svelte-headlessui": "^2.0.0",
+		"@tryfabric/martian": "^1.2.4",
 		"@types/safe-compare": "^1.1.0",
 		"@vavite/node-loader": "^3.0.0",
 		"autoprefixer": "^10.4.14",
@@ -52,6 +55,7 @@
 		"layercake": "^8.0.1",
 		"mime-types": "^2.1.35",
 		"postcss": "^8.4.24",
+		"promise-all-props": "^3.0.0",
 		"qrcode": "^1.5.3",
 		"qrcode-generator": "^1.4.4",
 		"resumablejs": "^1.1.0",

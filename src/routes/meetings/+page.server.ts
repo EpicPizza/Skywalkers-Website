@@ -1,5 +1,7 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { getFetchedMeetings } from "$lib/Meetings/helpers.server";
+import { getFetchedMeetingsOptimized, type FetchedMeeting } from "$lib/Meetings/helpers.server";
+import { getMemberCache } from "$lib/Members/manage.server.js";
+import { getRolesAsCache } from "$lib/Roles/role.server";
 import { error, redirect } from "@sveltejs/kit";
 
 export async function load({ locals, url }) {
@@ -16,12 +18,14 @@ export async function load({ locals, url }) {
 
     const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('starts', '>=', today).orderBy('starts').limit(50);
 
-    const meetings = await getFetchedMeetings(ref, locals.user.uid, locals.firestoreUser.team);
-
-    console.log(meetings);
+    const roles = await getRolesAsCache(locals.firestoreUser.team);
+    const members = await getMemberCache(locals.firestoreUser.team, roles);
+    const meetings = await getFetchedMeetingsOptimized(ref, locals.user.uid, locals.firestoreUser.team, members, roles);
     
+    console.log(meetings);
+
     return { 
-        meetings: meetings, 
+        meetings: meetings as unknown as FetchedMeeting[], 
         reachedEnd: (await firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', false).where('starts', '>=', today).count().get()).data().count == meetings.length, 
         meetingsShown: meetings.length, 
         loading: false, 

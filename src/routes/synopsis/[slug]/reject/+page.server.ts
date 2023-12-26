@@ -2,7 +2,7 @@ import { DOMAIN } from '$env/static/private';
 import type { SecondaryUser } from '$lib/Firebase/firebase';
 import { firebaseAdmin, seralizeFirestoreUser } from '$lib/Firebase/firebase.server';
 import type { Hours } from '$lib/Hours/hours.server';
-import { type FetchedMeeting, getFetchedMeeting } from '$lib/Meetings/helpers.server';
+import { type FetchedMeeting, getFetchedMeeting, completeMeeting } from '$lib/Meetings/helpers.server';
 import type { Role } from '$lib/Roles/role';
 import { getRole } from '$lib/Roles/role.server';
 import { error, redirect } from '@sveltejs/kit';
@@ -50,6 +50,22 @@ export const actions = {
 
         const meetingRef = db.collection('teams').doc(locals.firestoreUser.team).collection('meetings').doc(params.slug);
 
+        let meeting: FetchedMeeting | false = false;
+    
+        try {
+            meeting = await getFetchedMeeting(params.slug, locals.user.uid, locals.firestoreUser.team);
+        } catch(e: any) {
+            if('type' in e && e.type == "display") {
+                throw error(404, e.message);
+            } else {
+                console.log(e);
+            }
+        }
+    
+        if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
+
+        const notion = meeting.notion;
+
         const synopsisRef = db.collection('teams').doc(locals.firestoreUser.team).collection('synopsis').doc(params.slug);
     
         const synopsisData = (await synopsisRef.get()).data();
@@ -95,9 +111,7 @@ export const actions = {
                 t.update(toUpdate[i].ref, toUpdate[i].data);
             }
 
-            t.update(meetingRef, {
-                completed: false,
-            });
+            await completeMeeting(t, notion, meetingRef, false);
 
             t.delete(synopsisRef);
 

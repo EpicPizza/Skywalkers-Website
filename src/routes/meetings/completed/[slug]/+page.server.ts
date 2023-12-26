@@ -1,6 +1,9 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { getFetchedMeetings, type FetchedMeeting } from "$lib/Meetings/helpers.server";
+import { getFetchedMeetingsOptimized, type FetchedMeeting, getSynopses } from "$lib/Meetings/helpers.server";
+import { getMemberCache } from "$lib/Members/manage.server";
+import { getRolesAsCache } from "$lib/Roles/role.server";
 import { error, redirect } from "@sveltejs/kit";
+
 
 export async function load({ locals, url, params }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
@@ -19,8 +22,10 @@ export async function load({ locals, url, params }) {
 
     const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', true).orderBy('starts', 'desc').offset((on - 1) * 50).limit(50);
 
-    const meetings = await getFetchedMeetings(ref, locals.user.uid, locals.firestoreUser.team);
-     
+    const roles = await getRolesAsCache(locals.firestoreUser.team);
+    const members = await getMemberCache(locals.firestoreUser.team, roles);
+    const meetings = await getFetchedMeetingsOptimized(ref, locals.user.uid, locals.firestoreUser.team, members, roles);
+    
     return { 
         meetings: meetings as FetchedMeeting[], 
         completed: true, 

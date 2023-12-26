@@ -4,6 +4,7 @@ import { get } from 'svelte/store';
 import type { firebaseClient } from '$lib/Firebase/firebase';
 import type { DocumentReference } from "firebase/firestore";
 import { browser } from "$app/environment";
+import { PUBLIC_NOTION_PAGE } from "$env/static/public";
 
 //here for reference, instead these stores are made with setContext in root layout (or said otherwise).
 
@@ -225,6 +226,11 @@ export const navLinks: Writable<Link[]> = writable([
     {
         href: "/schedule",
         display: "Scheduler",
+        protected: true,
+    },
+    {
+        href: PUBLIC_NOTION_PAGE,
+        display: "Notion",
         protected: true,
     }
 ]);

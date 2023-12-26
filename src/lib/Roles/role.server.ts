@@ -46,6 +46,30 @@ export async function getRoles(team: string) {
     return roles;
 }
 
+export async function getRolesAsCache(team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    const roleDocs = await db.collection('teams').doc(team).collection('roles').get();
+
+    const roles = new Map<string, Role>();
+    
+    roleDocs.forEach((doc) => {
+        //let members = getMembers(doc.data().members as DocumentReference[]);
+
+        roles.set(doc.id, {
+            color: doc.data().color as string,
+            permissions: doc.data().permissions as string[],
+            level: doc.data().level as number,
+            name: doc.data().name as string,
+            connectTo: doc.data().connectTo as string | null,
+            members: [],
+            id: doc.id,
+        })
+    })
+
+    return roles;
+}
+
 export async function getRoleWithMembers(id: string, team: string) {
     const db = firebaseAdmin.getFirestore();
     

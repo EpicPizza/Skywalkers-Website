@@ -18,7 +18,7 @@ import { DOMAIN } from '$env/static/private';
 import { charset, extension, lookup } from 'mime-types';
 import { meetingIndicator, type Hours, type Indicator } from '$lib/Hours/hours.server.js';
 import colors from 'tailwindcss/colors.js';
-import { getFetchedMeeting, type FetchedMeeting } from '$lib/Meetings/helpers.server';
+import { getFetchedMeeting, type FetchedMeeting, completeMeeting } from '$lib/Meetings/helpers.server';
 import { getMember } from '$lib/Members/manage.server.js';
 import { getQueue, getQueueById, type Queue } from '$lib/Upload/helpers.server.js';
 
@@ -105,6 +105,8 @@ export const actions = {
 
         if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
 
+        const notion = meeting.notion;
+
         const signups = Array.from(meeting.signups, (signup) => signup.id);
 
         let users = await getUserList(db, locals.firestoreUser.team);
@@ -174,7 +176,7 @@ export const actions = {
                 return message(form, "Failed to upload attachment. Please try again.");
             }
 
-            urls.push({url: await getDownloadURL(locRef), type: queues[i].type?.mime ?? "text/plain", name: queues[i].name, code: code, ext: queues[i].type?.ext ?? "txt", location: `${code}.${queues[i].type?.ext ?? "txt"}` });
+            urls.push({url: await getDownloadURL(desRef), type: queues[i].type?.mime ?? "text/plain", name: queues[i].name, code: code, ext: queues[i].type?.ext ?? "txt", location: `${code}.${queues[i].type?.ext ?? "txt"}` });
         }
 
         const uid = locals.user.uid;
@@ -223,9 +225,7 @@ export const actions = {
 
             t.create(synopsisRef, synopsis);
 
-            t.update(meetingRef, {
-                completed: true,
-            })
+            await completeMeeting(t, notion, meetingRef, true, synopsis);
 
             firebaseAdmin.addLogWithTransaction("Meeting completed.", "event", uid, t);
         })

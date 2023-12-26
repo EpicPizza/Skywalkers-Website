@@ -14,12 +14,13 @@
     import DateTimeInput from "$lib/Components/DateTimeInput.svelte";
     import TimeInput from "$lib/Components/TimeInput.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
-    import { slide } from "svelte/transition";
+    import { fade, slide } from "svelte/transition";
     import { onDestroy } from "svelte";
     import { page } from "$app/stores";
     import Role from "$lib/Components/Role.svelte";
     import Ellipse from "$lib/Builders/Ellipse.svelte";
     import DatePicker from "$lib/Builders/DatePicker.svelte";
+    import Tooltip from "$lib/Builders/Tooltip.svelte";
 
     format.plugin(meridiem);
 
@@ -241,7 +242,7 @@
                         <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
                     {/if}
                 </div>
-                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
+                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden">
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
                     <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
                     <p class="text-left lg:text-lg ml-4 whitespace-nowrap">At: {meeting.location}</p>
@@ -255,6 +256,18 @@
                             <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
                         </div>
                     {/if}
+                    {#if meeting.signups.length > 0}
+                        <div transition:fade="{{ duration: 100 }}" class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                        <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
+                            {#each meeting.signups as signup, i}
+                                <div transition:fade="{{ duration: 100 }}" class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                    <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
+                                        <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
+                                    </Tooltip>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
                 </div>
                 <Menu>    
                     <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
@@ -263,6 +276,9 @@
                     <MenuItems class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
                         <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                             Go to Page
+                        </MenuItem>
+                        <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                            Notion
                         </MenuItem>
                         <MenuItem href="/synopsis/{meeting.id}/" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                             Synopsis

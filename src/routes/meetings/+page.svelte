@@ -19,9 +19,10 @@
     import { getContext, onMount, onDestroy } from "svelte";
     import { flip } from "svelte/animate";
     import { type Writable, type Unsubscriber, writable, get } from "svelte/store";
-    import { slide } from "svelte/transition";
+    import { fade, slide } from "svelte/transition";
     import { getDefault } from "$lib/Meetings/helpers.js";
     import Tooltip from "$lib/Builders/Tooltip.svelte";
+    import { PUBLIC_MEETING_VERSION } from "$env/static/public";
 
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
@@ -130,6 +131,10 @@
             console.log(firestoreMeetings);
 
             for(let i = 0; i < firestoreMeetings.length; i++) {
+                if(firestoreMeetings[i].data().version != PUBLIC_MEETING_VERSION) {
+                    fetch('/meetings/' + firestoreMeetings[i].id + "/update");
+                }
+
                 meetings.push({
                     name: firestoreMeetings[i].data().name as string,
                     id: firestoreMeetings[i].id as string,
@@ -148,6 +153,7 @@
                     link: firestoreMeetings[i].data().link,
                     update: firestoreMeetings[i].data().update,
                     calendar: firestoreMeetings[i].data().calendar,
+                    notion: firestoreMeetings[i].data().notion,
                 });
             }
 
@@ -455,113 +461,129 @@
     <div class="p-4 pb-2">
         {#each data.meetings as meeting, i (meeting.id)}
             <div animate:flip>
-            {#if showTime(data.meetings, i)}
-                <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
-                    {#if isToday(data.meetings[i].starts)}
-                        Today
-                    {:else}
-                        {format.format(meeting.starts, "dddd, MMMM DD")}
-                    {/if}
-                </p>
+                {#if showTime(data.meetings, i)}
+                    <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
+                        {#if isToday(data.meetings[i].starts)}
+                            Today
+                        {:else}
+                            {format.format(meeting.starts, "dddd, MMMM DD")}
+                        {/if}
+                    </p>
+                {/if}
+            {#if meeting.version != PUBLIC_MEETING_VERSION}
+                <div class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-alloutline-2 outline -outline-offset-1 outline-transparent">
+                    <div class="ml-4">
+                        <div class="animate-spin">
+                            <Icon style="transform: scaleX(-1);" scale=2rem icon="sync"/>
+                        </div>
+                    </div>
+                    <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">Updating Meeting</p>
+                    </div>
+                </div>
+            {:else}
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <svelte:element style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">        
+                    <div class="ml-4">
+                        {#if meeting.thumbnail.startsWith("icon:")}
+                            <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
+                        {/if}
+                    </div>
+                    <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden">
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.location}</p>
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
+                        {#if meeting.role != null}
+                            <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-3 h-4/6"></div>
+                            <div class="flex items-center gap-2 ml-4 md:ml-0">
+                                <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
+                                <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
+                            </div>
+                        {/if}
+                        {#if meeting.signups.length > 0}
+                            <div transition:fade="{{ duration: 100 }}" class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                            <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
+                                {#each meeting.signups as signup, i}
+                                    <div transition:fade="{{ duration: 100 }}" class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                        <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
+                                            <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
+                                        </Tooltip>
+                                    </div>
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+                    <Menu>
+                        <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
+                            <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
+                        </MenuButton>
+                        <MenuItems>
+                            <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
+                                <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Go to Page
+                                </MenuItem>
+                                <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Notion
+                                </MenuItem>
+                                {#if !(meeting.role && !meeting.role.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
+                                    <MenuItem on:click={async (event) => { 
+                                        event.preventDefault(); 
+                                        event.stopPropagation(); 
+
+                                        if(includesSignup(meeting.signups)) {
+                                            await remove(meeting.id, warning, client);
+                                        } else {
+                                            await add(meeting.id, warning, client);
+                                        }
+                                    }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        {#if includesSignup(meeting.signups)}
+                                            Leave
+                                        {:else}
+                                            Sign Up
+                                        {/if}
+                                    </MenuItem>
+                                {/if}
+                                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                                    <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        {#if $selected.includes(meeting.id)}
+                                            Deselect
+                                        {:else}
+                                            Select
+                                        {/if}
+                                    </MenuItem>
+                                {/if}
+                                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
+                                    <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Edit
+                                    </MenuItem>
+                                {/if}
+                                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
+                                    <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Duplicate
+                                    </MenuItem>
+                                {/if}
+                                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
+                                    <MenuItem on:click={async (event) => {
+                                        event.preventDefault(); 
+                                        event.stopPropagation(); 
+
+                                        await deleteMeeting(meeting.id, client);
+                                    }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Delete                           
+                                    </MenuItem>
+                                {/if}
+                                {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || meeting.lead || meeting.synopsis}
+                                    <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Complete
+                                    </MenuItem>
+                                {/if}
+                            </div>
+                        </MenuItems>
+                    </Menu>
+                </svelte:element>
             {/if}
-            <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <svelte:element style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
-                <div class="ml-4">
-                    {#if meeting.thumbnail.startsWith("icon:")}
-                        <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
-                    {/if}
-                </div>
-                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.location}</p>
-                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
-                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
-                    {#if meeting.role != null}
-                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-3 h-4/6"></div>
-                        <div class="flex items-center gap-2 ml-4 md:ml-0">
-                            <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
-                            <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
-                        </div>
-                    {/if}
-                    {#if meeting.signups.length > 0}
-                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
-                        <div class="hidden md:flex items-center gap-2 ml-4 md:ml-0">
-                            {#each meeting.signups as signup, i}
-                                <div class="bg-zinc-100 dark:bg-zinc-900 w-10 min-w-[2.5rem] -mr-5 rounded-full" style="z-index: {meeting.signups.length - i + 1};">
-                                    <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
-                                        <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-10 w-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
-                                    </Tooltip>
-                                </div>
-                            {/each}
-                        </div>
-                    {/if}
-                </div>
-                <Menu>
-                    <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
-                        <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
-                    </MenuButton>
-                    <MenuItems>
-                        <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
-                            <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                Go to Page
-                            </MenuItem>
-                            {#if !(meeting.role && !meeting.role.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
-                                <MenuItem on:click={async (event) => { 
-                                    event.preventDefault(); 
-                                    event.stopPropagation(); 
-
-                                    if(includesSignup(meeting.signups)) {
-                                        await remove(meeting.id, warning, client);
-                                    } else {
-                                        await add(meeting.id, warning, client);
-                                    }
-                                }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    {#if includesSignup(meeting.signups)}
-                                        Leave
-                                    {:else}
-                                        Sign Up
-                                    {/if}
-                                </MenuItem>
-                            {/if}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
-                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    {#if $selected.includes(meeting.id)}
-                                        Deselect
-                                    {:else}
-                                        Select
-                                    {/if}
-                                </MenuItem>
-                            {/if}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
-                                <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    Edit
-                                </MenuItem>
-                            {/if}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
-                                <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    Duplicate
-                                </MenuItem>
-                            {/if}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
-                                <MenuItem on:click={async (event) => {
-                                    event.preventDefault(); 
-                                    event.stopPropagation(); 
-
-                                    await deleteMeeting(meeting.id, client);
-                                }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    Delete                           
-                                </MenuItem>
-                            {/if}
-                            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || meeting.lead || meeting.synopsis}
-                                <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    Complete
-                                </MenuItem>
-                            {/if}
-                        </div>
-                    </MenuItems>
-                </Menu>
-            </svelte:element>
             </div>
         {:else}
             {#if data.loading}

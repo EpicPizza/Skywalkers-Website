@@ -16,7 +16,7 @@ import { meetingIndicator, type Hours } from '$lib/Hours/hours.server';
 import { DOMAIN } from '$env/static/private';
 import meridiem from "date-and-time/plugin/meridiem";
 import format from 'date-and-time';
-import { type FetchedMeeting, getFetchedMeeting } from '$lib/Meetings/helpers.server';
+import { type FetchedMeeting, getFetchedMeeting, editSynopsis } from '$lib/Meetings/helpers.server';
 import { getQueueById, type Queue } from '$lib/Upload/helpers.server';
 
 format.plugin(meridiem);
@@ -113,6 +113,8 @@ export const actions = {
         }
     
         if(!meeting) throw error(404, 'Huh, for some reason the meeting is not here.');
+
+        const notion = meeting.notion;
         
         const formData = await request.formData();
 
@@ -185,7 +187,7 @@ export const actions = {
                 return message(form, "Failed to upload attachment. Please try again.");
             }
 
-            urls.push({url: await getDownloadURL(locRef), type: queues[i].type?.mime ?? "text/plain", name: queues[i].name, code: code, ext: queues[i].type?.ext ?? "txt", location: `${code}.${queues[i].type?.ext ?? "txt"}` });
+            urls.push({url: await getDownloadURL(desRef), type: queues[i].type?.mime ?? "text/plain", name: queues[i].name, code: code, ext: queues[i].type?.ext ?? "txt", location: `${code}.${queues[i].type?.ext ?? "txt"}` });
         }
 
         console.log(urls);
@@ -316,6 +318,8 @@ export const actions = {
             }
 
             t.update(synopsisRef, synopsis);
+
+            await editSynopsis(notion, synopsis);
 
             firebaseAdmin.addLogWithTransaction("Synopsis edited.", "summarize", uid, t);
         })

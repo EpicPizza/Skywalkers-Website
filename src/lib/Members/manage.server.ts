@@ -1,7 +1,8 @@
 import type { SecondaryUser } from "$lib/Firebase/firebase";
 import { firebaseAdmin, getUser } from "$lib/Firebase/firebase.server";
+import { getDefaultRole } from "$lib/Meetings/helpers";
 import type { Role } from "$lib/Roles/role";
-import { getSpecifiedRoles, getSpecifiedRolesWithTransaction } from "$lib/Roles/role.server";
+import { getRolesAsCache, getSpecifiedRoles, getSpecifiedRolesWithTransaction } from "$lib/Roles/role.server";
 import { error } from "@sveltejs/kit";
 import { randomBytes, scryptSync } from 'crypto';
 import { FieldValue, type DocumentReference, type Transaction } from "firebase-admin/firestore";
@@ -181,6 +182,32 @@ export async function unquarantineMember(id: string, adminRoles: Role[], data: Q
 
         t.delete(quarantineRef);
     })
+}
+
+export async function getMemberCache(team: string, roles: Map<string, Role>): Promise<Map<string, SecondaryUser>> {
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('users').where('team', '==', team);
+
+    const docs = (await ref.get()).docs;
+
+    const users = new Map<string, SecondaryUser>();
+
+    for(let i = 0; i < docs.length; i++) {
+        const doc = docs[i];
+
+        const user = doc.data();
+
+        if(user == undefined) throw new Error("User not found.");
+    
+        users.set(docs[i].id, {
+            ...user,
+            roles: Array.from(user.roles, (role: DocumentReference) => { return roles.get(role.id) ?? getDefaultRole(role.id) }),
+            id: doc.id,
+        } as SecondaryUser);
+    }
+
+    return users;
 }
 
 export async function getMember(id: string): Promise<SecondaryUser> {

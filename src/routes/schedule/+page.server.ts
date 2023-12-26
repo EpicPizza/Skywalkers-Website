@@ -54,6 +54,9 @@ export const actions = {
             }, 3000);
         });
 
+        form.data.starting = new Date(form.data.starting.valueOf() - (form.data.timezone * 1000 * 60));
+        form.data.ending = new Date(form.data.ending.valueOf() - (form.data.timezone * 1000 * 60));
+
         form.data.starting.setMilliseconds(0);
         form.data.starting.setSeconds(0);
         form.data.starting.setMinutes(0);
@@ -63,10 +66,10 @@ export const actions = {
         form.data.ending.setSeconds(0);
         form.data.ending.setMinutes(0);
         form.data.ending.setHours(0);
+        
+        const days = ((form.data.ending.valueOf() - form.data.starting.valueOf()) / (1000 * 60 * 60 * 24)) + 1;
 
-        const days = ((form.data.ending.valueOf() - form.data.starting.valueOf()) / (1000 * 60 * 60 * 24)) + 1
-
-        form.data.starting = new Date(form.data.starting.valueOf() - form.data.timezone * 60 * 1000 + (1000 * 60 * 60 * 18));
+        form.data.starting = new Date(form.data.starting.valueOf() + (60 * 60 * 1000 * 18));
 
         const first = form.data.starting;
         const times = 14;

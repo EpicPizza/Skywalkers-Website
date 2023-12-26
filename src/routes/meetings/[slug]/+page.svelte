@@ -85,6 +85,7 @@
                 version: currentMeeting.version,
                 virtual: currentMeeting.virtual,
                 calendar: currentMeeting.calendar,
+                notion: currentMeeting.notion,
             }
         });
     })
@@ -248,6 +249,7 @@
             {#if data.meeting.completed == false && !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
                 <a href="/meetings/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
             {/if}
+            <a href="https://www.notion.so/{data.meeting.notion.replaceAll("-", "")}" class="b-secondary lg:text-lg flex gap-1 items-center"><span>Notion</span></a>
         </div>
     </div>
 </div>
