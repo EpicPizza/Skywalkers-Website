@@ -179,7 +179,8 @@ export const actions = {
 
             try {
                 await locRef.copy(desRef);
-                await desRef.setMetadata({ contentDispoition: 'inline; filename*=utf-8\'\'"' + queues[i].name + '.' + queues[i].type?.ext ?? "txt" + '"'});
+                console.log({ contentDisposition: 'inline; filename*=utf-8\\\'\\\'"' + queues[i].name + '.' + queues[i].type?.ext ?? "txt" + '"', contentType: queues[i].type?.mime ?? "text/plain" })
+                await desRef.setMetadata({ contentDisposition: 'inline; filename*=utf-8\\\'\\\'"' + queues[i].name + '.' + queues[i].type?.ext ?? "txt" + '"', contentType: queues[i].type?.mime ?? "text/plain" });
                //await locFol.delete();
             } catch(e) {
                 console.log(e);

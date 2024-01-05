@@ -64,15 +64,14 @@ export function firebaseClient() {
         if(!browser) return undefined as any;
 
         if(app == undefined) {
-           const firebaseConfig = {
-                apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
-                authDomain: "skywalkers.alexest.net",
-                projectId: "frc-skywalkers",
-                storageBucket: "frc-skywalkers.appspot.com",
-                messagingSenderId: "86129312478",
-                appId: "1:86129312478:web:b06670457b876827e1784f",
-                measurementId: "G-GMZX3PY5H6"
-            };
+            const firebaseConfig = {
+                apiKey: "AIzaSyDUStXNyzY5sOm23Mxh0I40lRQdoNkux58",
+                authDomain: "frc-skywalkers-dev.firebaseapp.com",
+                projectId: "frc-skywalkers-dev",
+                storageBucket: "frc-skywalkers-dev.appspot.com",
+                messagingSenderId: "570673802109",
+                appId: "1:570673802109:web:a9f00bc816ba5d47477a14"
+            };;
     
             app = initializeApp(firebaseConfig);
         }

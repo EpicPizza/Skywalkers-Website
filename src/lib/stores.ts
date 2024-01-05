@@ -5,6 +5,7 @@ import type { firebaseClient } from '$lib/Firebase/firebase';
 import type { DocumentReference } from "firebase/firestore";
 import { browser } from "$app/environment";
 import { PUBLIC_NOTION_PAGE } from "$env/static/public";
+import { persisted } from "svelte-persisted-store";
 
 //here for reference, instead these stores are made with setContext in root layout (or said otherwise).
 
@@ -234,6 +235,16 @@ export const navLinks: Writable<Link[]> = writable([
         protected: true,
     }
 ]);
+
+export function devMode() {
+    const { subscribe, set, update } = persisted("dev", false);
+    
+    return {
+        subscribe,
+        set,
+        update,
+    }
+}
 
 //https://svelte.dev/repl/0ace7a508bd843b798ae599940a91783?version=3.16.7
 export function clickOutside(node: HTMLElement) {

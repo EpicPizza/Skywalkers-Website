@@ -21,6 +21,7 @@
     import Ellipse from "$lib/Builders/Ellipse.svelte";
     import DatePicker from "$lib/Builders/DatePicker.svelte";
     import Tooltip from "$lib/Builders/Tooltip.svelte";
+    import { dev as env } from "$app/environment";
 
     format.plugin(meridiem);
 
@@ -28,6 +29,7 @@
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
     let warning = getContext('warning') as Writable<Warning | undefined>;
+    let dev = getContext('dev') as Writable<boolean>;
 
     let selected = Select();
     let selectedMeetings: typeof data.meetings[0][] = [];
@@ -257,10 +259,10 @@
                         </div>
                     {/if}
                     {#if meeting.signups.length > 0}
-                        <div transition:fade="{{ duration: 100 }}" class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                        <div class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
                         <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
                             {#each meeting.signups as signup, i}
-                                <div transition:fade="{{ duration: 100 }}" class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
                                     <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
                                         <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
                                     </Tooltip>
@@ -273,28 +275,48 @@
                     <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
                         <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                     </MenuButton>
-                    <MenuItems class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
-                        <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                    <MenuItems class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark">
+                        <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                             Go to Page
+                            <Icon scale=1.15rem icon=description></Icon>
                         </MenuItem>
-                        <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                        <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                             Notion
+                            <Icon scale=1.15rem icon=open_in_new></Icon>
                         </MenuItem>
-                        <MenuItem href="/synopsis/{meeting.id}/" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                        <MenuItem href="/synopsis/{meeting.id}/" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                             Synopsis
+                            <Icon scale=1.15rem icon=summarize></Icon>
                         </MenuItem>
+                        {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
+                            <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                {#if $selected.includes(meeting.id)}
+                                    Deselect
+                                    <Icon scale=1.15rem icon=radio_button_checked></Icon>
+                                {:else}
+                                    Select
+                                    <Icon scale=1.15rem icon=radio_button_unchecked></Icon>
+                                {/if}
+                            </MenuItem>
+                        {/if}
                         {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
-                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                    {#if $selected.includes(meeting.id)}
-                                        Deselect
-                                    {:else}
-                                        Select
-                                    {/if}
-                                </MenuItem>
-                            {/if}
-                        {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
-                            <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                            <MenuItem href="/meetings/{meeting.id}/duplicate" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                 Duplicate
+                                <Icon scale=1.15rem icon=content_copy></Icon>
+                            </MenuItem>
+                        {/if}
+                        {#if $dev}
+                            <MenuItem target="_blank" href="https://console.firebase.google.com/u/0/project/frc-skywalkers{env ? "-dev" : ""}/firestore/data/~2Fteams~2F{$client?.team}~2Fmeetings~2F{meeting.id}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Firebase
+                                <Icon scale=1.15rem icon=terminal></Icon>
+                            </MenuItem>
+                            <MenuItem on:click={(e) => { navigator.clipboard.writeText(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Copy ID
+                                <Icon scale=1.15rem icon=content_copy></Icon>
+                            </MenuItem>
+                            <MenuItem class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                <p>Version</p>
+                                <p>{meeting.version}</p>
                             </MenuItem>
                         {/if}
                     </MenuItems>

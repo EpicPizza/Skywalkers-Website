@@ -1,9 +1,14 @@
-import { DISCORD, CHANNEL, PRIVATE_KEY } from "$env/static/private";
+import { DISCORD, CHANNEL, PRIVATE_KEY, DOMAIN } from "$env/static/private";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import type { DiscordRole } from "$lib/Roles/role";
 import crypto from 'crypto';
 import { attachmentHelpers } from '$lib/Meetings/meetings.server';
 import { error } from "@sveltejs/kit";
+import type { Meeting } from "$lib/Meetings/helpers.server";
+import dnt from 'date-and-time';
+import meridiem from "date-and-time/plugin/meridiem";
+
+dnt.plugin(meridiem);
 
 interface DiscordUser {
     id: string,
@@ -120,6 +125,42 @@ export async function sendDM(content: string, id: string) {
 
     if(result.status != 200) {
         throw error(501, "Discord synopsis not sent");
+    }
+}
+
+export async function sendConfirmation(meeting: Meeting, id: string) {
+    let time = dnt.format(meeting.starts, "h:mm a") + " - " + dnt.format(meeting.ends, "h:mm a");
+
+    let message: any = {
+        embeds: [
+            {
+                title: 'Are you going to ' + meeting.name + ' tomorrow from ' + time + '?',
+                color: '#f0dd30',
+                description: 'This is a meeting confirmation message, if you would like to change where you get meeting confirmations, please go to your account settings.'
+            }
+        ],
+        links: [
+            {
+                label: "Confirm",
+                url: DOMAIN + "/meetings/" + meeting.id,
+            }
+        ]
+    }
+
+    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/dm/" + id));
+
+    console.log(request);
+
+    const result = await fetch(DISCORD + "/post/dm/" + id, {
+        method: "POST",
+        headers: {
+            'content-type': 'application/json',
+        },
+        body: request
+    })
+
+    if(result.status != 200) {
+        throw error(501, "Discord message not sent");
     }
 }
 

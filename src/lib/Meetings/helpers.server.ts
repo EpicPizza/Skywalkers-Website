@@ -1,7 +1,7 @@
 import { message, superValidate } from "sveltekit-superforms/server";
 import { attachmentHelpers, getUserList, meetingSchema } from "./meetings.server";
-import { DOMAIN, NOTION, NOTION_MEETINGS, OWNER } from "$env/static/private";
-import { sendDM } from "$lib/Discord/discord.server";
+import { DEV, DOMAIN, NOTION, NOTION_MEETINGS, OWNER, SENDGRID, SENDGRIDFROM, SENDGRIDNAME, SENDGRIDREPLYTO, SENDGRIDTEMPLATE, TWILIONUMBER, TWILIOSID, TWILIOTOKEN } from "$env/static/private";
+import { sendConfirmation, sendDM } from "$lib/Discord/discord.server";
 import { firebaseAdmin, seralizeFirestoreUser } from "$lib/Firebase/firebase.server";
 import { createEvent, deleteEvent, editEvent, getEvent } from "$lib/Google/calendar";
 import { getClientWithCrendentials, getCalendar } from "$lib/Google/client";
@@ -18,10 +18,20 @@ import { Client } from "@notionhq/client";
 import type { BlockObjectRequest, CreatePageParameters, UpdatePageParameters } from "@notionhq/client/build/src/api-endpoints";
 import type { StringLiteral } from "typescript";
 import {markdownToBlocks, markdownToRichText} from '@tryfabric/martian';
+import mail, { type MailDataRequired } from '@sendgrid/mail';
+import dnt from 'date-and-time';
+import meridiem from "date-and-time/plugin/meridiem";
+import { error } from "@sveltejs/kit";
+import twilio from 'twilio';
 
-//v1.0 - orginal 
+dnt.plugin(meridiem);
+
+//v1.0 - original 
 //v1.1 - added notion
-//v1.2 - bug that when meetings updated to include notion, it didn't mark complete properly
+//v1.2 - bug, when meetings were updated to include notion, it didn't mark complete properly
+//v1.3 - bug, forgot to add location in notion 
+
+//v2.0 - confirmations
 
 export interface NewMeeting { 
     name: string, 
@@ -36,6 +46,7 @@ export interface NewMeeting {
     thumbnail: string, 
     role: null | string,
     signups: string[],
+    confirmations: null | { id: string, result: null | boolean }[]
 }
 
 export interface Meeting extends NewMeeting {
@@ -186,6 +197,17 @@ const update = {
                         }
                     ]
                 },
+                Location: {
+                    type: 'rich_text',
+                    rich_text: [
+                        {
+                            type: 'text',
+                            text: {
+                                'content': meeting.location,
+                            }
+                        }
+                    ]
+                },
             },
             children: []
         } satisfies CreatePageParameters;
@@ -228,7 +250,7 @@ const update = {
 
         await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
             notion: notionMeeting.id,
-            version: "v1.2"
+            version: "v1.3"
         })
 
         return notionMeeting.id;
@@ -246,15 +268,62 @@ const update = {
                 Completed: {
                     type: 'checkbox',
                     checkbox: meeting.completed
-                }
+                },
+                Location: {
+                    type: 'rich_text',
+                    rich_text: [
+                        {
+                            type: 'text',
+                            text: {
+                                'content': meeting.location,
+                            }
+                        }
+                    ]
+                },
             },
         } satisfies UpdatePageParameters;
 
         await notion.pages.update(page);
 
         await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
-            version: "v1.2"
+            version: "v1.3"
         })
+    },
+    voneztwo: async function(meeting: Meeting, user: string, team: string) {
+        const notion = new Client({ auth: NOTION });
+
+        const page = {
+            page_id: meeting.notion,
+            properties: {
+                Location: {
+                    type: 'rich_text',
+                    rich_text: [
+                        {
+                            type: 'text',
+                            text: {
+                                'content': meeting.location,
+                            }
+                        }
+                    ]
+                },
+            },
+        } satisfies UpdatePageParameters;
+
+        await notion.pages.update(page);
+
+        await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
+            version: "v1.3"
+        })
+    },
+    vonezthree: async function(meeting: Meeting, user: string, team: string): Promise<Meeting> {
+        await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
+            version: "v2.0",
+            confirmations: null,
+        })
+
+        meeting.confirmations = null;
+
+        return meeting;
     }
 }
 
@@ -267,7 +336,7 @@ export async function getMeeting(id: string, user: string, team: string): Promis
 
     //if(data.completed == true) throw { message: "Not Editable; Meeting Completed", type: "display" };
 
-    const meeting = {
+    let meeting = {
         name: data.name as string,
         lead: data.lead,
         synopsis:  data.synopsis,
@@ -286,6 +355,7 @@ export async function getMeeting(id: string, user: string, team: string): Promis
         virtual: data.virtual,
         calendar: data.calendar,
         notion: data.notion,
+        confirmations: data.confirmations,
     }
 
     if(meeting.version == "v1.0") {
@@ -294,6 +364,12 @@ export async function getMeeting(id: string, user: string, team: string): Promis
         meeting.notion = id;
     } else if(meeting.version == "v1.1") {
         await update.vonezone(meeting, user, team);
+    } else if(meeting.version == "v1.2") {
+        await update.voneztwo(meeting, user, team);
+    }
+    
+    if(meeting.version == "v1.3") {
+        meeting = await update.vonezthree(meeting, user, team);
     }
     
     return meeting;
@@ -306,7 +382,7 @@ export async function getMeetings(ref: Query, user: string, team: string) {
     const meetings = new Array<Meeting>();
 
     for(let i = 0; i < docs.length; i++) {
-        const meeting = {
+        let meeting = {
             name: docs[i].data().name as string,
             id: docs[i].id as string,
             lead: docs[i].data().lead,
@@ -324,8 +400,9 @@ export async function getMeetings(ref: Query, user: string, team: string) {
             calendar: docs[i].data().calendar,
             completed: docs[i].data().completed,
             signups: docs[i].data().signups,
-            notion: docs[i].data().notion
-        };
+            notion: docs[i].data().notion,
+            confirmations: null,
+        } satisfies Meeting as Meeting;
 
         if(meeting.version == "v1.0") {
             const id = await update.vonezzero(meeting, user, team);
@@ -333,6 +410,12 @@ export async function getMeetings(ref: Query, user: string, team: string) {
             meeting.notion = id;
         } else if(meeting.version == "v1.1") {
             await update.vonezone(meeting, user, team);
+        } else if(meeting.version == "v1.2") {
+            await update.voneztwo(meeting, user, team);
+        }
+
+        if(meeting.version == "v1.3") {
+            meeting = await update.vonezthree(meeting, user, team);
         }
 
         meetings.push(meeting);
@@ -431,6 +514,7 @@ export async function getFetchedMeetings(ref: Query, user: string, team: string)
             virtual: rawMeetings[i].virtual,
             calendar: rawMeetings[i].calendar,
             notion: rawMeetings[i].notion,
+            confirmations: rawMeetings[i].confirmations
         })
 
         if((meetings[i].lead != undefined && meetings[i].lead.team != team) || (meetings[i].synopsis != null && (meetings[i].synopsis as SecondaryUser).team != team) || (meetings[i].mentor != null && (meetings[i].mentor as SecondaryUser).team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
@@ -465,7 +549,8 @@ export async function getFetchedMeetingsOptimized(ref: Query, user: string, team
             signups: Array.from(rawMeeting.signups, (signup) => { return members.get(signup) ?? getDefault(signup) }),
             virtual: rawMeeting.virtual,
             calendar: rawMeeting.calendar,
-            notion: rawMeeting.notion
+            notion: rawMeeting.notion,
+            confirmations: rawMeeting.confirmations,
         } satisfies FetchedMeeting)
 
         //not required since cache is already team scoped
@@ -497,6 +582,7 @@ export async function getFetchedMeeting(id: string, user: string, team: string):
         virtual: rawMeeting.virtual,
         calendar: rawMeeting.calendar,
         notion: rawMeeting.notion,
+        confirmations: rawMeeting.confirmations,
     }
 
     if((meeting.lead != undefined && meeting.lead.team != team) || (meeting.synopsis != undefined && meeting.synopsis.team != team) || (meeting.mentor != undefined && meeting.mentor.team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
@@ -521,6 +607,7 @@ export async function createMeetingFromForm(form: SuperValidated<typeof meetingS
         virtual: form.data.virtual,
         completed: false,
         signups: [],
+        confirmations: null
     }, user, team);
 
     return meeting;
@@ -542,6 +629,7 @@ export async function editMeetingFromForm(currentMeeting: Meeting, form: SuperVa
         virtual: form.data.virtual,
         completed: false,
         signups: currentMeeting.signups,
+        confirmations: null,
     }, user, team);
 }
 
@@ -735,6 +823,17 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
                     }
                 ]
             },
+            Location: {
+                type: 'rich_text',
+                rich_text: [
+                    {
+                        type: 'text',
+                        text: {
+                            'content': location,
+                        }
+                    }
+                ]
+            },
         },
         children: []
     } satisfies CreatePageParameters;
@@ -757,11 +856,12 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
         signups: signups,
         update: signups.length == 0 ? false : true,
         id: id,
-        version: "v1.1",
+        version: "v2.0",
         virtual: virtual,
         notion: notionMeeting.id,
-    } as Meeting;
-
+        confirmations: null,
+    } satisfies Meeting as Meeting;
+ 
     await db.runTransaction(async t => {
         t.create(ref.doc(id), meeting);
 
@@ -923,6 +1023,17 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
                     }
                 ]
             },
+            Location: {
+                type: 'rich_text',
+                rich_text: [
+                    {
+                        type: 'text',
+                        text: {
+                            'content': location,
+                        }
+                    }
+                ]
+            },
         },
         children: []
     } satisfies CreatePageParameters;
@@ -945,11 +1056,13 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
         signups: signups,
         update: signups.length == 0 ? false : true,
         id: id,
-        version: "v1.1",
+        version: "v2.0",
         virtual: virtual,
-        schedule: schedule,
         notion: notionMeeting.id,
-    } as Meeting;
+        confirmations: null,
+        //@ts-expect-error
+        schedule: schedule, //niche use for filtering scheduled meetings
+    } satisfies Meeting as Meeting;
 
     await db.runTransaction(async t => {
         t.create(ref.doc(id), meeting);
@@ -1103,6 +1216,17 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
                     }
                 ]
             },
+            Location: {
+                type: 'rich_text',
+                rich_text: [
+                    {
+                        type: 'text',
+                        text: {
+                            'content': location,
+                        }
+                    }
+                ]
+            },
         }
     } satisfies UpdatePageParameters;
 
@@ -1124,9 +1248,10 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
         signups: signups,
         update: currentMeeting.update,
         id: currentMeeting.id,
-        version: "v1.1",
+        version: "v2.0",
         virtual: virtual,
         notion: notionMeeting.id,
+        confirmations: currentMeeting.confirmations,
     } satisfies Meeting;
 
     await db.runTransaction(async t => {
@@ -1305,4 +1430,155 @@ export async function deleteMeetings(meetings: string[], user: string, team: str
 
         await ref.delete();
     }
+}
+
+export async function sendConfirmations(meeting: Meeting, user: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    const hasConfirmations = await db.runTransaction(async t => {
+        const data = (await t.get(db.collection('teams').doc(team).collection('meetings').doc(meeting.id))).data();
+
+        const confirmations = data?.confirmations;
+
+        if(confirmations === null) {
+            t.update(db.collection('teams').doc(team).collection('meetings').doc(meeting.id), {
+                confirmations: Array.from(meeting.signups, signup => {
+                    return { id: signup, result: null };
+                }) satisfies Meeting["confirmations"],
+            })
+
+            return true;
+        } else {
+            return false;
+        }
+    })
+
+    if(hasConfirmations == false) {
+        throw { message: "Already has confirmations.", type: "display" };
+    }
+
+    mail.setApiKey(SENDGRID);
+
+    if(DEV == 'FALSE') {
+        meeting.starts.setHours(meeting.starts.getHours() - 8);
+        meeting.ends.setHours(meeting.ends.getHours() - 8);
+    }
+
+    let time = dnt.format(meeting.starts, "h:mm a") + " - " + dnt.format(meeting.ends, "h:mm a");
+
+    let emailTo = new Array<string>();
+    let discordTo = new Array<string>();
+    let phoneTo = new Array<{ id: string, number: string }>();
+
+    for(let i = 0; i < meeting.signups.length; i++) {
+        const ref = db.collection('users').doc(meeting.signups[i]).collection('settings').doc('confirmations');
+
+        const doc = await ref.get();
+
+        let preference: 'email' | 'discord' | 'phone' | 'none' = "email"; // Email | Discord | None
+
+        if(doc.exists && doc.data() && doc.data()?.preference != null) {
+            preference = doc.data()?.preference;
+        }
+
+        if(preference == 'discord') {
+            discordTo.push(meeting.signups[i]);
+        } else if(preference == 'email') {
+            emailTo.push(meeting.signups[i])
+        } else if(preference == 'phone') {
+            if(typeof doc.data()?.number == 'string') {
+                phoneTo.push({
+                    id: meeting.signups[i],
+                    number: doc.data()?.number
+                })
+            } else {
+                emailTo.push(meeting.signups[i]);
+            }
+        }
+    }
+
+    for(let i = 0; i < discordTo.length; i++) {
+        const discordRef = db.collection('users').doc(discordTo[i]).collection('settings').doc('discord');
+
+        const discordDoc = await discordRef.get();
+
+        let id: undefined | string = undefined;
+
+        if(discordDoc.exists && discordDoc.data() && discordDoc.data()?.id != null) {
+            id = discordDoc.data()?.id as string;
+        }
+
+        if(id == undefined) {
+            emailTo.push(discordTo[i]) //fallback
+        } else {
+            try {
+                await sendConfirmation(meeting, id);
+            } catch(e) {
+                console.log(e);
+            }
+        }
+    }
+
+    const client = twilio(TWILIOSID, TWILIOTOKEN);
+
+    for(let i = 0; i < phoneTo.length; i++) {
+        try {
+            await client.messages.create({
+                body: 'Hello from Twilio',
+                from: TWILIONUMBER,
+                to: phoneTo[i].number,
+            })
+        } catch(e) {
+            console.log(e);
+
+            emailTo.push(phoneTo[i].id);
+        }
+    }
+
+    const members = await firebaseAdmin.getAuth().getUsers(Array.from(emailTo, (signup) => ({ uid: signup })));
+
+    const emails = Array.from(members.users, member => member.email as string );
+
+    const msg = {
+        from: {
+            email: SENDGRIDFROM,
+            name: SENDGRIDNAME
+        },
+        templateId: SENDGRIDTEMPLATE,
+        replyTo: SENDGRIDREPLYTO,
+        subject: "Confirmation for " + meeting.name,
+        dynamicTemplateData: {
+            name: meeting.name,
+            time: time,
+            link: DOMAIN + "/meetings/" + meeting.id,
+            subject: "Confirmation for " + meeting.name,
+        },
+        personalizations: Array.from(emails, email => {
+            return {
+                to: email,
+            }
+        })
+    } satisfies MailDataRequired;
+
+    mail.send(msg);
+}
+
+export async function markConfirmation(meeting: Meeting, result: null | boolean, user: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    await db.runTransaction(async t => {
+        const confirmations = (await t.get(db.collection('teams').doc(team).collection('meetings').doc(meeting.id))).data()?.confirmations as Meeting["confirmations"];
+
+        if(!confirmations) return;
+
+        for(let i = 0; i < confirmations.length; i++) {
+            if(confirmations[i].id == user) {
+                confirmations[i].result = result;
+            }
+        }
+
+        t.update(db.collection('teams').doc(team).collection('meetings').doc(meeting.id), {
+            confirmations: confirmations,
+        })
+    })
 }

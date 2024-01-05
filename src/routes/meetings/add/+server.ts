@@ -63,6 +63,7 @@ export const PATCH = async ({ locals, request }) => {
                 role: data.role,
                 completed: false,
                 signups: [],
+                confirmations: null,
             }, locals.user.uid, locals.firestoreUser.team);
         } catch(e: any) {
             if('type' in e && e.type == "display") {

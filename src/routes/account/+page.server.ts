@@ -15,21 +15,34 @@ const connect = z.object({
 
 export async function load({ locals, depends }) {
     depends("discord-link");
+    depends("conf-preference");
 
     const form = await superValidate(connect);
 
     if(locals.user && locals.firestoreUser && locals.firestoreUser.team != undefined) {
         const db = firebaseAdmin.getFirestore();
 
-        const ref = db.collection('users').doc(locals.user.uid).collection('settings').doc('discord');
+        const discordRef = db.collection('users').doc(locals.user.uid).collection('settings').doc('discord');
 
-        const doc = await ref.get();
+        const confirmationRef = db.collection('users').doc(locals.user.uid).collection('settings').doc('confirmations');
+
+        const discordDoc = await discordRef.get();
+
+        const confirmationDoc = await confirmationRef.get();
 
         let id: undefined | string = undefined;
 
-        if(doc.exists && doc.data() && doc.data()?.id != null) {
-            id = doc.data()?.id as string;
+        if(discordDoc.exists && discordDoc.data() && discordDoc.data()?.id != null) {
+            id = discordDoc.data()?.id as string;
         }
+
+        let preference: string = "email"; // Email | Discord | Phone | None 
+
+        if(confirmationDoc.exists && confirmationDoc.data() && confirmationDoc.data()?.preference != null) {
+            preference = confirmationDoc.data()?.preference as string;
+        }
+
+        preference = preference.substring(0, 1).toUpperCase() + preference.substring(1, preference.length);
 
         return {
             stream: {
@@ -37,12 +50,14 @@ export async function load({ locals, depends }) {
             },
             form: form,
             id: id,
+            preference: preference,
         }
     } else {
         return {
             stream: {
                 users: undefined,
             },
+            preference: "None",
             form: form,
             id: undefined,
         }

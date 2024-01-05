@@ -93,9 +93,11 @@
                                 <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}'s Profile" src={user.photoURL}/>
                                 <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</p>
                                 <div class="flex gap-1.5">
-                                    <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
-                                    <input step="0.25" class="w-16 p-2 py-0.5 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
-                                    <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
+                                    {#if user.role == 'student'}
+                                        <button disabled={member.time <= 0} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time < 0.25) { member.time = 0; } else if(member.time > 12) { member.time = 12; } else {  member.time -= 0.25; } }}><Icon scale=1.25rem icon=remove></Icon></button>
+                                        <input step="0.25" class="w-16 p-2 py-0.5 text-lg lg:text-xl text-center rounded-md" type=number bind:value={member.time}/>
+                                        <button disabled={member.time >= 12} class="b-primary disabled:cursor-not-allowed w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { if(member.time > 11.75) { member.time = 12; } else if(member.time < 0) { member.time = 0; } else {  member.time += 0.25; } }}><Icon scale=1.25rem icon=add></Icon></button>
+                                    {/if}
                                     <button class="b-accent w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-around" on:click|preventDefault={() => { $form.hours.splice(i, 1); $form.hours = $form.hours; }}><Icon scale=1.25rem icon=delete></Icon></button>
                                 </div>
                             </div>

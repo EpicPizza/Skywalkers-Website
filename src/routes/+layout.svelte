@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getContext, onMount, setContext } from "svelte";
     import "../app.css";
-    import { createMode, createPersistentWritable, createVerified } from '$lib/stores';
+    import { createMode, createPersistentWritable, createVerified, devMode } from '$lib/stores';
     import Nav from '$lib/Nav/Nav.svelte'
     import { firebaseClient } from "$lib/Firebase/firebase";
     import Warning from '$lib/Builders/Warning.svelte';
@@ -19,6 +19,8 @@
     let loading = writable<boolean>();
     let bottom = writable<boolean>();
 
+    let dev = devMode();
+
     mode.serverInit(data.mode);
     client.serverInit(data.preload);
     verified.serverInit(data.team);
@@ -26,6 +28,7 @@
     setContext('mode', mode);
     setContext('client', client);
     setContext('verified', verified);
+    setContext('dev', dev);
 
     setContext('navmenu', writable(false));
     setContext('scroll', writable(true));

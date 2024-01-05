@@ -8,6 +8,7 @@
     import Loading from "$lib/Builders/Loading.svelte";
     import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
     import { remove, add, deleteMeetings, deleteMeeting } from "$lib/Meetings/meetings";
+    import { dev as env } from '$app/environment';
     import { Menu, MenuButton, MenuItems, MenuItem } from "@rgossiaux/svelte-headlessui";
     import Dialog from "$lib/Builders/Dialog.svelte";
     import format from "date-and-time";
@@ -22,12 +23,13 @@
     import { fade, slide } from "svelte/transition";
     import { getDefault } from "$lib/Meetings/helpers.js";
     import Tooltip from "$lib/Builders/Tooltip.svelte";
-    import { PUBLIC_MEETING_VERSION } from "$env/static/public";
+    import { PUBLIC_DOMAIN, PUBLIC_MEETING_VERSION } from "$env/static/public";
 
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>
     let bottom = getContext('bottom') as Writable<boolean>;
     let warning = getContext('warning') as Writable<Warning | undefined>;
+    let dev = getContext('dev') as Writable<boolean>;
 
     format.plugin(meridiem);
 
@@ -154,6 +156,7 @@
                     update: firestoreMeetings[i].data().update,
                     calendar: firestoreMeetings[i].data().calendar,
                     notion: firestoreMeetings[i].data().notion,
+                    confirmations: firestoreMeetings[i].data().confirmations,
                 });
             }
 
@@ -483,7 +486,7 @@
                 </div>
             {:else}
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
-                <svelte:element style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/meetings/{meeting.id}" class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">        
+                <button style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } else { goto("/meetings/" + meeting.id); }} } class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">        
                     <div class="ml-4">
                         {#if meeting.thumbnail.startsWith("icon:")}
                             <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
@@ -503,10 +506,10 @@
                             </div>
                         {/if}
                         {#if meeting.signups.length > 0}
-                            <div transition:fade="{{ duration: 100 }}" class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                            <div class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
                             <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
                                 {#each meeting.signups as signup, i}
-                                    <div transition:fade="{{ duration: 100 }}" class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                    <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
                                         <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
                                             <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
                                         </Tooltip>
@@ -515,17 +518,19 @@
                             </div>
                         {/if}
                     </div>
-                    <Menu>
+                    <Menu on:click={(e) => { e.stopPropagation(); }}>
                         <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
                             <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
                         </MenuButton>
                         <MenuItems>
-                            <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[8rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
-                                <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                            <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
+                                <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                     Go to Page
+                                    <Icon scale=1.15rem icon=description></Icon>
                                 </MenuItem>
-                                <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                     Notion
+                                    <Icon scale=1.15rem icon=open_in_new></Icon>
                                 </MenuItem>
                                 {#if !(meeting.role && !meeting.role.permissions.includes('LEAVE_SIGNUP')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MODERATE_MEETINGS'))}
                                     <MenuItem on:click={async (event) => { 
@@ -537,31 +542,37 @@
                                         } else {
                                             await add(meeting.id, warning, client);
                                         }
-                                    }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                         {#if includesSignup(meeting.signups)}
                                             Leave
+                                            <Icon scale=1.15rem icon=close></Icon>
                                         {:else}
                                             Sign Up
+                                            <Icon scale=1.15rem icon=done></Icon>
                                         {/if}
                                     </MenuItem>
                                 {/if}
                                 {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS')) || !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('LEAVE_SIGNUP'))}
-                                    <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                         {#if $selected.includes(meeting.id)}
                                             Deselect
+                                            <Icon scale=1.15rem icon=radio_button_checked></Icon>
                                         {:else}
                                             Select
+                                            <Icon scale=1.15rem icon=radio_button_unchecked></Icon>
                                         {/if}
                                     </MenuItem>
                                 {/if}
                                 {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('EDIT_MEETINGS'))}
-                                    <MenuItem href="/meetings/{meeting.id}/edit" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    <MenuItem href="/meetings/{meeting.id}/edit" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                         Edit
+                                        <Icon scale=1.15rem icon=edit></Icon>
                                     </MenuItem>
                                 {/if}
                                 {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('CREATE_MEETINGS'))}
-                                    <MenuItem href="/meetings/{meeting.id}/duplicate" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    <MenuItem href="/meetings/{meeting.id}/duplicate" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                         Duplicate
+                                        <Icon scale=1.15rem icon=content_copy></Icon>
                                     </MenuItem>
                                 {/if}
                                 {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS'))}
@@ -570,19 +581,35 @@
                                         event.stopPropagation(); 
 
                                         await deleteMeeting(meeting.id, client);
-                                    }} class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
-                                        Delete                           
+                                    }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Delete      
+                                        <Icon scale=1.15rem icon=delete></Icon>                     
                                     </MenuItem>
                                 {/if}
                                 {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('DELETE_MEETINGS')) || meeting.lead || meeting.synopsis}
-                                    <MenuItem href="/meetings/{meeting.id}/complete" class="float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    <MenuItem href="/meetings/{meeting.id}/complete" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
                                         Complete
+                                        <Icon scale=1.15rem icon=double_arrow></Icon>
+                                    </MenuItem>
+                                {/if}
+                                {#if $dev}
+                                    <MenuItem target="_blank" href="https://console.firebase.google.com/u/0/project/frc-skywalkers{env ? "-dev" : ""}/firestore/data/~2Fteams~2F{$client?.team}~2Fmeetings~2F{meeting.id}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Firebase
+                                        <Icon scale=1.15rem icon=terminal></Icon>
+                                    </MenuItem>
+                                    <MenuItem on:click={(e) => { navigator.clipboard.writeText(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        Copy ID
+                                        <Icon scale=1.15rem icon=content_copy></Icon>
+                                    </MenuItem>
+                                    <MenuItem class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                        <p>Version</p>
+                                        <p>{meeting.version}</p>
                                     </MenuItem>
                                 {/if}
                             </div>
                         </MenuItems>
                     </Menu>
-                </svelte:element>
+                </button>
             {/if}
             </div>
         {:else}
@@ -619,7 +646,7 @@
         <svelte:element this={data.completed ? "div" : "a"} href={data.completed ? undefined : "/meetings/completed/1"} class="w-full lg:text-lg  text-center my-1.5 rounded-md {!data.completed ? "bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10" : "bg-accent-500 text-black text-dcursor-not-allowed"} transition flex justify-around items-center">
             Completed
         </svelte:element>
-    </div>
+    </div>  
 {:else}
     <div on:outroend={() => { checkLeave(); }} transition:slide|local class="h-12 lg:h-14 sticky z-[5] bottom-0 border-border-light dark:border-border-dark border-t-[1px] bg-backgroud-light dark:bg-backgroud-dark overflow-auto">
         <div class="flex px-1.5 gap-1.5 h-full">

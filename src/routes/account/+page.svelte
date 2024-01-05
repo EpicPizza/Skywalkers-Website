@@ -17,10 +17,12 @@
     import { superForm } from "sveltekit-superforms/client";
     import colors from "tailwindcss/colors";
     import Tooltip from "$lib/Builders/Tooltip.svelte";
+    import Menu from '$lib/Batteries/Menu.svelte';
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
     let verified = getContext('verified') as ReturnType<typeof createVerified>;
     let warning = getContext('warning') as Writable<Warning | undefined>;
+    let dev = getContext('dev') as Writable<boolean>;
 
     let open = false;
     let confirmOpen = false;
@@ -66,6 +68,44 @@
             }
         }
     }
+
+    async function changePreference(preference: string) {
+        if(preference == 'Phone') {
+            phoneOpen = true;
+            phoneNumber = "";
+            
+            return;
+        }
+
+        preference = preference.toLowerCase();
+
+        await fetch('/account/confirmations/' + preference, {
+            method: 'POST'
+        });
+
+        invalidate("conf-preference");
+    }
+
+    let phoneOpen = false;
+    let phoneNumber = "";
+    let phoneError = "";
+
+    async function finishPhone() {
+        phoneError = "";
+        
+        const res = await fetch('/account/confirmations/phone', {
+            method: 'POST',
+            body: phoneNumber,
+        });
+
+        if(res.status == 400) {
+            phoneError = "Invalid Phone Number";
+        } else {
+            phoneOpen = false;
+
+            invalidate("conf-preference");
+        }
+    }
 </script>
 
 <svelte:head>
@@ -78,7 +118,7 @@
         <Line class="mb-6 mt-2"></Line>
         {#if $verified}
             <div class="flex items-center justify-between">
-                <p>Linked Discord Account: </p>
+                <p>Linked discord account: </p>
                 <div class="flex gap-2 h-[34px]">
                     <button disabled={data.id != undefined} class="b-accent h-[34px]" on:click={() => { open = !open; reset(); selected = -1; }}>
                         {#if data.id == undefined}
@@ -97,6 +137,20 @@
                         </form>
                     {/if}
                 </div>
+            </div>
+            <div class="flex items-center justify-between mt-2 pb-1">
+                <p>Developer mode:</p>
+                <button on:click={() => { $dev = !$dev; }} class="p-1 {$dev ? "border-blue-700 dark:border-blue-500 bg-blue-200 dark:bg-blue-900 text-blue-700 dark:text-blue-500" : "border-border-light dark:border-border-dark text-border-light dark:text-border-dark"} border-[1px] rounded-md m-0.5 transition disabled:cursor-not-allowed disabled:opacity-40">
+                    <Icon icon=check></Icon>
+                </button>
+            </div>
+            <div class="flex items-center justify-between mt-1 pb-1">
+                <p>Recieve confirmations via:</p>
+                <Menu raw={true} selected={data.preference} choices={["Email", "Discord", "Phone", "None"]} on:select={(e) => { changePreference(e.detail); }}>
+                    <button class="b-secondary">
+                        {data.preference}
+                    </button>
+                </Menu>
             </div>
         {:else}
             <div class="bg-yellow-500 bg-opacity-20 dark:bg-opacity-10 dark:text-yellow-500 text-yellow-900 flex rounded-lg p-4 gap-3">
@@ -205,5 +259,31 @@
                 </div>
             {/if}
         {/await}
+    </div>
+</Dialog>
+
+<Dialog bind:isOpen={phoneOpen} width=24rem>
+    <h1 slot=title class="text-2xl">Add Phone Number</h1>
+
+    <div slot=description>
+        <Line class="mt-4"></Line>
+    </div>
+
+    <p class="mt-4">North American phone numbers only.</p>
+
+    <div class="w-[5.375rem] mt-4">
+        <p class="text-sm -mt-5 translate-x-2 translate-y-4 w-min whitespace-nowrap bg-white dark:bg-zinc-800 px-1 leading-4">Phone Number:</p>
+        <input autocomplete="off" bind:value={phoneNumber} placeholder="000-000-0000" name="phone" class="p-2 mt-2 bg-white border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 border-[1px] rounded-md pl-3" type="string">
+    </div>
+
+    {#if phoneError != ""}
+        <p class="mt-2 text-red-500 font-bold">{phoneError}</p>
+    {/if}
+
+    <Line class="my-4"></Line>
+
+    <div class="flex flex-row-reverse">  
+        <button disabled={phoneNumber.length == 0} on:click={finishPhone} class="b-green disabled:opacity-50 disabled:cursor-not-allowed">Add</button>
+        <button class="b-default mr-2 ml-1" on:click|preventDefault={(e) => { e.preventDefault(); phoneOpen = !phoneOpen; }}>Cancel</button>
     </div>
 </Dialog>

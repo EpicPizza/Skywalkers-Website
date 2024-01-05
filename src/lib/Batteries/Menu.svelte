@@ -11,6 +11,7 @@
 
     export let choices: string[];
     export let selected: string;
+    export let raw = false;
 
     const dispatch = createEventDispatcher();
 
@@ -19,8 +20,8 @@
     export { className as class };
 </script>
 
-<button on:click|stopPropagation class="w-full sm:w-fit" tabindex={-1}>
-    <button use:melt={$trigger} class="w-full sm:w-fit">
+<button on:click|stopPropagation class="{raw ? "w-fit" : "w-full sm:w-fit"}" tabindex={-1}>
+    <button use:melt={$trigger} class="{raw ? "w-fit" : "w-full sm:w-fit"}">
         <slot/>
     </button>
 </button>

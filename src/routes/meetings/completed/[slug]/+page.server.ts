@@ -18,9 +18,9 @@ export async function load({ locals, url, params }) {
 
     let count = (await firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', true).count().get()).data().count;
    
-    if(on * 50 - 50 > count) throw error(400, "Invalid Page Number");
+    if(on * 15 - 15 > count) throw error(400, "Invalid Page Number");
 
-    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', true).orderBy('starts', 'desc').offset((on - 1) * 50).limit(50);
+    const ref = firebaseAdmin.getFirestore().collection('teams').doc(locals.firestoreUser.team).collection('meetings').where('completed', '==', true).orderBy('starts', 'desc').offset((on - 1) * 15).limit(15);
 
     const roles = await getRolesAsCache(locals.firestoreUser.team);
     const members = await getMemberCache(locals.firestoreUser.team, roles);
@@ -33,12 +33,12 @@ export async function load({ locals, url, params }) {
         page: {
             total: {
                 count: count,
-                pages: Math.ceil(count / 50),
+                pages: Math.ceil(count / 15),
             },
             on: on, 
             beginning: on == 1,
-            end: on >= Math.ceil(count / 50),
-            showing: (meetings.length == 0 ? 0 : ((on - 1) * 50) + 1) + " - " + (count > on * 50 ? on * 50 : count),
+            end: on >= Math.ceil(count / 15),
+            showing: (meetings.length == 0 ? 0 : ((on - 1) * 15) + 1) + " - " + (count > on * 15 ? on * 15 : count),
         }
     };
 }
