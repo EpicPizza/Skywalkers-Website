@@ -1,7 +1,7 @@
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
-import { quarantineMember } from "$lib/Members/manage.server";
 import { error, redirect } from "@sveltejs/kit";
 import { unlink } from '$lib/Discord/link.server';
+import { kickMember } from "$lib/Members/manage.server.js";
 
 export const actions = {
     default: async function({ locals }) {
@@ -13,11 +13,7 @@ export const actions = {
 
         const doc = await ref.get();
 
-        const kickedRef = db.collection('quarantine').doc(locals.user.uid);
-
-        let kickedDoc = await kickedRef.get();
-
-        if((!doc.exists || doc.data() == undefined) && (!kickedDoc || kickedDoc.data() == undefined)) {
+        if((!doc.exists || doc.data() == undefined)) {
             try {
                 await firebaseAdmin.getAuth().deleteUser(locals.user.uid);
             } catch(e) {
@@ -29,34 +25,16 @@ export const actions = {
             return { success: true };
         } else if(!(!doc.exists || doc.data() == undefined)) {
             try {
-                await unlink(locals.user.uid);
-
-                await quarantineMember(locals.user.uid);
+                if(locals.firestoreUser) {
+                    for(let i = 0; i < locals.firestoreUser.teams.length; i++) {
+                        kickMember(locals.user.uid, locals.firestoreUser.teams[i].team);
+                    }
+                }
             } catch(e) {
                 console.log(e);
 
                 return error(401, "An unexpected error occurred, please contact us for further help.");
             }
-        }
-
-        kickedDoc = await kickedRef.get();
-
-        if(!(!kickedDoc || kickedDoc.data() == undefined)) {
-            const hoursRef = db.collection('teams').doc(kickedDoc.data()?.team).collection('hours').doc(locals.user.uid);
-
-            const hours = await hoursRef.get();
-
-            if(hours.exists) await hoursRef.delete();
-
-            await kickedRef.delete();
-        } else {
-            console.log("Kicked doc not found.");
-
-            throw error(501, "An unexpected error occurred, please contact us for further help.");
-        }
-
-        if(locals.firestoreUser && locals.firestoreUser.team) {
-            await firebaseAdmin.addLog("Left the team.", "person", locals.user.uid);
         }
 
         try {
@@ -66,22 +44,6 @@ export const actions = {
 
             throw error(501, "An unexpected error occurred, please contact us for further help.");
         }
-
-        const folderPath = `users/${locals.user.uid}`;
-
-        await new Promise((resolve) => {
-            firebaseAdmin.getBucket().deleteFiles({
-                prefix: folderPath,
-            }, (err, files) => {
-                if(err) {
-                    console.log(err);
-
-                    throw error(501, "An unexpected error occurred, please contact us for further help.");
-                }
-
-                resolve(null);
-            })
-        });
 
         return { success: true };
     }       

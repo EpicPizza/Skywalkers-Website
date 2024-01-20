@@ -6,6 +6,8 @@
     import ImmediateDispatchDelete from "./ImmediateDispatchDelete.svelte";
     import type { Role } from "$lib/Roles/role";
     import { string } from "zod";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
+    import type { Writable } from "svelte/store";
 
     const dispatch = createEventDispatcher();
 
@@ -13,9 +15,12 @@
 
     export {id as role};
 
-    let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const team = getContext('team') as Writable<string>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
 
-    let role = client.getRole(id);
+    let role = client.getRole(id, $team);
 
     let awaitedRole: Role | undefined;
 
@@ -23,7 +28,7 @@
 
     let invalidObject: { id: string, invalid: boolean } = { id: "", invalid: false } ;
 
-    $: invalid = (awaitedRole != undefined && $client?.level != undefined && awaitedRole.level >= $client?.level) || ($client?.permissions != undefined && !$client?.permissions.includes("MANAGE_ROLES"));
+    $: invalid = (awaitedRole != undefined && $currentTeam && $currentTeam.level != undefined && awaitedRole.level >= $currentTeam.level) || ($permissions.includes("MANAGE_ROLES"));
 
     $: invalidObject.invalid = invalid;
 

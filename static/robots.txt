@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /t/
+Disallow: /team/
+Disallow: /account/
+Disallow: /batteries/
+Disallow: /meetings/
+Disallow: /synopsis/
+Disallow: /session/
+Disallow: /upload/

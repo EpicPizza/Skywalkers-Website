@@ -6,8 +6,13 @@
     import AddMemberDialog from "./AddMemberDialog.svelte";
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
+    import type { Writable } from "svelte/store";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+    const team = getContext('team') as Writable<string>;
 
     export let role: Role;   
 
@@ -18,7 +23,7 @@
 
         loading = true;
 
-        await fetch("/api/roles/remove", {
+        await fetch("/t/" + $team + "/api/roles/remove", {
             method: 'POST',
             body: JSON.stringify({
                 uid: id,
@@ -38,7 +43,7 @@
     <div class="p-4 pt-0 w-full h-full overflow-scroll bg-backgroud-light dark:bg-backgroud-dark rounded-xl relative">
         <div class="flex justify-between items-center h-[4.125rem]">
             <h1 class="text-2xl font-bold">{role.name}</h1>
-            {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)}
+            {#if !(!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)}
                 <button on:click={() => { open = !open; }} class="b-default">Add</button>
             {/if}
         </div>
@@ -53,11 +58,11 @@
             {#each members as member}
                 <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center">
-                        <img class="h-9 w-9 rounded-full" referrerpolicy="no-referrer" alt="{member.team}'s profile" src={member.photoURL} />
+                        <img class="h-9 w-9 rounded-full" referrerpolicy="no-referrer" alt="{member.displayName}'s profile" src={member.photoURL} />
                         <p class="text-lg ml-2 font-light">{member.displayName}{member.pronouns ? " (" + member.pronouns + ")" : ""}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)}
+                        {#if !(!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level <= role.level)}
                             <button class="b-default h-[2.125rem]" on:click={() => { handleRemove(member.id) }}>Remove</button>
                         {/if}
                     </div>

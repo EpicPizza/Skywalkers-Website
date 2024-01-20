@@ -12,6 +12,7 @@
     
     let sidebar = getContext('sidebar') as Writable<boolean>;
     let clicked = getContext('clicked') as Writable<boolean>;
+    let team = getContext('team') as Writable<string>;
 
     let open: boolean = false;
     let colorElement: HTMLElement;
@@ -36,7 +37,7 @@
             open = false;
 
             if($message.length > "Role Added at ".length) {
-                goto("/settings/roles/" + $message.substring("Role Added at ".length, $message.length));
+                goto("/t/" + $team + "/settings/roles/" + $message.substring("Role Added at ".length, $message.length));
             }
 
             $sidebar = false;
@@ -63,7 +64,7 @@
     <h1 class="text-2xl" slot=title>Create Role</h1>
 
     <div slot=content class="mt-4">
-        <form method="POST" use:enhance action="/api/roles/create"> <!-- No actions allowed on layouts, so I instead put the action in a seperate url. -->
+        <form method="POST" use:enhance action="/t/{$team}/api/roles/create"> <!-- No actions allowed on layouts, so I instead put the action in a seperate url. -->
             <Line class="mb-4"></Line>
             <div class="flex items-center">
                 <h2 class="text-lg mr-2">Name:</h2>

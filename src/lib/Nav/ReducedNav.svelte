@@ -5,8 +5,16 @@
     import Profile from "./Profile.svelte";
     import { Menu } from "@rgossiaux/svelte-headlessui";
     import type { Writable } from "svelte/store";
+    import { page } from "$app/stores"
+    import type { createCurrentTeam } from "$lib/stores";
 
     let navmenu = getContext('navmenu') as Writable<boolean>;
+    let teamInfo = getContext('teamInfo') as Writable<Map<string, { name: string, website: string, icon: string }>>
+    let team = getContext('team') as Writable<string>;
+    let global = getContext('global') as Writable<boolean>;
+    let currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+
+    $: info = $teamInfo.get($page.params.team == undefined ? ($currentTeam ? $currentTeam.team : "000000") : $page.params.team);
 
     onDestroy(() => {
         $navmenu = false;
@@ -29,9 +37,15 @@
     </div>
     
     <div class="flex flex-row justify-around w-full">
-        <a bind:this={main} href="/" class="flex justify-around absolute h-full flex-col">
-            <img alt="logo" src="/favicon.webp" class="max-h-[3rem] max-w-[3rem] rounded-lg">
-        </a>
+        {#if info}
+            <a bind:this={main} href="{!$global && ($page.params.team || $currentTeam)  ? "/t/" + ($page.params.team == undefined ? ($currentTeam ? $currentTeam.team : "000000") : $page.params.team) : ""}/" class="flex justify-around absolute h-full flex-col">
+                <img alt="logo" src="{$global ? "/favicon.webp" : info.icon}" class="max-h-[3rem] max-w-[3rem] rounded-lg">
+            </a>
+        {:else}
+            <a bind:this={main} href="{!$global && ($page.params.team || $currentTeam)  ? "/t/" + ($page.params.team == undefined ? ($currentTeam ? $currentTeam.team : "000000") : $page.params.team) : ""}/" class="flex justify-around absolute h-full flex-col">
+                <img alt="logo" src="/favicon.webp" class="max-h-[3rem] max-w-[3rem] rounded-lg">
+            </a>
+        {/if}
     </div>
     
     <div  class="min-w-[5rem] flex float-right h-full flex-col justify-around">

@@ -1,4 +1,4 @@
-import { ADMIN, DEV, OWNER } from '$env/static/private';
+import { ADMIN, DEV, OWNER, OWNER_TEAM } from '$env/static/private';
 import { getCalendar, getClient, getClientWithCrendentials } from '$lib/Google/client';
 import { editEvent, getEvent } from '$lib/Google/calendar';
 import { sendDM } from '$lib/Discord/discord.server';
@@ -13,7 +13,7 @@ export default async function editAttendees(data: ReturnType<DocumentData["data"
             return;
         }
 
-        await sendDM("Authorization Needed", OWNER);
+        await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
 
         process.exit();
     }
@@ -25,7 +25,7 @@ export default async function editAttendees(data: ReturnType<DocumentData["data"
             return;
         }
 
-        await sendDM("Authorization Needed", OWNER);
+        await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
 
         process.exit();
     }

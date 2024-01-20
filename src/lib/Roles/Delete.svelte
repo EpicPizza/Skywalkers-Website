@@ -10,8 +10,12 @@
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
     import type { Writable } from "svelte/store";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+    const team = getContext('team') as Writable<string>;
 
     let sidebar = getContext('sidebar') as Writable<boolean>;
     let clicked = getContext('clicked') as Writable<boolean>;
@@ -26,10 +30,10 @@
 
         loading = true;
 
-        await deleteRole(role.id);
+        await deleteRole(role.id, $team);
 
         if($page.params.slug == role.id) {
-            goto("/settings/roles");
+            goto("/t/" + $team + "/settings/roles");
 
             $sidebar = true;
         }
@@ -44,7 +48,7 @@
     }
 </script>
 
-<button class="hidden {($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level) ? "" : "group-hover:block"}" on:click|stopPropagation={handleClick} transition:fade="{{ duration: 100 }}">
+<button class="hidden {!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level ? "" : "group-hover:block"}" on:click|stopPropagation={handleClick} transition:fade="{{ duration: 100 }}">
     <Icon icon=delete scale="1.15rem"></Icon>
 </button>
 

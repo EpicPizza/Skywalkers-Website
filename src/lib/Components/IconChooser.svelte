@@ -5,12 +5,15 @@
 <script lang=ts>
     import Dialog from '$lib/Builders/Dialog.svelte';
     import Loading from '$lib/Builders/Loading.svelte'
-    import { onMount } from 'svelte';
+    import { getContext, onMount } from 'svelte';
     import { fly } from 'svelte/transition';
     import Icon from '$lib/Builders/Icon.svelte';
     import Line from '$lib/Builders/Line.svelte';
     import { browser } from '$app/environment';
     import Tooltip from '$lib/Builders/Tooltip.svelte';
+    import type { Writable } from 'svelte/store';
+
+    const team = getContext('team') as Writable<string>;
 
     let icons: string[] = [];
 
@@ -105,7 +108,7 @@
     async function getIcons(page: number): Promise<string[]> {
         let cache = cachedIcons.get(page);
         if(cache == undefined) {
-            const result = await fetch("/api/icons", {
+            const result = await fetch("/t/" + $team + "/api/icons", {
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json',
@@ -128,7 +131,7 @@
     async function searchIcons(query: string) {
         let cache = cachedIcons.get(query);
         if(cache == undefined) {
-            const result = await fetch("/api/icons", {
+            const result = await fetch("/t/" + $team + "/api/icons", {
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json',

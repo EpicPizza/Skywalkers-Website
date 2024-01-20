@@ -9,7 +9,7 @@ const Number = z.string();
 export async function POST({ request, locals, params }) {
     if(locals.user == undefined) throw error(403, "Sign In Required");
 
-    if(locals.team == false || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+    if(locals.team == undefined || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
 
     let preference: z.infer<typeof Preference> = "none";
     let number: string = "";

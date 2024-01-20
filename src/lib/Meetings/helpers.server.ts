@@ -1,13 +1,13 @@
 import { message, superValidate } from "sveltekit-superforms/server";
 import { attachmentHelpers, getUserList, meetingSchema } from "./meetings.server";
-import { DEV, DOMAIN, NOTION, NOTION_MEETINGS, OWNER, SENDGRID, SENDGRIDFROM, SENDGRIDNAME, SENDGRIDREPLYTO, SENDGRIDTEMPLATE, TWILIONUMBER, TWILIOSID, TWILIOTOKEN } from "$env/static/private";
+import { DEV, DOMAIN, OWNER_TEAM, OWNER, SENDGRID, SENDGRIDFROM, SENDGRIDNAME, SENDGRIDREPLYTO, SENDGRIDTEMPLATE, TWILIONUMBER, TWILIOSID, TWILIOTOKEN } from "$env/static/private";
 import { sendConfirmation, sendDM } from "$lib/Discord/discord.server";
-import { firebaseAdmin, seralizeFirestoreUser } from "$lib/Firebase/firebase.server";
+import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { createEvent, deleteEvent, editEvent, getEvent } from "$lib/Google/calendar";
 import { getClientWithCrendentials, getCalendar } from "$lib/Google/client";
 import type { SuperValidated } from "sveltekit-superforms";
 import { getRole, getRoleWithMembers } from "$lib/Roles/role.server";
-import type { DocumentReference, Query, Transaction } from "firebase-admin/firestore";
+import { FieldValue, type DocumentReference, type Query, type Transaction } from "firebase-admin/firestore";
 import type { SecondaryUser } from "$lib/Firebase/firebase";
 import type { Role } from "$lib/Roles/role";
 import { getMember } from "$lib/Members/manage.server";
@@ -23,6 +23,7 @@ import dnt from 'date-and-time';
 import meridiem from "date-and-time/plugin/meridiem";
 import { error } from "@sveltejs/kit";
 import twilio from 'twilio';
+import { getDownloadURL } from "firebase-admin/storage";
 
 dnt.plugin(meridiem);
 
@@ -32,6 +33,8 @@ dnt.plugin(meridiem);
 //v1.3 - bug, forgot to add location in notion 
 
 //v2.0 - confirmations
+
+//v3.0 - adding team number to synopses files
 
 export interface NewMeeting { 
     name: string, 
@@ -53,6 +56,7 @@ export interface Meeting extends NewMeeting {
     link: null | string
     version: string,
     calendar: string,
+    guests: string[],
     update: boolean,
     notion: string,
     id: string,
@@ -105,223 +109,26 @@ export function getToday() {
     return today;
 }
 
+export async function getTeamNotion(team: string): Promise<{ secret: string, database: string }> {
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('teams').doc(team).collection('settings').doc('notion');
+
+    const doc = await ref.get();
+
+    if(!doc.exists || doc.data() == undefined) throw new Error("Notion settings not found.");
+
+    return { secret: doc.data()?.secret as string, database: doc.data()?.database as string }; 
+}
+
 const update = {
-    vonezzero: async function(meeting: Meeting, user: string, team: string) {
-        console.log(meeting.id);
-
-        const notion = new Client({ auth: NOTION });
-
-        const page = {
-            parent: {
-                database_id: NOTION_MEETINGS,
-            },
-            properties: {
-                title: {
-                    type: 'title',
-                    title: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.name
-                            }
-                        }
-                    ]
-                },
-                Completed: {
-                    type: 'checkbox',
-                    checkbox: meeting.completed
-                },
-                Link: {
-                    type: 'url',
-                    url: DOMAIN + "/meetings/" + meeting.id,
-                },
-                Group: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': (await getRole(meeting.role ?? "000000", team))?.name ?? "Blank"
-                            }
-                        }
-                    ]
-                },
-                Time: {
-                    type: 'date',
-                    date: {
-                        start: meeting.starts.toISOString(),
-                        end: meeting.ends.toISOString(),
-                    }
-                },
-                Lead: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': (await getMember(meeting.lead.id))?.displayName ?? "None"
-                            }
-                        }
-                    ]
-                },
-                Mentor: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.mentor ? (await getMember(meeting.mentor.id)).displayName ?? "None" : "None"
-                            }
-                        }
-                    ]
-                },
-                Synopsis: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.synopsis ? (await getMember(meeting.synopsis.id)).displayName ?? "None" : "None"
-                            }
-                        }
-                    ]
-                },
-                Warning: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': "EDIT IN WEBSITE, your changes here will be overwritten."
-                            }
-                        }
-                    ]
-                },
-                Location: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.location,
-                            }
-                        }
-                    ]
-                },
-            },
-            children: []
-        } satisfies CreatePageParameters;
-
-        const notionMeeting = await notion.pages.create(page);
-
-        if(meeting.completed) {
-            const synopsis = await getSynopsis(meeting.id, user, team);
-
-            const attachments = new Array<BlockObjectRequest>();
-
-            for(let i = 0; i < synopsis.attachments.length; i++) {
-                if(attachmentHelpers.isImage(synopsis.attachments[i].type)) {
-                    attachments.push({
-                        type: "image", 
-                        image: {
-                            type: "external", 
-                            external: { 
-                                url: synopsis.attachments[i].url 
-                            }
-                        }
-                    })
-                } else {
-                    attachments.push({
-                        type: "file",
-                        file: {
-                            type: "external",
-                            external: {
-                                url: synopsis.attachments[i].url 
-                            },
-                            name: synopsis.attachments[i].name + "." + synopsis.attachments[i].ext
-                        }
-                    })
-                }
-            }
-
-            await notion.blocks.children.append({ block_id: notionMeeting.id, children: (markdownToBlocks(synopsis.body) as unknown as BlockObjectRequest[]).concat(attachments)})
-                
-        }
-
+    vthreezzero: async function(meeting: Meeting, user: string, team: string): Promise<Meeting> {
         await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
-            notion: notionMeeting.id,
-            version: "v1.3"
+            version: "v3.1",
+            guests: [],
         })
 
-        return notionMeeting.id;
-    },
-    vonezone: async function(meeting: Meeting, user: string, team: string) {
-        if(meeting.completed) {
-            await editSynopsis(meeting.notion, await getSynopsis(meeting.id, user, team)); //add files
-        }
-
-        const notion = new Client({ auth: NOTION });
-
-        const page = {
-            page_id: meeting.notion,
-            properties: {
-                Completed: {
-                    type: 'checkbox',
-                    checkbox: meeting.completed
-                },
-                Location: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.location,
-                            }
-                        }
-                    ]
-                },
-            },
-        } satisfies UpdatePageParameters;
-
-        await notion.pages.update(page);
-
-        await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
-            version: "v1.3"
-        })
-    },
-    voneztwo: async function(meeting: Meeting, user: string, team: string) {
-        const notion = new Client({ auth: NOTION });
-
-        const page = {
-            page_id: meeting.notion,
-            properties: {
-                Location: {
-                    type: 'rich_text',
-                    rich_text: [
-                        {
-                            type: 'text',
-                            text: {
-                                'content': meeting.location,
-                            }
-                        }
-                    ]
-                },
-            },
-        } satisfies UpdatePageParameters;
-
-        await notion.pages.update(page);
-
-        await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
-            version: "v1.3"
-        })
-    },
-    vonezthree: async function(meeting: Meeting, user: string, team: string): Promise<Meeting> {
-        await firebaseAdmin.getFirestore().collection('teams').doc(team).collection('meetings').doc(meeting.id).update({
-            version: "v2.0",
-            confirmations: null,
-        })
-
-        meeting.confirmations = null;
+        meeting.guests = [];
 
         return meeting;
     }
@@ -356,20 +163,11 @@ export async function getMeeting(id: string, user: string, team: string): Promis
         calendar: data.calendar,
         notion: data.notion,
         confirmations: data.confirmations,
+        guests: data.guests,
     }
 
-    if(meeting.version == "v1.0") {
-        const id = await update.vonezzero(meeting, user, team);
-
-        meeting.notion = id;
-    } else if(meeting.version == "v1.1") {
-        await update.vonezone(meeting, user, team);
-    } else if(meeting.version == "v1.2") {
-        await update.voneztwo(meeting, user, team);
-    }
-    
-    if(meeting.version == "v1.3") {
-        meeting = await update.vonezthree(meeting, user, team);
+    if(meeting.version == "v3.0") {
+        meeting = await update.vthreezzero(meeting, user, team);
     }
     
     return meeting;
@@ -401,21 +199,12 @@ export async function getMeetings(ref: Query, user: string, team: string) {
             completed: docs[i].data().completed,
             signups: docs[i].data().signups,
             notion: docs[i].data().notion,
+            guests: docs[i].data().guests,
             confirmations: null,
         } satisfies Meeting as Meeting;
 
-        if(meeting.version == "v1.0") {
-            const id = await update.vonezzero(meeting, user, team);
-    
-            meeting.notion = id;
-        } else if(meeting.version == "v1.1") {
-            await update.vonezone(meeting, user, team);
-        } else if(meeting.version == "v1.2") {
-            await update.voneztwo(meeting, user, team);
-        }
-
-        if(meeting.version == "v1.3") {
-            meeting = await update.vonezthree(meeting, user, team);
+        if(meeting.version == "v3.0") {
+            meeting = await update.vthreezzero(meeting, user, team);
         }
 
         meetings.push(meeting);
@@ -435,7 +224,7 @@ export async function getSynopsis(id: string, user: string, team: string) {
 
     for(let i = 0; i < synopsis.hours.length; i++) {
         try { 
-            let member = await getMember(synopsis.hours[i].member.id); 
+            let member = await getMember(synopsis.hours[i].member.id, team); 
 
             hours.push({
                 member,
@@ -497,9 +286,9 @@ export async function getFetchedMeetings(ref: Query, user: string, team: string)
     for(let i = 0; i < rawMeetings.length; i++) {
         meetings.push({
             name: rawMeetings[i].name as string,
-            lead: await seralizeFirestoreUser((await rawMeetings[i].lead.get()).data(), rawMeetings[i].lead.id) as SecondaryUser,
-            synopsis:  rawMeetings[i].synopsis == null ? null : await getMember((rawMeetings[i].synopsis as DocumentReference).id) ?? null,
-            mentor: rawMeetings[i].mentor == null ? null : await getMember((rawMeetings[i].mentor as DocumentReference).id) ?? null,
+            lead: await getMember(rawMeetings[i].lead.id, team, true) as SecondaryUser,
+            synopsis:  rawMeetings[i].synopsis == null ? null : await getMember((rawMeetings[i].synopsis as DocumentReference).id, team, true) ?? null,
+            mentor: rawMeetings[i].mentor == null ? null : await getMember((rawMeetings[i].mentor as DocumentReference).id, team, true) ?? null,
             location: rawMeetings[i].location as string,
             starts: rawMeetings[i].starts,
             ends: rawMeetings[i].ends,
@@ -510,14 +299,15 @@ export async function getFetchedMeetings(ref: Query, user: string, team: string)
             link: rawMeetings[i].link,
             id: rawMeetings[i].id as string,
             version: rawMeetings[i].version,
-            signups: await Promise.all(Array.from(rawMeetings[i].signups, (signup) => { return getMember(signup) })),
+            signups: await Promise.all(Array.from(rawMeetings[i].signups, (signup) => { return getMember(signup, team) })),
             virtual: rawMeetings[i].virtual,
             calendar: rawMeetings[i].calendar,
             notion: rawMeetings[i].notion,
-            confirmations: rawMeetings[i].confirmations
+            confirmations: rawMeetings[i].confirmations,
+            guests: rawMeetings[i].guests,
         })
 
-        if((meetings[i].lead != undefined && meetings[i].lead.team != team) || (meetings[i].synopsis != null && (meetings[i].synopsis as SecondaryUser).team != team) || (meetings[i].mentor != null && (meetings[i].mentor as SecondaryUser).team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
+        //if((meetings[i].lead != undefined && meetings[i].lead.team != team) || (meetings[i].synopsis != null && (meetings[i].synopsis as SecondaryUser).team != team) || (meetings[i].mentor != null && (meetings[i].mentor as SecondaryUser).team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
     }
 
     return meetings;
@@ -551,6 +341,7 @@ export async function getFetchedMeetingsOptimized(ref: Query, user: string, team
             calendar: rawMeeting.calendar,
             notion: rawMeeting.notion,
             confirmations: rawMeeting.confirmations,
+            guests: rawMeeting.guests,
         } satisfies FetchedMeeting)
 
         //not required since cache is already team scoped
@@ -565,9 +356,9 @@ export async function getFetchedMeeting(id: string, user: string, team: string):
 
     const meeting = {
         name: rawMeeting.name as string,
-        lead: await seralizeFirestoreUser((await rawMeeting.lead.get()).data(), rawMeeting.lead.id) as SecondaryUser,
-        synopsis:  rawMeeting.synopsis == null ? null : await getMember(rawMeeting.synopsis.id) ?? null,
-        mentor: rawMeeting.mentor == null ? null : await getMember(rawMeeting.mentor.id) ?? null,
+        lead: await getMember(rawMeeting.lead.id, team, true),
+        synopsis:  rawMeeting.synopsis == null ? null : await getMember(rawMeeting.synopsis.id, team, true) ?? null,
+        mentor: rawMeeting.mentor == null ? null : await getMember(rawMeeting.mentor.id, team, true) ?? null,
         location: rawMeeting.location as string,
         starts: rawMeeting.starts,
         ends: rawMeeting.ends,
@@ -578,14 +369,15 @@ export async function getFetchedMeeting(id: string, user: string, team: string):
         link: rawMeeting.link,
         id: id as string,
         version: rawMeeting.version,
-        signups: await Promise.all(Array.from(rawMeeting.signups, (signup) => { return getMember(signup) })),
+        signups: await Promise.all(Array.from(rawMeeting.signups, (signup) => { return getMember(signup, team, true) })),
         virtual: rawMeeting.virtual,
         calendar: rawMeeting.calendar,
         notion: rawMeeting.notion,
         confirmations: rawMeeting.confirmations,
+        guests: rawMeeting.guests
     }
 
-    if((meeting.lead != undefined && meeting.lead.team != team) || (meeting.synopsis != undefined && meeting.synopsis.team != team) || (meeting.mentor != undefined && meeting.mentor.team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
+    //if((meeting.lead != undefined && meeting.lead.team != "unknown" && meeting.lead.team != team) || (meeting.synopsis != undefined && meeting.synopsis.team != "unknown" && meeting.synopsis.team != team) || (meeting.mentor != undefined && meeting.mentor.team != "unknown" && meeting.mentor.team != team)) throw { message: "Meeting Requested Inaccessible Resource", type: "display" };
 
     return meeting;
 }
@@ -660,6 +452,8 @@ export async function validateFormMeeting(form: SuperValidated<typeof meetingSch
     
     const users = await getUserList(db, team);
 
+    console.log("USERS", users);
+
     if(!users.includes(form.data.lead) || (form.data.mentor != null && form.data.mentor != '' && !users.includes(form.data.mentor)) || (form.data.synopsis != null && form.data.synopsis != '' && !users.includes(form.data.synopsis))) {
         return message(form, 'User(s) not found.', {
             status: 404
@@ -668,9 +462,11 @@ export async function validateFormMeeting(form: SuperValidated<typeof meetingSch
 
     if(!(form.data.role == undefined || form.data.role == '') && !(await db.collection('teams').doc(team).collection('roles').doc(form.data.role).get()).exists) return message(form, "Role not found.");
 
-    const role = await getRole(form.data.role ?? "000000", team);
+    if(form.data.role != undefined && form.data.role != "") {
+        const role = await getRole(form.data.role, team);
 
-    if(role == undefined && form.data.role) return message(form, "Role not found.");
+        if(role == undefined) return message(form, "Role not found.");
+    }
 
     return 0;
 }
@@ -685,7 +481,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
     const eventOptions = {
         summary: name,
         location: location,
-        description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
+        description: "Find more details here: " + DOMAIN + "/t/" + team + "/meetings/" + id + ".",
         start: {
             dateTime: starts,
             timeZone: "America/Los_Angeles"
@@ -713,7 +509,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
 
     if(client == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -725,7 +521,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
 
     if(calendar == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -735,11 +531,13 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
 
     const event = await createEvent(client, calendar, eventOptions);
 
-    const notion = new Client({ auth: NOTION });
+    const settings = await getTeamNotion(team);
+
+    const notion = new Client({ auth: settings.secret });
 
     const page = {
         parent: {
-            database_id: NOTION_MEETINGS,
+            database_id: settings.database,
         },
         properties: {
             title: {
@@ -759,7 +557,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
             },
             Link: {
                 type: 'url',
-                url: DOMAIN + "/meetings/" + id,
+                url: DOMAIN + "/t/" + team + "/meetings/" + id,
             },
             Group: {
                 type: 'rich_text',
@@ -767,7 +565,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
                     {
                         type: 'text',
                         text: {
-                            'content': (await getRole(role ?? "000000", team))?.name ?? "Blank"
+                            'content': (await getRole(role == "" || role == undefined ? "000000" : role, team))?.name ?? "Blank"
                         }
                     }
                 ]
@@ -785,7 +583,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
                     {
                         type: 'text',
                         text: {
-                            'content': (await getMember(lead.id))?.displayName ?? "None"
+                            'content': (await getMember(lead.id, team))?.displayName ?? "None"
                         }
                     }
                 ]
@@ -796,7 +594,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
                     {
                         type: 'text',
                         text: {
-                            'content': mentor ? (await getMember(mentor.id)).displayName ?? "None" : "None"
+                            'content': mentor ? (await getMember(mentor.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -807,7 +605,7 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
                     {
                         type: 'text',
                         text: {
-                            'content': synopsis ? (await getMember(synopsis.id)).displayName ?? "None" : "None"
+                            'content': synopsis ? (await getMember(synopsis.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -856,16 +654,17 @@ export async function createMeeting({ name, location, starts, ends, virtual, lea
         signups: signups,
         update: signups.length == 0 ? false : true,
         id: id,
-        version: "v2.0",
+        version: "v3.0",
         virtual: virtual,
         notion: notionMeeting.id,
         confirmations: null,
+        guests: [],
     } satisfies Meeting as Meeting;
  
     await db.runTransaction(async t => {
         t.create(ref.doc(id), meeting);
 
-        firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
+        firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t, team);
     })
 
     return meeting;
@@ -885,7 +684,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
     const eventOptions = {
         summary: name,
         location: location,
-        description: "Find more details here: https://skywalkers.alexest.net/meetings/" + id + ".",
+        description: "Find more details here: " + DOMAIN + "/t/" + team + "/meetings/" + id + ".",
         start: {
             dateTime: starts,
             timeZone: "America/Los_Angeles"
@@ -913,7 +712,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
 
     if(client == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -925,7 +724,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
 
     if(calendar == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -935,11 +734,13 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
 
     const event = await createEvent(client, calendar, eventOptions);
 
-    const notion = new Client({ auth: NOTION });
+    const settings = await getTeamNotion(team);
+
+    const notion = new Client({ auth: settings.secret });
 
     const page = {
         parent: {
-            database_id: NOTION_MEETINGS,
+            database_id: settings.database,
         },
         properties: {
             title: {
@@ -959,7 +760,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
             },
             Link: {
                 type: 'url',
-                url: DOMAIN + "/meetings/" + id,
+                url: DOMAIN + "/t/" + team + "/meetings/" + id,
             },
             Group: {
                 type: 'rich_text',
@@ -967,7 +768,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
                     {
                         type: 'text',
                         text: {
-                            'content': (await getRole(role ?? "000000", team))?.name ?? "Blank"
+                            'content': (await getRole(role == "" || role == undefined ? "000000" : role, team))?.name ?? "Blank"
                         }
                     }
                 ]
@@ -985,7 +786,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
                     {
                         type: 'text',
                         text: {
-                            'content': (await getMember(lead.id))?.displayName ?? "None"
+                            'content': (await getMember(lead.id, team))?.displayName ?? "None"
                         }
                     }
                 ]
@@ -996,7 +797,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
                     {
                         type: 'text',
                         text: {
-                            'content': mentor ? (await getMember(mentor.id)).displayName ?? "None" : "None"
+                            'content': mentor ? (await getMember(mentor.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -1007,7 +808,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
                     {
                         type: 'text',
                         text: {
-                            'content': synopsis ? (await getMember(synopsis.id)).displayName ?? "None" : "None"
+                            'content': synopsis ? (await getMember(synopsis.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -1056,10 +857,11 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
         signups: signups,
         update: signups.length == 0 ? false : true,
         id: id,
-        version: "v2.0",
+        version: "v3.0",
         virtual: virtual,
         notion: notionMeeting.id,
         confirmations: null,
+        guests: [],
         //@ts-expect-error
         schedule: schedule, //niche use for filtering scheduled meetings
     } satisfies Meeting as Meeting;
@@ -1067,7 +869,7 @@ export async function createMeetingFromSchedule({ name, location, starts, ends, 
     await db.runTransaction(async t => {
         t.create(ref.doc(id), meeting);
 
-        firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t);
+        firebaseAdmin.addLogWithTransaction("Meeting created.", "event", user, t, team);
     })
 
     return meeting;
@@ -1083,7 +885,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
 
     if(client == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -1095,7 +897,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
 
     if(calendar == undefined) {
         try {
-            await sendDM("Authorization Needed", OWNER);
+            await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
         } catch(e) {
             throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
         }
@@ -1130,7 +932,9 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
 
     const event = await editEvent(client, currentMeeting.calendar, calendar, eventOptions);
 
-    const notion = new Client({ auth: NOTION });
+    const settings = await getTeamNotion(team);
+
+    const notion = new Client({ auth: settings.secret });
 
     const page = {
         page_id: currentMeeting.notion,
@@ -1152,7 +956,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
             },
             Link: {
                 type: 'url',
-                url: DOMAIN + "/meetings/" + currentMeeting.id,
+                url: DOMAIN + "/t/" + team + "/meetings/" + currentMeeting.id,
             },
             Group: {
                 type: 'rich_text',
@@ -1160,7 +964,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
                     {
                         type: 'text',
                         text: {
-                            'content': (await getRole(role ?? "000000", team))?.name ?? "Blank"
+                            'content': (await getRole(role == "" || role == undefined ? "000000" : role, team))?.name ?? "Blank"
                         }
                     }
                 ]
@@ -1178,7 +982,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
                     {
                         type: 'text',
                         text: {
-                            'content': (await getMember(lead.id))?.displayName ?? "None"
+                            'content': (await getMember(lead.id, team))?.displayName ?? "None"
                         }
                     }
                 ]
@@ -1189,7 +993,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
                     {
                         type: 'text',
                         text: {
-                            'content': mentor ? (await getMember(mentor.id)).displayName ?? "None" : "None"
+                            'content': mentor ? (await getMember(mentor.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -1200,7 +1004,7 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
                     {
                         type: 'text',
                         text: {
-                            'content': synopsis ? (await getMember(synopsis.id)).displayName ?? "None" : "None"
+                            'content': synopsis ? (await getMember(synopsis.id, team)).displayName ?? "None" : "None"
                         }
                     }
                 ]
@@ -1248,25 +1052,28 @@ export async function editMeeting(currentMeeting: Meeting, { name, location, sta
         signups: signups,
         update: currentMeeting.update,
         id: currentMeeting.id,
-        version: "v2.0",
+        version: "v3.0",
         virtual: virtual,
         notion: notionMeeting.id,
         confirmations: currentMeeting.confirmations,
+        guests: [],
     } satisfies Meeting;
 
     await db.runTransaction(async t => {
         t.update(ref.doc(currentMeeting.id), meeting as any); //weird type error?
 
-        firebaseAdmin.addLogWithTransaction("Meeting edited.", "event", user, t);
+        firebaseAdmin.addLogWithTransaction("Meeting edited.", "event", user, t, team);
     });
 }
 
-export async function completeMeeting(t: Transaction, id: string, ref: DocumentReference, complete: boolean, synopsis: { urls: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: { member: DocumentReference, time: number }[], synopsis: string } | undefined = undefined) {
+export async function completeMeeting(t: Transaction, team: string, id: string, ref: DocumentReference, complete: boolean, synopsis: { urls: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: { member: DocumentReference, time: number }[], synopsis: string } | undefined = undefined) {
     t.update(ref, {
         completed: complete,
     });
 
-    const notion = new Client({ auth: NOTION });
+    const settings = await getTeamNotion(team);
+
+    const notion = new Client({ auth: settings.secret });
 
     const page = {
         page_id: id,
@@ -1318,8 +1125,10 @@ export async function completeMeeting(t: Transaction, id: string, ref: DocumentR
     }
 }
 
-export async function editSynopsis(id: string, synopsis: { urls: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: any[], synopsis: string } | { attachments: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: any[], body: string } ) {
-    const notion = new Client({ auth: NOTION });
+export async function editSynopsis(id: string, team: string, synopsis: { urls: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: any[], synopsis: string } | { attachments: { url: string, type: string, name: string, location: string, code: string, ext: string }[], hours: any[], body: string } ) {
+    const settings = await getTeamNotion(team);
+
+    const notion = new Client({ auth: settings.secret });
     
     const children = await notion.blocks.children.list({ block_id: id });
 
@@ -1385,6 +1194,8 @@ export async function editSynopsis(id: string, synopsis: { urls: { url: string, 
 }
 
 export async function deleteMeetings(meetings: string[], user: string, team: string) {
+    const settings = await getTeamNotion(team);
+
     const db = firebaseAdmin.getFirestore();
 
     for(let i = 0; i < meetings.length; i++) {
@@ -1402,7 +1213,7 @@ export async function deleteMeetings(meetings: string[], user: string, team: str
 
         if(client == undefined) {
             try {
-                await sendDM("Authorization Needed", OWNER);
+                await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
             } catch(e) {
                 throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
             }
@@ -1414,7 +1225,7 @@ export async function deleteMeetings(meetings: string[], user: string, team: str
     
         if(calendar == undefined) {
             try {
-                await sendDM("Authorization Needed", OWNER);
+                await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
             } catch(e) {
                 throw { message: "Google calendar integration down. Discord bot down. Please contact support, something has gone really wrong.", type: "display" };
             }
@@ -1422,7 +1233,7 @@ export async function deleteMeetings(meetings: string[], user: string, team: str
             throw { message: "Google calendar integration down.", type: "display" };
         }
 
-        const notion = new Client({ auth: NOTION });
+        const notion = new Client({ auth: settings.secret });
 
         await notion.blocks.delete({ block_id: doc.data()?.notion });
 
@@ -1430,6 +1241,26 @@ export async function deleteMeetings(meetings: string[], user: string, team: str
 
         await ref.delete();
     }
+}
+
+export async function addGuestSignUp(signUp: string, id: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('teams').doc(team).collection('meetings').doc(id);
+
+    await ref.update({
+        guests: FieldValue.arrayUnion(signUp),
+    })
+}
+
+export async function removeGuestSignup(signUp: string, id: string, team: string) {
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('teams').doc(team).collection('meetings').doc(id);
+
+    await ref.update({
+        guests: FieldValue.arrayRemove(signUp),
+    })
 }
 
 export async function sendConfirmations(meeting: Meeting, user: string, team: string) {
@@ -1512,7 +1343,7 @@ export async function sendConfirmations(meeting: Meeting, user: string, team: st
             emailTo.push(discordTo[i]) //fallback
         } else {
             try {
-                await sendConfirmation(meeting, id);
+                await sendConfirmation(meeting, id, team);
             } catch(e) {
                 console.log(e);
             }
@@ -1523,8 +1354,14 @@ export async function sendConfirmations(meeting: Meeting, user: string, team: st
 
     for(let i = 0; i < phoneTo.length; i++) {
         try {
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(null);
+                }, 3000);
+            })
+
             await client.messages.create({
-                body: 'Hello from Twilio',
+                body: 'Are you coming to ' + meeting.name + ' tomorrow from ' + time + '?\nConfirm here: ' + DOMAIN + '/t/' + team + '/meetings/' + meeting.id,
                 from: TWILIONUMBER,
                 to: phoneTo[i].number,
             })
@@ -1535,32 +1372,34 @@ export async function sendConfirmations(meeting: Meeting, user: string, team: st
         }
     }
 
-    const members = await firebaseAdmin.getAuth().getUsers(Array.from(emailTo, (signup) => ({ uid: signup })));
+    if(emailTo.length > 0) {
+        const members = await firebaseAdmin.getAuth().getUsers(Array.from(emailTo, (signup) => ({ uid: signup })));
 
-    const emails = Array.from(members.users, member => member.email as string );
+        const emails = Array.from(members.users, member => member.email as string );
 
-    const msg = {
-        from: {
-            email: SENDGRIDFROM,
-            name: SENDGRIDNAME
-        },
-        templateId: SENDGRIDTEMPLATE,
-        replyTo: SENDGRIDREPLYTO,
-        subject: "Confirmation for " + meeting.name,
-        dynamicTemplateData: {
-            name: meeting.name,
-            time: time,
-            link: DOMAIN + "/meetings/" + meeting.id,
+        const msg = {
+            from: {
+                email: SENDGRIDFROM,
+                name: SENDGRIDNAME
+            },
+            templateId: SENDGRIDTEMPLATE,
+            replyTo: SENDGRIDREPLYTO,
             subject: "Confirmation for " + meeting.name,
-        },
-        personalizations: Array.from(emails, email => {
-            return {
-                to: email,
-            }
-        })
-    } satisfies MailDataRequired;
+            dynamicTemplateData: {
+                name: meeting.name,
+                time: time,
+                link: DOMAIN + "/t/" + team + "/meetings/" + meeting.id,
+                subject: "Confirmation for " + meeting.name,
+            },
+            personalizations: Array.from(emails, email => {
+                return {
+                    to: email,
+                }
+            })
+        } satisfies MailDataRequired;
 
-    mail.send(msg);
+        mail.send(msg);
+    }
 }
 
 export async function markConfirmation(meeting: Meeting, result: null | boolean, user: string, team: string) {

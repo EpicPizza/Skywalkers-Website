@@ -1,8 +1,9 @@
-import { DOWN } from "$env/static/private";
+import { DOMAIN, DOWN } from "$env/static/private";
 import { firebaseAdmin, getUser } from "$lib/Firebase/firebase.server";
 import { getSpecifiedRoles } from "$lib/Roles/role.server";
 import type { Handle, RequestHandler } from "@sveltejs/kit";
 import type { DocumentReference } from "firebase-admin/firestore";
+import { z } from "zod";
 
 export const handle = (async ({ event, resolve }) => {
     if(DOWN != "FALSE") {
@@ -16,6 +17,24 @@ export const handle = (async ({ event, resolve }) => {
         response.headers.set('X-Content-Type-Options', 'nosniff');
     
         return response;
+    }
+
+    let team: null | string = null;
+
+    if(event.url.href.startsWith(DOMAIN + "/t/")) {
+        const param = event.url.href.substring(DOMAIN.length + 3, DOMAIN.length + 9);
+
+        event.locals.unverifiedTeam = null;
+
+        try {
+            team = z.coerce.number().min(111111).max(999999).parse(param).toString();
+
+            event.locals.unverifiedTeam = team;
+
+            console.log("Team", param);
+        } catch(e) {
+            console.log(e);
+        }
     }
 
     console.log(event.route);
@@ -37,26 +56,68 @@ export const handle = (async ({ event, resolve }) => {
     const db = firebaseAdmin.getFirestore();
 
     if(user == undefined) {
-        event.locals.team = false;
+        event.locals.team = null;
         event.locals.firestoreUser = undefined;
+        event.locals.permissions = [];
+        event.locals.level = 0;
+        event.locals.kicked = false;
+        event.locals.teamInfo = new Map();
+        if(event.locals.unverifiedTeam) {
+            const doc = (await db.collection('teams').doc(event.locals.unverifiedTeam).collection('settings').doc('info').get());
+            if(doc.exists) {
+                event.locals.teamInfo.set(event.locals.unverifiedTeam, doc.data() as { name: string, website: string, icon: string });
+            }
+        }
     } else {
         const firestoreUser = (await db.collection('users').doc(user.uid).get()).data();
 
         if(firestoreUser == undefined) {
-            event.locals.team = false;
+            event.locals.team = null;
             event.locals.firestoreUser = undefined;
+            event.locals.permissions = [];
+            event.locals.level = 0;
+            event.locals.kicked = false;
+            event.locals.teamInfo = new Map();
 
-            const quaraantinedUser = (await db.collection('quarantine').doc(user.uid).get());
-            event.locals.kicked = quaraantinedUser.exists;
+            if(event.locals.unverifiedTeam) {
+                const doc = (await db.collection('teams').doc(event.locals.unverifiedTeam).collection('settings').doc('info').get());
+                if(doc.exists) {
+                    event.locals.teamInfo.set(event.locals.unverifiedTeam, doc.data() as { name: string, website: string, icon: string });
+                }
+            }
         } else {
-            event.locals.team = true;
+            event.locals.team = team ? team : firestoreUser.teams[0].team;
+            event.locals.permissions = [];
+            event.locals.level = 0;
+            event.locals.teamInfo = new Map();
+
+            let found = false;
+
+            for(let i = 0; i < firestoreUser.teams.length; i++) {
+                if(firestoreUser.teams[i].team == event.locals.team) {
+                    event.locals.permissions = firestoreUser.teams[i].permissions;
+                    event.locals.level = firestoreUser.teams[i].level;
+
+                    found = true;
+                }
+
+                event.locals.teamInfo.set(firestoreUser.teams[i].team, (await db.collection('teams').doc(firestoreUser.teams[i].team).collection('settings').doc('info').get()).data() as { name: string, website: string, icon: string });
+
+                firestoreUser.teams[i].roles = await getSpecifiedRoles(firestoreUser.teams[i].roles as DocumentReference[]);
+            }
+
+            if(found == false) {
+                event.locals.team = null;
+            }
+
+
             event.locals.firestoreUser = {
                 ...firestoreUser as any,
-                roles: await getSpecifiedRoles(firestoreUser.roles as DocumentReference[]),
             };
             event.locals.kicked = false;
         }
     }
+    
 	const response = await resolve(event, {
         transformPageChunk: ({ html }) => html.replaceAll('%theme%', scheme),
     });

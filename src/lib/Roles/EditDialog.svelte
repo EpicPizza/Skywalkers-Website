@@ -6,17 +6,17 @@
     import Loading from "$lib/Builders/Loading.svelte";
     import { superForm } from "sveltekit-superforms/client";
     import type { SuperValidated } from "sveltekit-superforms";
-    import type { Role } from "./role";
+    import type { Role, RoleForm } from "./role";
 
     export let open: boolean = false;
     export let role: Role;
     let colorElement: HTMLElement;
-    let editForm: SuperValidated<any>;
+    let editForm: SuperValidated<typeof RoleForm>;
     export { editForm as form };
 
     console.log(role.id);
 
-    const { tainted, allErrors, reset, message, form, enhance, delayed } = superForm(editForm);
+    const { tainted, allErrors, reset, message, form, enhance, delayed } = superForm(editForm, { id: "edit" });
 
     $: {
         if($message == "Role Edited") {
@@ -33,6 +33,8 @@
         })
         tainted.set({});
     })(open);
+
+    $: console.log($message, $allErrors, $form)
 
     let initialFocus: HTMLElement;
 </script>

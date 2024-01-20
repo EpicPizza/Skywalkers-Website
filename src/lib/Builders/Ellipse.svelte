@@ -4,7 +4,7 @@
 
     let milliseconds: number;
 
-    let interval: NodeJS.Timer | undefined = undefined;
+    let interval: any | undefined = undefined;
 
     onMount(() => {
         interval = setInterval(() => {

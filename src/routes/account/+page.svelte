@@ -29,7 +29,7 @@
 
     export let data;
 
-    let selected: number = -1;
+    let selected: string = "";
 
     const { enhance, form, delayed, message, allErrors, reset } = superForm(data.form);
 
@@ -57,14 +57,30 @@
         await init();
     });
 
+    let users: Awaited<typeof data.stream.users>;
+
     async function init() {
-        let users = await data.stream.users;
+        users = await data.stream.users;
 
         if(users == undefined || data.id == undefined) return;
 
         for(let i = 0; i < users.length; i++) {
             if(users[i].id == data.id) {
                 linked = users[i].username + (users[i].discrim = "0" ? "" : "#" + users[i].discrim);
+            }
+        }
+    }
+
+    function getID(username: string) {
+
+        if(users == undefined) return;
+
+         for(let i = 0; i < users.length; i++) {
+            console.log(users[i].username == username);
+            if(users[i].username == username) {
+
+
+                return users[i].id;
             }
         }
     }
@@ -106,10 +122,12 @@
             invalidate("conf-preference");
         }
     }
+
+    $: $form.id = getID(selected);
 </script>
 
 <svelte:head>
-    <title>Skywalkers | Account</title>
+    <title>Your Account</title>
 </svelte:head>
 
 <Background>
@@ -120,7 +138,7 @@
             <div class="flex items-center justify-between">
                 <p>Linked discord account: </p>
                 <div class="flex gap-2 h-[34px]">
-                    <button disabled={data.id != undefined} class="b-accent h-[34px]" on:click={() => { open = !open; reset(); selected = -1; }}>
+                    <button disabled={data.id != undefined} class="b-accent h-[34px]" on:click={() => { open = !open; reset(); selected = ""; }}>
                         {#if data.id == undefined}
                             <Icon icon=add></Icon>
                         {:else if linked == undefined}
@@ -131,7 +149,7 @@
                     </button>
                     {#if data.id != undefined}
                         <form use:enhance method=POST>
-                            <button on:click={() => { reset(); selected = -1; }} class="b-primary min-h-[34px]">
+                            <button on:click={() => { reset(); selected = ""; }} class="b-primary min-h-[34px]">
                                 <Icon icon=remove></Icon>
                             </button>
                         </form>
@@ -152,16 +170,16 @@
                     </button>
                 </Menu>
             </div>
+            {#if data.info != ""}
+                <p class="opacity-50 italic mt-4 pb-2 text-center">{data.info}</p>
+            {/if}
         {:else}
             <div class="bg-yellow-500 bg-opacity-20 dark:bg-opacity-10 dark:text-yellow-500 text-yellow-900 flex rounded-lg p-4 gap-3">
                 <Icon scale=2rem icon=warning></Icon>
                 <p>There are no other settings available for unverified users.</p>
             </div>
         {/if}
-        <div class="mt-6 flex justify-between items-center">
-            <a href="/" class="b-primary flex items-center gap-1 w-fit">
-                <Icon scale=1.25rem icon=arrow_back></Icon>Back Home
-            </a>
+        <div class="mt-6 flex-row-reverse justify-between items-center">
             <a href="/account/delete" class="b-red float-right ml-2">
                 Delete Account
              </a>
@@ -190,7 +208,7 @@
 
         <div class="flex flex-row-reverse">  
             <button disabled={$form.verify == undefined || $form.verify == ""} class="b-green disabled:opacity-50 disabled:cursor-not-allowed">Confirm</button>
-            <button class="b-default mr-2 ml-1" on:click|preventDefault={(e) => { e.preventDefault(); confirmOpen = !confirmOpen; reset(); selected = -1; }}>Cancel</button>
+            <button class="b-default mr-2 ml-1" on:click|preventDefault={(e) => { e.preventDefault(); confirmOpen = !confirmOpen; reset(); selected = ""; }}>Cancel</button>
             {#if $delayed}
                 <div class="scale-75 flex items-center h-[2.125rem] overflow-hidden">
                     <Loading></Loading>
@@ -207,58 +225,30 @@
         <Line class="mt-4"></Line>
     </div>
 
-    <div slot=content class="py-2 h-[calc(100dvh-17rem)] overflow-auto overflow-y-visible">
-        {#await data.stream.users}
-            <div class="flex justify-around">
-                <Loading></Loading>
-            </div>
-        {:then users}
-            {#if users != undefined}
-                {#each users as user, i}
-                    <button on:click={() => { selected = i; $form.id = user.id; }} class="flex w-full items-center transition rounded-md p-2 mb-1 bg-black dark:bg-white {selected == i ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"} hover:bg-opacity-10 dark:hover:bg-opacity-10">
-                        <div style="background-color: {user.color == null ? colors.gray["500"] : user.color};" class="w-6 h-6 mr-2 rounded-full"></div>
-                        <p>{user.username}{user.discrim == "0" ? "" : "#" + user.discrim}</p>
-                    </button>
-                {/each}
-            {/if}
-        {/await}
+    <p class="mt-4">Enter your discord uersname:</p>
+
+    <div class="w-full my-4">
+        <p class="text-sm -mt-5 translate-x-2 translate-y-4 w-min whitespace-nowrap bg-white dark:bg-zinc-800 px-1 leading-4">Username:</p>
+        <input autocomplete="off" bind:value={selected} name="verify" class="p-2 mt-2 w-full bg-white border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 border-[1px] rounded-md pl-3" type="string">
     </div>
 
     <Line class="mb-4"></Line>
 
-    <div class="flex justify-between">
-        {#await data.stream.users}
-            <div class="w-full h-[34px]"></div>
-        {:then users}
-            {#if users != undefined}
-                <div>
-                    {#if selected != undefined && selected > -1}
-                        <div class="flex w-auto items-center transition rounded-md px-3 py-[7px] bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10">
-                            <div style="background-color:  {users[selected].color == null ? colors.gray["500"] : users[selected].color};" class="w-4 h-4 mr-2 rounded-full"></div>
-                            <p class="text-sm">{users[selected].username}{users[selected].discrim == "0" ? "" : "#" + users[selected].discrim}</p>
-                        </div>
-                    {:else if selected != undefined}
-                        <div class="flex w-auto items-center transition rounded-md px-3 py-[7px] bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10">
-                            <p class="text-sm">None Selected</p>
+    <div class="flex justify-between w-full">
+        <div class="w-full">
+            <form use:enhance method=POST class="w-full">
+                <input hidden type='text' name=id value={$form.id}/>
+                <div class="flex w-full flex-row-reverse">  
+                    <button disabled={getID(selected) == undefined} class="b-green disabled:opacity-50 disabled:cursor-not-allowed">Connect</button>
+                    <button class="b-default mr-2 ml-1" on:click|preventDefault={(e) => { e.preventDefault(); open = !open; reset(); selected = ""; }}>Cancel</button>
+                    {#if $delayed}
+                        <div class="scale-75 flex items-center h-[2.125rem] overflow-hidden">
+                            <Loading></Loading>
                         </div>
                     {/if}
                 </div>
-                <div>
-                    <form use:enhance method=POST>
-                        <input hidden type='text' name=id bind:value={$form.id}/>
-                        <div class="flex">  
-                            {#if $delayed}
-                                <div class="scale-75 flex items-center h-[2.125rem] overflow-hidden">
-                                    <Loading></Loading>
-                                </div>
-                            {/if}
-                            <button class="b-default mr-2 ml-1" on:click|preventDefault={(e) => { e.preventDefault(); open = !open; reset(); selected = -1; }}>Cancel</button>
-                            <button disabled={selected == -1} class="b-green disabled:opacity-50 disabled:cursor-not-allowed">Connect</button>
-                        </div>
-                    </form>
-                </div>
-            {/if}
-        {/await}
+            </form>
+        </div>
     </div>
 </Dialog>
 

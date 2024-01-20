@@ -1,5 +1,5 @@
 import admin from 'firebase-admin'
-import { ADMIN, DEV, OWNER } from '$env/static/private';
+import { ADMIN, DEV, OWNER, PROD_ADMIN } from '$env/static/private';
 import FirebaseAdmin from 'firebase-admin';
 const firebaseAuth = FirebaseAdmin.auth;
 import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
@@ -28,12 +28,33 @@ function getFirebaseAdmin() {
     let firestore: Firestore | undefined = undefined;
     let bucket: ReturnType<(ReturnType<typeof getStorage>["bucket"])> | undefined = undefined;
     let interval: NodeJS.Timeout | undefined = undefined; 
+    let prodApp: admin.app.App | undefined = undefined;
 
     const setFirebaseApp = (incomingApp: admin.app.App) => {
         app = incomingApp;
     }
 
-    const getFirebaseApp = (): admin.app.App => {
+    const getFirebaseApp = (prod = false): admin.app.App => {
+        if(prod && DEV == 'TRUE') {
+            if(prodApp == undefined) {
+                var found = false;
+                for(var i = 0; i < admin.apps.length; i++) {
+                    if(admin.apps[i] != null && (admin.apps[i] as admin.app.App).name == "Server-Prod") {
+                        prodApp = admin.apps[i] as admin.app.App;
+                        found = true;
+                    }
+                }
+                if(found == false) {
+                    prodApp = admin.initializeApp({
+                        credential: (admin.credential.cert(JSON.parse(PROD_ADMIN) as admin.ServiceAccount)),
+                        storageBucket: 'frc-skywalkers.appspot.com'
+                    }, "Server-Prod");
+                }
+            }
+
+            return prodApp as admin.app.App;
+        }
+
         if(app == undefined) { //this get reruns on every change durring preview, but firebase admin still sees the pervious instance made, so this just checks if we can use a previous firebase instance, otherwise it will cause an error because firebase thinks we are reintializing
             console.log( DEV == 'TRUE' ? "regetting" : undefined);
             if(DEV == 'TRUE') {
@@ -119,7 +140,7 @@ function getFirebaseAdmin() {
         })
     }
 
-    const addLogWithTransaction = (content: string, icon: string, id: string, transaction: Transaction) => {
+    const addLogWithTransaction = (content: string, icon: string, id: string, transaction: Transaction, team: string) => {
         const db = firebaseAdmin.getFirestore();
 
         const ref = db.collection('logs');
@@ -131,6 +152,7 @@ function getFirebaseAdmin() {
             icon,
             id,
             timestamp: new Date(),
+            team,
         })
     }
 
@@ -141,15 +163,6 @@ function getFirebaseAdmin() {
         getBucket: getBucket,
         addLog: addLog,
         addLogWithTransaction: addLogWithTransaction,
-    }
-}
-
-export async function seralizeFirestoreUser(user: any, id: string): Promise<SecondaryUser | undefined> {
-    if(user == undefined) return undefined;
-    return {
-        ...user,
-        id: id,
-        roles: await getSpecifiedRoles(user.roles as DocumentReference[]),
     }
 }
 

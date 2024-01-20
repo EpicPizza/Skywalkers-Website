@@ -19,7 +19,7 @@ export async function load({ locals, depends }) {
 
     const form = await superValidate(connect);
 
-    if(locals.user && locals.firestoreUser && locals.firestoreUser.team != undefined) {
+    if(locals.user && locals.firestoreUser && locals.team != undefined) {
         const db = firebaseAdmin.getFirestore();
 
         const discordRef = db.collection('users').doc(locals.user.uid).collection('settings').doc('discord');
@@ -32,6 +32,9 @@ export async function load({ locals, depends }) {
 
         let id: undefined | string = undefined;
 
+
+        let info = "";
+
         if(discordDoc.exists && discordDoc.data() && discordDoc.data()?.id != null) {
             id = discordDoc.data()?.id as string;
         }
@@ -40,17 +43,30 @@ export async function load({ locals, depends }) {
 
         if(confirmationDoc.exists && confirmationDoc.data() && confirmationDoc.data()?.preference != null) {
             preference = confirmationDoc.data()?.preference as string;
+
+            switch(preference) {
+                case "phone": 
+                    info = "Currently sending meeting confirmations to " + confirmationDoc.data()?.number + ".";
+                    break;
+                case "discord":
+                    info = "Currently sending meeting confirmations to your linked discord account, or using your email (" + locals.user.email + ") if you don't have one linked.";
+                    break;
+                case "email":
+                    info = "Currently sending meeting confirmations to " + locals.user.email + ".";
+                    break;
+            }
         }
 
         preference = preference.substring(0, 1).toUpperCase() + preference.substring(1, preference.length);
 
         return {
             stream: {
-                users: getUsers(),
+                users: getUsers(locals.team),
             },
             form: form,
             id: id,
             preference: preference,
+            info: info,
         }
     } else {
         return {
@@ -60,13 +76,14 @@ export async function load({ locals, depends }) {
             preference: "None",
             form: form,
             id: undefined,
+            info: "",
         }
     }
 }
 
 export const actions = {
     default: async function ({ locals, request }) {
-        if(!locals.user || !locals.firestoreUser || locals.firestoreUser.team == undefined) return;
+        if(!locals.user || !locals.firestoreUser || locals.team == undefined) return;
 
         const form = await superValidate(request, connect);
 
@@ -74,7 +91,7 @@ export const actions = {
             return fail(400, { form });
         }
 
-        console.log(form.data);
+        let team = locals.team;
 
         if(form.data.verify && form.data.verify != "") {
             const db = firebaseAdmin.getFirestore();
@@ -123,7 +140,7 @@ export const actions = {
                     });
                 }
 
-                firebaseAdmin.addLogWithTransaction("Linked their discord account.", "link", userId, t);
+                firebaseAdmin.addLogWithTransaction("Linked their discord account.", "link", userId, t, team);
             })
 
             return message(form, "Verified");
@@ -134,7 +151,7 @@ export const actions = {
 
             const code = getRandomCode();
 
-            const users = await getUsers();
+            const users = await getUsers(locals.team);
 
             let found = false;
             for(let i = 0; i < users.length; i++) {

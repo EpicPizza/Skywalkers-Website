@@ -5,7 +5,9 @@
     import Loading from "$lib/Builders/Loading.svelte";
     import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
     import type { Role } from "$lib/Roles/role";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
     import { getContext } from "svelte";
+    import type { Writable } from "svelte/store";
 
     export let member: SecondaryUser;
     export let roles: Role[];
@@ -17,13 +19,46 @@
     let deleting = "";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const team = getContext('team') as Writable<string>;
+    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+
+    $: memberRoles = ((user: SecondaryUser) => {
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == $team) {
+                return user.teams[i].roles;
+            }
+        }
+
+        return []
+    })(member);
+
+    $: memberPermissions = ((user: SecondaryUser) => {
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == $team) {
+                return user.teams[i].permissions;
+            }
+        }
+
+        return [];
+    })(member);
+
+    $: memberLevel = ((user: SecondaryUser) => {
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == $team) {
+                return user.teams[i].level;
+            }
+        }
+
+        return 0;
+    })(member);
 
     async function deleteRole(id: string) {
         let self = crypto.randomUUID() as string;
 
         deleting = self;
 
-        await fetch("/api/roles/remove", {
+        await fetch("/t/" + $team + "/api/roles/remove", {
             method: 'POST',
             body: JSON.stringify({
                 uid: member.id,
@@ -54,7 +89,7 @@
         let promises = new Array<Promise<Response>>();
 
         for(let i = 0; i < id.length; i++) {
-            promises.push(fetch("/api/roles/add", {
+            promises.push(fetch("/t/" + $team + "/api/roles/add", {
                 method: 'POST',
                 body: JSON.stringify({
                     uid: [ member.id ],
@@ -82,11 +117,11 @@
                 </div>
             {/if}
 
-            {#each member.roles as role}
+            {#each memberRoles as role}
                 <a href="/settings/roles/{role.id}" class="bg-black inline-flex dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2">
                     <div style="background-color: {role.color};" class="w-4 h-4 rounded-full"></div>
                     {role.name}
-                    {#if $client != undefined && $client.permissions != undefined && $client.permissions.includes('MANAGE_ROLES') && $client.level != undefined && role.level < $client.level}
+                    {#if $permissions.includes('MANAGE_ROLES') && $currentTeam && $currentTeam.level != undefined && role.level < $currentTeam.level}
                         <button on:click|preventDefault={() => { deleteRole(role.id); }} class="w-6 h-6 transition bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 hover:bg-opacity-20 hover:dark:bg-opacity-20 flex rounded-full justify-around items-center"><Icon scale=1.1rem icon=close></Icon></button>
                     {/if}
                 </a>
@@ -96,18 +131,18 @@
                 </span>
             {/each}
 
-            {#if $client != undefined && $client.permissions != undefined && $client.permissions.includes('MANAGE_ROLES')}
+            {#if $permissions != undefined && $permissions.includes('MANAGE_ROLES')}
                 <button on:click={() => { open = !open; }} class="b-default absolute bottom-4 right-4 mt-10 block float-right">Add Role</button>
             {/if}
         </div>
         <div class="p-4 w-full mt-6 sm:mt-8 border-[1px] border-border-light dark:border-border-dark rounded-xl">
-            Permission Level: <span class="bg-black inline-flex dark:bg-white bg-opacity-10 ml-1 dark:bg-opacity-10 p-0.5 px-3 rounded-lg">{member.level}</span>
+            Permission Level: <span class="bg-black inline-flex dark:bg-white bg-opacity-10 ml-1 dark:bg-opacity-10 p-0.5 px-3 rounded-lg">{memberLevel}</span>
         </div>
     </div>
     <div class="p-4 w-full border-[1px] border-border-light dark:border-border-dark rounded-xl">
         <p class="mb-2">Permissions:</p>
 
-        {#each member.permissions as permission}
+        {#each memberPermissions as permission}
             <div class="bg-black inline-block dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 text-xs rounded-lg w-fit mb-2 mr-2">
                 {permission.replaceAll("_", " ")}
             </div>
@@ -127,7 +162,7 @@
 
     <div slot=content class="py-2 h-[calc(100dvh-17rem)] overflow-auto overflow-y-visible">
         {#each roles as role (role)}
-            {#if role.name != 'everyone' && !hasRole(member.roles, role.id) && $client?.level != undefined && role.level < $client?.level}
+            {#if role.name != 'everyone' && !hasRole(memberRoles, role.id) && $currentTeam && $currentTeam.level != undefined && role.level < $currentTeam.level}
                 <button on:click={() => { if(!selected.includes(role.id)) { selected.push(role.id); selected = selected; } else { selected.splice(selected.indexOf(role.id), 1); selected = selected; } }} class="flex w-full items-center transition rounded-md p-2 mb-1 bg-black dark:bg-white {selected != undefined && selected.includes(role.id) ? "bg-opacity-10 dark:bg-opacity-10" : "bg-opacity-0 dark:bg-opacity-0"}">
                     <div style="background-color: {role.color};" class="w-6 h-6 mr-2 rounded-full"></div>
                     <p>{role.name}</p>

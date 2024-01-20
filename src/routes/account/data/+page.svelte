@@ -39,7 +39,7 @@
 </script>
 
 <svelte:head>
-    <title>Skywalkers | Account</title>
+    <title>Account Data</title>
 </svelte:head>
 
 <Background>
@@ -73,7 +73,7 @@
         <div bind:this={store} class="rounded-lg relative bg-secondary-light dark:bg-secondary-dark w-full p-4 max-h-96 {showmorestore ? "overflow-auto" : "overflow-hidden"}">
             {#if $client == undefined}
                 <p class="font-bold text-red-500">Signed Out</p>
-            {:else if $client.team == undefined}
+            {:else if $client.teams == undefined}
                 <p class="font-bold text-red-500">You are not verified. Your data has not been stored on our database. Your email may be in our database, see explanation below.</p>
             {:else}
                 <p class="whitespace-pre-line break-all">

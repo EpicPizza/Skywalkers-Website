@@ -1,193 +1,91 @@
-import type { SecondaryUser } from "$lib/Firebase/firebase";
+import { unlink } from "$lib/Discord/link.server";
+import type { SecondaryUser, Teams } from "$lib/Firebase/firebase";
 import { firebaseAdmin, getUser } from "$lib/Firebase/firebase.server";
-import { getDefaultRole } from "$lib/Meetings/helpers";
+import { getDefault, getDefaultRole } from "$lib/Meetings/helpers";
 import type { Role } from "$lib/Roles/role";
 import { getRolesAsCache, getSpecifiedRoles, getSpecifiedRolesWithTransaction } from "$lib/Roles/role.server";
 import { error } from "@sveltejs/kit";
 import { randomBytes, scryptSync } from 'crypto';
 import { FieldValue, type DocumentReference, type Transaction } from "firebase-admin/firestore";
 
-export async function quarantineMember(id: string) {
+export async function kickMember(id: string, team: string) {
     const db = firebaseAdmin.getFirestore();
-
-    const quarantineRef = db.collection('quarantine').doc(id);
 
     const userRef = db.collection('users').doc(id);
 
-    await db.runTransaction(async t => {
-        const member = await getMemberWithTransaction(id, t);
+    const deleted = await db.runTransaction(async t => {
+        const member = await getMemberWithTransaction(id, team, t);
 
-        const hoursRef = db.collection('teams').doc(member.team).collection('hours').doc(member.id);
+        const hoursRef = db.collection('teams').doc(team).collection('hours').doc(member.id);
 
         const hours = await t.get(hoursRef);
 
         if(hours.exists && hours.data()) {
-            t.update(hoursRef, {
-                total: 0,
-                entries: [],
-                deleted: true,
-                history: FieldValue.arrayUnion({ date: new Date().valueOf(), id: crypto.randomUUID(), data: { total: hours.data()?.total, entries: hours.data()?.entries } })
-            });
+            t.delete(hoursRef)
         }
 
-        for(let i = 0; i < member.roles.length; i++) {
-            t.update(db.collection('teams').doc(member.team).collection('roles').doc(member.roles[i].id), {
+        let currentTeam: Teams[0] = (() => {
+            let found: Teams[0] | null = null;
+
+            for(let i = 0; i < member.teams.length; i++) {
+                if(member.teams[i].team == team) {
+                    found = member.teams[i];
+                    member.teams.splice(i, 1);
+                }
+            }
+
+            if(found == null) throw new Error("Not part of team");
+
+            return found;
+        })();
+
+        for(let i = 0; i < currentTeam.roles.length; i++) {
+            t.update(db.collection('teams').doc(currentTeam.team).collection('roles').doc(currentTeam.roles[i].id), {
                 members: FieldValue.arrayRemove(db.collection('users').doc(id))
             })
         }
 
-        t.create(quarantineRef, {
-            id: id,
-            team: member.team,
-            data: {
-                displayName: member.displayName,
-                photoURL: member.photoURL,
-                pronouns: member.pronouns,
-                role: member.role,
-                roles: ((roles: Role[]) => {
-                    let array = new Array();
-    
-                    roles.forEach((role) => {
-                        array.push(role.id);
-                    })
-
-                    return array;
-                })(member.roles),
-            }
+        t.update(userRef, {
+            teams: member.teams,
+            team: Array.from(member.teams, (v) => v.team),
         })
 
-        t.delete(userRef);
-    })
-}
-
-export async function unquarantineMember(id: string, adminRoles: Role[], data: QuarantinedMember["data"] | undefined) {
-    const db = firebaseAdmin.getFirestore();
-
-    await (async function check() {
-        const member = await getQuarantinedMember(id);
-
-        if(data != undefined) {
-            member.data = data;
+        if(member.teams.length == 0) {
+            return true;
+        } else {
+            return false;
         }
+    });
 
-        const roleRefs = new Array<DocumentReference>();
+    if(deleted) {
+        await unlink(id);
 
-        for(let i = 0; i < member.data.roles.length; i++) {
-            roleRefs.push(db.collection('teams').doc(member.team).collection('roles').doc(member.data.roles[i]))
-        }
+        await userRef.delete();
+        await userRef.collection('settings').doc('confirmations').delete();
+        await userRef.collection('settings').doc('discord').delete();
 
-        const roles = await getSpecifiedRoles(roleRefs, member.team); //dw about everyone role, this fumction includes it for you
+        const folderPath = `users/${id}`;
 
-        console.log("Kicked", roles);
-        console.log("Admin", adminRoles);
+        await new Promise((resolve) => {
+            firebaseAdmin.getBucket().deleteFiles({
+                prefix: folderPath,
+            }, (err, files) => {
+                if(err) {
+                    console.log(err);
 
-        let level = 0;
-        let adminLevel = 0;
-
-        for(let i = 0; i < roles.length; i++) {
-            if(roles[i].level > level) {
-                level = roles[i].level;
-            }
-        }
-
-        for(let i = 0; i < adminRoles.length; i++) {
-            if(adminRoles[i].level > adminLevel) {
-                adminLevel = adminRoles[i].level;
-            }
-        }
-
-        console.log("Kicked", level);
-        console.log("Admin", adminLevel);
-
-        if(level >= adminLevel) {
-            throw new Error("Insufficient Permission Level");
-        }
-    })();
-
-    const quarantineRef = db.collection('quarantine').doc(id);
-
-    const userRef = db.collection('users').doc(id);
-
-    await db.runTransaction(async t => {
-        const member = await getQuarantinedMemberWithTransaction(id, t);
-
-        if(data != undefined) {
-            member.data = data;
-        }
-
-        const roleRefs = new Array<DocumentReference>();
-
-        for(let i = 0; i < member.data.roles.length; i++) {
-            const doc = await db.collection('teams').doc(member.team).collection('roles').doc(member.data.roles[i]).get();
-
-
-            if(doc.exists) {
-                roleRefs.push(doc.ref);
-            }
-        }
-
-        console.log("refs", roleRefs);
-
-        const roles = await getSpecifiedRolesWithTransaction(roleRefs, t, member.team); //dw about everyone role, this fumction includes it for you
-
-        let level = 0;
-        let permissions = new Array<string>();
-
-        for(let i = 0; i < roles.length; i++) {
-            if(roles[i].level > level) {
-                level = roles[i].level;
-            }
-
-            for(let j = 0; j < roles[i].permissions.length; j++) {
-                if(!permissions.includes(roles[i].permissions[j])) {
-                    permissions.push(roles[i].permissions[j]);
+                    throw error(501, "An unexpected error occurred, please contact us for further help.");
                 }
-            }
-        }
 
-        for(let i = 0; i < roleRefs.length; i++) {
-            for(let j = 0; j < roles.length; j++) {
-                if(roles[j].name == 'everyone' && roles[j].id == roleRefs[i].id) {
-                    roleRefs.splice(i, 1);
-                }
-            }
-        }
-
-        const hoursRef = db.collection('teams').doc(member.team).collection('hours').doc(member.id);
-
-        const hours = await t.get(hoursRef);
-
-        if(hours.exists && hours.data()) {
-            t.update(hoursRef, {
-                deleted: false,
-            });
-        }
-
-        t.create(userRef, {
-            displayName: member.data.displayName,
-            level: level,
-            permissions: permissions,
-            photoURL: member.data.photoURL,
-            pronouns: member.data.pronouns,
-            role: member.data.role,
-            roles: roleRefs,
-            team: member.team
-        })
-
-        for(let i = 0; i < roleRefs.length; i++) {
-            t.update(roleRefs[i], {
-                members: FieldValue.arrayUnion(userRef),
+                resolve(null);
             })
-        }
-
-        t.delete(quarantineRef);
-    })
+        });
+    }
 }
 
 export async function getMemberCache(team: string, roles: Map<string, Role>): Promise<Map<string, SecondaryUser>> {
     const db = firebaseAdmin.getFirestore();
 
-    const ref = db.collection('users').where('team', '==', team);
+    const ref = db.collection('users').where('team', 'array-contains', team);
 
     const docs = (await ref.get()).docs;
 
@@ -199,10 +97,17 @@ export async function getMemberCache(team: string, roles: Map<string, Role>): Pr
         const user = doc.data();
 
         if(user == undefined) throw new Error("User not found.");
+
+        for(let j = 0; j < user.teams.length; j++) {
+            if(user.teams[j].team == team) {
+                user.teams[j].roles = Array.from(user.teams[j].roles, (role: DocumentReference) => { return roles.get(role.id) ?? getDefaultRole(role.id) });
+            } else {
+                user.teams[j].roles = [];
+            }
+        }
     
         users.set(docs[i].id, {
             ...user,
-            roles: Array.from(user.roles, (role: DocumentReference) => { return roles.get(role.id) ?? getDefaultRole(role.id) }),
             id: doc.id,
         } as SecondaryUser);
     }
@@ -210,116 +115,47 @@ export async function getMemberCache(team: string, roles: Map<string, Role>): Pr
     return users;
 }
 
-export async function getMember(id: string): Promise<SecondaryUser> {
+export async function getMember(id: string, team: string, silenced = false): Promise<SecondaryUser> {
     const db = firebaseAdmin.getFirestore();
 
     const ref = db.collection('users').doc(id);
 
-    const doc = await ref.get();
+    try {
+        const doc = await ref.get();
 
-    if(!doc.exists) throw new Error("User not found.");
+        if(!doc.exists) throw new Error("User not found.");
 
-    const user = doc.data();
+        const user = doc.data();
 
-    if(user == undefined) throw new Error("User not found.");
+        if(user == undefined) throw new Error("User not found.");
 
-    return {
-        ...user,
-        roles: await getSpecifiedRoles(user.roles),
-        id: doc.id,
-    } as SecondaryUser
-}
+        for(let j = 0; j < user.teams.length; j++) {
+            if(user.teams[j].team == team) {
+                user.teams[j].roles = await getSpecifiedRoles(user.teams[j].roles);
+            } else {
+                user.teams[j].roles = [];
+            }
+        }
 
-export async function getQuarantinedMember(id: string): Promise<QuarantinedMember> {
-    const db = firebaseAdmin.getFirestore();
+        return {
+            ...user,
+            id: doc.id,
+        } as SecondaryUser
 
-    const ref = db.collection('quarantine').doc(id);
+    } catch(e) {
+        console.log(silenced);
 
-    const doc = await ref.get();
+        if(silenced) {
+            console.log(e);
 
-    if(!doc.exists) throw new Error("User not found.");
-
-    const user = doc.data();
-
-    if(user == undefined) throw new Error("User not found.");
-
-    return {
-        ...user,
-    } as QuarantinedMember
-}
-
-export async function getQuarantinedMemberInfo(id: string): Promise<QuarantinedMemberInfo> {
-    const member = await getQuarantinedMember(id);
-
-    const db = firebaseAdmin.getFirestore();
-
-    const roleRefs = new Array<DocumentReference>();
-
-    for(let i = 0; i < roleRefs.length; i++) {
-        roleRefs.push(db.collection('teams').doc(member.team).collection('roles').doc(member.data.roles[i]))
-    }
-
-    const roles = await getSpecifiedRoles(roleRefs);
-
-    return {
-        id: member.id,
-        team: member.team,
-        data: {
-            displayName: member.data.displayName,
-            photoURL: member.data.photoURL,
-            pronouns: member.data.pronouns,
-            role: member.data.role,
-            roles: roles,
+            return getDefault(id);
+        } else {
+            throw e;
         }
     }
 }
 
-export async function getQuarantinedMembers(team: string): Promise<QuarantinedMember[]> {
-    const db = firebaseAdmin.getFirestore();
-
-    const ref = db.collection('quarantine').where('team', '==', team);
-
-    const collection = await ref.get();
-
-    let quarantinedMembers = new Array<QuarantinedMember>();
-
-    for(let i = 0; i < collection.docs.length; i++) {
-        if(collection.docs[i].data() != undefined) {
-            quarantinedMembers.push({
-                ...collection.docs[i].data()
-            } as QuarantinedMember)
-        }
-    }
-
-    return quarantinedMembers
-}
-
-
-export interface QuarantinedMember { 
-    id: string,
-    team: string,
-    data: {
-        displayName: string,
-        photoURL: string,
-        pronouns: string,
-        role: string,
-        roles: string[],
-    }
-}
-
-export interface QuarantinedMemberInfo { 
-    id: string,
-    team: string,
-    data: {
-        displayName: string,
-        photoURL: string,
-        pronouns: string,
-        role: string,
-        roles: Role[],
-    }
-}
-
-export async function getMemberWithTransaction(id: string, t: Transaction): Promise<SecondaryUser> {
+export async function getMemberWithTransaction(id: string, team: string, t: Transaction): Promise<SecondaryUser> {
     const db = firebaseAdmin.getFirestore();
 
     const ref = db.collection('users').doc(id);
@@ -332,27 +168,17 @@ export async function getMemberWithTransaction(id: string, t: Transaction): Prom
 
     if(user == undefined) throw new Error("User not found.");
 
+    for(let j = 0; j < user.teams.length; j++) {
+        if(user.teams[j].team == team) {
+            user.teams[j].roles = await getSpecifiedRolesWithTransaction(user.teams[j].roles, t, team);
+        } else {
+            user.teams[j].roles = [];
+        }
+    }
+
+
     return {
         ...user,
-        roles: await getSpecifiedRolesWithTransaction(user.roles, t, user.team),
         id: doc.id,
     } as SecondaryUser
-}
-
-export async function getQuarantinedMemberWithTransaction(id: string, t: Transaction): Promise<QuarantinedMember> {
-    const db = firebaseAdmin.getFirestore();
-
-    const ref = db.collection('quarantine').doc(id);
-
-    const doc = await t.get(ref);
-
-    if(!doc.exists) throw new Error("User not found.");
-
-    const user = doc.data();
-
-    if(user == undefined) throw new Error("User not found.");
-
-    return {
-        ...user,
-    } as QuarantinedMember
 }

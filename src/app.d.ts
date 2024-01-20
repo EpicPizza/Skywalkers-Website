@@ -8,8 +8,12 @@ declare global {
 		interface Locals {
 			user: UserRecord | undefined
 			firestoreUser: FirestoreUser | undefined,
-			team: boolean,
+			permissions: string[],
+			level: number,
+			team: null | string,
 			kicked: boolean,
+			unverifiedTeam: null | string,
+			teamInfo: Map<string, { name: string, website: string, icon: string }>
 		}
 		// interface PageData {}
 		// interface Platform {}

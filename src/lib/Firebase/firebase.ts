@@ -4,7 +4,7 @@ import { type Auth, getAuth as getFirebaseAuth, GoogleAuthProvider, onAuthStateC
 import { get, writable, type Unsubscriber, type Writable } from "svelte/store";
 import { getFirestore as getFirebaseFirestore, type Firestore, type Unsubscribe, doc, getDoc, onSnapshot, DocumentReference } from "firebase/firestore";
 import { createVerified } from "$lib/stores";
-import { navigating } from "$app/stores";
+import { navigating, page } from "$app/stores";
 import type { Role } from "$lib/Roles/role";
 import { browser } from "$app/environment";
 
@@ -15,22 +15,27 @@ interface Preload {
     uid: string,
     preload: boolean,
     pronouns: string | undefined,
-    team: string | undefined,
-    role: string | undefined,
-    permissions: string[] | undefined,
-    level: number | undefined,
-    roles: Role[] | undefined,
+    teams: Teams | undefined,
 }
+
+export type Teams = {
+    team: string,
+    role: string,
+    permissions: string[],
+    level: number,
+    roles: Role[],
+}[];
+
 
 export interface FirestoreUser {
     displayName: string,
-    permissions: string[],
-    level: number;
     photoURL: string,
-    role: string,
-    team: string,
     pronouns: string,
-    roles: Role[]
+    teams: Teams
+}
+
+export interface MainUser extends FirestoreUser {
+    permissions: string[]
 }
 
 export interface SecondaryUser extends FirestoreUser {
@@ -38,15 +43,11 @@ export interface SecondaryUser extends FirestoreUser {
 }
 
 export interface UndefinedFirestoreUser {
-    role: undefined,
-    team: undefined,
     pronouns: undefined,
-    permissions: undefined,
-    level: undefined,
-    roles: undefined,
+    teams: undefined,
 }
 
-export type VerifiedUser = FirestoreUser & User;
+export type VerifiedUser = MainUser & User;
 type NonverifiedUser = UndefinedFirestoreUser & User;
 
 export function firebaseClient() {
@@ -56,22 +57,24 @@ export function firebaseClient() {
     let provider: GoogleAuthProvider | undefined = undefined;
     let firestore: Firestore | undefined = undefined;
     let unsubscribe: Unsubscribe | undefined = undefined;
-    let cachedUsers: Map<string, SecondaryUser | { team: undefined }> = new Map();
-    let cachedRoles: Map<string, Role | { id: undefined } > = new Map();
+    let cachedUsers: Map<string, SecondaryUser | { teams: undefined }> = new Map();
+    let cachedRoles: Map<{ id: string, team: string }, Role | { id: undefined } > = new Map();
     let firestoreEntry: any | undefined = undefined;
+    let leaving 
 
     const getApp = (): FirebaseApp => {
         if(!browser) return undefined as any;
 
         if(app == undefined) {
-            const firebaseConfig = {
-                apiKey: "AIzaSyDUStXNyzY5sOm23Mxh0I40lRQdoNkux58",
-                authDomain: "frc-skywalkers-dev.firebaseapp.com",
-                projectId: "frc-skywalkers-dev",
-                storageBucket: "frc-skywalkers-dev.appspot.com",
-                messagingSenderId: "570673802109",
-                appId: "1:570673802109:web:a9f00bc816ba5d47477a14"
-            };;
+           const firebaseConfig = {
+                apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
+                authDomain: "skywalkers.alexest.net",
+                projectId: "frc-skywalkers",
+                storageBucket: "frc-skywalkers.appspot.com",
+                messagingSenderId: "86129312478",
+                appId: "1:86129312478:web:b06670457b876827e1784f",
+                measurementId: "G-GMZX3PY5H6"
+            };
     
             app = initializeApp(firebaseConfig);
         }
@@ -161,12 +164,8 @@ export function firebaseClient() {
                 if(firestoreUser == undefined) {
                     user.set({
                         ...currentUser,
-                        role: undefined,
-                        team: undefined,
+                        teams: undefined,
                         pronouns: undefined,
-                        roles: undefined,
-                        level: undefined,
-                        permissions: undefined,
                     });
                 } else {
                     user.set({
@@ -184,12 +183,8 @@ export function firebaseClient() {
                 if(firestoreUser == undefined) {
                     user.set({
                         ...currentUser,
-                        role: undefined,
-                        team: undefined,
+                        teams: undefined,
                         pronouns: undefined,
-                        roles: undefined,
-                        level: undefined,
-                        permissions: undefined,
                     });
                 } else {
                     user.set({
@@ -203,7 +198,7 @@ export function firebaseClient() {
         })
     }
 
-    const getFirestoreUser = async (id: string): Promise<FirestoreUser | undefined> => {
+    const getFirestoreUser = async (id: string): Promise<MainUser | undefined> => {
         const db = getFirestore();
 
         const userRef = doc(db, "users", id);
@@ -223,11 +218,11 @@ export function firebaseClient() {
         unsubscribe = onSnapshot(userRef, async (snapshot) => {
             if(snapshot.data() == undefined) { //means user was unverified, easiest way to handle unverfication is just to signout :/
                 let currentUser = get(user);
-                if(currentUser != undefined && currentUser.team != undefined) {
+                if(currentUser != undefined && currentUser.teams) {
                     signOut();
                 }
             } else {
-                if(get(user)?.team == undefined) {
+                if(get(user)?.teams) {
                     invalidateAll();
                 }
 
@@ -236,21 +231,51 @@ export function firebaseClient() {
                 if(!(currentUser == undefined || 'preload' in currentUser)) { //prevents updates when user is signed out alr or website is still loading (preload exists)
                     firestoreEntry = snapshot.data();
 
+                    let permissions = [];
+
+                    if(firestoreEntry) {
+                        for(let i = 0 ; i < firestoreEntry.teams.length; i++) {
+                            if(firestoreEntry.teams[i].team == get(page).params.team) {
+                                permissions = firestoreEntry.teams[i].permissions;
+                            }
+
+                            firestoreEntry.teams[i].roles = await getSpecifiedRoles(firestoreEntry.teams[i].roles as DocumentReference[], firestoreEntry.teams[i].team)
+                        }
+                    }
+
                     user.set({
                         ...currentUser,
-                        ...{
-                            ...snapshot.data(),
-                            roles: snapshot.data() ? await getSpecifiedRoles(snapshot.data()?.roles as DocumentReference[]) : [],
-                        } as FirestoreUser
-                    })
+                        ...firestoreEntry as FirestoreUser,
+                        permissions
+                    } as VerifiedUser);
                 }
             }
-        })
+        });
+
+        let backup = get(user); //no way to get roles at this point, will have to sacriface
+
+        let permissions: string[] = [];
+
+        if(userData && backup && backup.teams) {
+            for(let i = 0; i < userData.teams.length; i++) {
+                if(userData.teams[i].team == get(page).params.team) {
+                    permissions = userData.teams[i].permissions;
+                }
+
+                const team = userData.teams[i].team;
+
+                for(let j = 0; j < backup.teams.length; j++) {
+                    if(backup.teams[j].team == team) {
+                        userData.teams[i].roles = backup.teams[j].roles;
+                    }
+                }
+            }
+        }
 
         return userData ? {
             ...userData,
-            roles: get(user) ? get(user)?.roles : [], //this gets run before user object is updated and getSpecifiedRoles waits until user object is updated, which causes website to get stuck in a promise loop waiting for each other :/
-        } as FirestoreUser : undefined;
+            permissions,
+        } as MainUser : undefined;
     }
 
     const signIn = async () => {
@@ -271,6 +296,9 @@ export function firebaseClient() {
             }
         });
 
+        cachedUsers = new Map();
+        cachedRoles = new Map();
+
         getAuth().signOut();
     }
 
@@ -285,21 +313,42 @@ export function firebaseClient() {
         getAuth().signOut();
     }
 
-    const getUser = async (id: string): Promise<SecondaryUser | undefined> => {
+    const getUser = async (id: string, refresh = false): Promise<SecondaryUser | undefined> => {
         const cache = cachedUsers.get(id);
 
-        if(cache != undefined) {
-            if(cache.team == undefined) {
+        if(cache != undefined && !refresh) {
+            if(cache.teams == undefined) {
                 return undefined;
             } else {
+                let currentUser = get(user);
+                if(currentUser == undefined || 'preload' in currentUser || currentUser.teams == undefined) {
+                    currentUser = await new Promise<VerifiedUser>((resolve) => {
+                        user.subscribe((value) => {
+                            if(value == undefined || 'preload' in value || value.teams == undefined) return;
+
+                            resolve(value);
+                        })
+                    })
+                }
+
+                const inTeams = Array.from(currentUser.teams, (team) => team.team);
+
+                for(let i = 0 ; i < cache.teams.length; i++) {
+                    if(inTeams.includes(cache.teams[i].team)) {
+                        cache.teams[i].roles = await getSpecifiedRoles(cache.teams[i].roles as unknown as DocumentReference[], cache.teams[i].team)
+                    }
+                }
+
+                cacheUser(id, cache as SecondaryUser);
+
                 return cache;
             }
         } else {
             let currentUser = get(user);
-            if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) {
+            if(currentUser == undefined || 'preload' in currentUser || currentUser.teams == undefined) {
                 currentUser = await new Promise<VerifiedUser>((resolve) => {
                     user.subscribe((value) => {
-                        if(value == undefined || 'preload' in value || value.team == undefined) return;
+                        if(value == undefined || 'preload' in value || value.teams == undefined) return;
 
                         resolve(value);
                     })
@@ -315,7 +364,7 @@ export function firebaseClient() {
                 requestedUser = (await getDoc(ref)).data();
             } catch(e: any) {
                 if(e.message == "Missing or insufficient permissions.") {
-                    cacheUser(id, { team: undefined });
+                    cacheUser(id, { teams: undefined });
                 } else {
                     console.error(e);
                 }
@@ -323,32 +372,38 @@ export function firebaseClient() {
             }
 
             if(requestedUser == undefined) return undefined;
+
+            const inTeams = Array.from(currentUser.teams, (team) => team.team);
+
+            for(let i = 0 ; i < requestedUser.teams.length; i++) {
+                if(inTeams.includes(requestedUser.teams[i].team)) {
+                    requestedUser.teams[i].roles = await getSpecifiedRoles(requestedUser.teams[i].roles as DocumentReference[], requestedUser.teams[i].team)
+                }
+            }
             
             cacheUser(id, {
                 ... requestedUser,
-                roles: await getSpecifiedRoles(requestedUser.roles as DocumentReference[]),
                 id: id
             } as SecondaryUser);
 
             return {
                 ... requestedUser,
-                roles: await getSpecifiedRoles(requestedUser.roles as DocumentReference[]),
                 id: id
             } as SecondaryUser;
         }
     }
 
-    const cacheUser = (id: string, cachingUser: SecondaryUser | { team: undefined }) => {
+    const cacheUser = (id: string, cachingUser: SecondaryUser | { teams: undefined }) => {
         if(cachedUsers.get(id) == undefined) {
             cachedUsers.set(id, cachingUser);
         }
     }
 
-    const getRole = async (id: string): Promise<Role | undefined> => {
+    const getRole = async (id: string, team: string): Promise<Role | undefined> => {
         if(!browser) return;
         if(id == "") return;
 
-        const cache = cachedRoles.get(id);
+        const cache = cachedRoles.get({ id: id, team: team });
 
         if(cache != undefined) {
             if(cache.id == undefined) {
@@ -359,10 +414,10 @@ export function firebaseClient() {
         } else {
             let currentUser = get(user);
 
-            if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) {
+            if(currentUser == undefined || 'preload' in currentUser || currentUser.teams == undefined) {
                 currentUser = await new Promise<VerifiedUser>((resolve) => {
                     user.subscribe((value) => {
-                        if(value == undefined || 'preload' in value || value.team == undefined) return;
+                        if(value == undefined || 'preload' in value || value.teams == undefined) return;
 
                         resolve(value);
                     })
@@ -371,14 +426,14 @@ export function firebaseClient() {
 
             const db = getFirestore();
 
-            const ref = doc(db, "teams", currentUser.team, "roles", id);
+            const ref = doc(db, "teams", team, "roles", id);
 
             let requestedRole;
             try {
                 requestedRole = (await getDoc(ref)).data();
             } catch(e: any) {
                 if(e.message == "Missing or insufficient permissions.") {
-                    cacheRole(id, { id: undefined });
+                    cacheRole(id, team, { id: undefined });
                 } else {
                     console.error(e);
                 }
@@ -387,7 +442,7 @@ export function firebaseClient() {
 
             if(requestedRole == undefined) return undefined;
             
-            cacheRole(id, {
+            cacheRole(id, team, {
                 ... requestedRole,
                 members: [] as any,
                 id: id
@@ -401,17 +456,15 @@ export function firebaseClient() {
         }
     }
 
-    const cacheRole = (id: string, cachingRole: Role | { id: undefined }) => {
-        if(cachedRoles.get(id) == undefined) {
-            cachedRoles.set(id, cachingRole);
-        }
+    const cacheRole = (id: string, team: string, cachingRole: Role | { id: undefined }) => {
+        cachedRoles.set({ id, team }, cachingRole);
     }
 
-    const getSpecifiedRoles = async (refs: DocumentReference[]) => {
+    const getSpecifiedRoles = async (refs: DocumentReference[], team: string) => {
         const roles = new Array<Role>();
 
         for(let i = 0; i < refs.length; i++) {
-            const role = await getRole(refs[i].id);
+            const role = await getRole(refs[i].id, team);
     
             if(role != undefined) {
                 roles.push(role);
@@ -427,7 +480,7 @@ export function firebaseClient() {
 
         const { subscribe } = writable<T | undefined>(initial, (set) => {
             unsubscribeUser = user.subscribe((currentUser) => {
-                if(currentUser == undefined || 'preload' in currentUser || currentUser.team == undefined) return;
+                if(currentUser == undefined || 'preload' in currentUser || currentUser.teams == undefined) return;
 
                 if(unsubscribe) unsubscribe();
 
@@ -465,7 +518,6 @@ export function firebaseClient() {
             getUser: getAuthUser,
             getEntry: getFirestoreEntry,
         },
-        cacheUser: cacheUser,
         getUser: getUser,
         getRole: getRole,
     }

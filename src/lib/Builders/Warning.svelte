@@ -8,6 +8,8 @@
     import { cubicOut } from "svelte/easing";
     import { fade } from "svelte/transition";
     import { portal } from "svelte-portal";
+    import { page } from "$app/stores";
+    import { increment } from "firebase/firestore";
 
     let mode = getContext('mode') as ReturnType<typeof createMode>
 
@@ -72,9 +74,11 @@
     <div out:fade use:portal class="fixed bottom-0 left-0 ml-2 mb-2 bg-backgroud-light dark:bg-backgroud-dark rounded-md border-border-light dark:border-border-dark border-[1px] shadow-2xl overflow-auto z-[1000]">
         <div class="relative flex items-center p-4">
             <p class="whitespace-nowrap">{message}</p>
-            <button class="b-clear ml-4" on:click={() => {popup = false;}}>
-                <Icon scale=1.75rem icon=close/>
-            </button>
+            {#if !$page.url.href.includes("public")}
+                <button class="b-clear ml-4" on:click={() => {popup = false;}}>
+                    <Icon scale=1.75rem icon=close/>
+                </button>
+            {/if}
         </div>
         <div style="width: {$delay * 100}%; background-color: {color};" class="absolute h-1 bottom-0 left-0"></div>
     </div>

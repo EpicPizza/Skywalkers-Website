@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-    <title>Skywalkers | Account</title>
+    <title>Delete Account</title>
 </svelte:head>
 
 <Background>

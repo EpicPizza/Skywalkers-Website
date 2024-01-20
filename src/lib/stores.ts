@@ -1,10 +1,9 @@
 import type { User } from "firebase/auth";
 import { writable, type Readable, type Writable, type Unsubscriber } from "svelte/store";
 import { get } from 'svelte/store';
-import type { firebaseClient } from '$lib/Firebase/firebase';
+import type { FirestoreUser, Teams, firebaseClient } from '$lib/Firebase/firebase';
 import type { DocumentReference } from "firebase/firestore";
 import { browser } from "$app/environment";
-import { PUBLIC_NOTION_PAGE } from "$env/static/public";
 import { persisted } from "svelte-persisted-store";
 
 //here for reference, instead these stores are made with setContext in root layout (or said otherwise).
@@ -162,6 +161,146 @@ export function createPersistentWritable(key: string, initial: string) {
     }
 }
 
+export function createPermissions() {
+    const {subscribe, set, update} = writable<string[]>([]);
+    let unsubscribeTeam: Unsubscriber | undefined = undefined;
+    let unsubscribeClient: Unsubscriber | undefined = undefined;
+
+    const serverInit = (user: { teams: Teams } | undefined, team: string) => {
+        if(user == undefined) return;
+
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == team) {
+                set(user.teams[i].permissions);
+            }
+        }
+    }
+
+    const clientInit = (client: ReturnType<typeof firebaseClient>, team: Writable<string>) => {
+        if(unsubscribeTeam != undefined) { //just for development weirdness
+            unsubscribeTeam();
+            unsubscribeTeam = undefined;
+        }
+
+        if(unsubscribeClient != undefined) { //just for development weirdness
+            unsubscribeClient();
+            unsubscribeClient = undefined;
+        }
+
+        unsubscribeTeam = team.subscribe((current) => {
+            const user = get({ subscribe: client.subscribe });
+
+            if(user == undefined || user.teams == undefined) {
+                set([]);
+            } else {
+                for(let i = 0; i < user.teams.length; i++) {
+                    if(user.teams[i].team == current) {
+                        set(user.teams[i].permissions);
+
+                        return;
+                    }
+                }
+
+               set([]);
+            }
+        })
+
+        unsubscribeClient = client.subscribe((user) => {
+            const currentTeam = get({ subscribe: team.subscribe });
+
+            if(user == undefined || user.teams == undefined) {
+                set([]);
+            } else {
+                for(let i = 0; i < user.teams.length; i++) {
+                    if(user.teams[i].team == currentTeam) {
+                        set(user.teams[i].permissions);
+
+                        return;
+                    }
+                }
+
+               set([]);
+            }
+        })
+    }
+
+    return {
+        subscribe: subscribe,
+        clientInit: clientInit,
+        serverInit: serverInit,
+    }
+}
+
+export function createCurrentTeam() {
+    const {subscribe, set, update} = writable<Teams[0] | undefined>();
+    let unsubscribeTeam: Unsubscriber | undefined = undefined;
+    let unsubscribeClient: Unsubscriber | undefined = undefined;
+
+    const serverInit = (user: { teams: Teams } | undefined, team: string) => {
+        if(user == undefined) return;
+
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == team) {
+                set(user.teams[i]);
+            }
+        }
+    }
+
+    const clientInit = (client: ReturnType<typeof firebaseClient>, team: Writable<string>) => {
+        if(unsubscribeTeam != undefined) { //just for development weirdness
+            unsubscribeTeam();
+            unsubscribeTeam = undefined;
+        }
+
+        if(unsubscribeClient != undefined) { //just for development weirdness
+            unsubscribeClient();
+            unsubscribeClient = undefined;
+        }
+
+        unsubscribeTeam = team.subscribe((current) => {
+            const user = get({ subscribe: client.subscribe });
+
+            if(user == undefined || user.teams == undefined) {
+                set(undefined);
+            } else {
+                for(let i = 0; i < user.teams.length; i++) {
+                    if(user.teams[i].team == current) {
+                        set(user.teams[i]);
+
+                        return;
+                    }
+                }
+
+               set(undefined);
+            }
+        })
+
+        unsubscribeClient = client.subscribe((user) => {
+            const currentTeam = get({ subscribe: team.subscribe });
+
+            if(user == undefined || user.teams == undefined) {
+                set(undefined);
+            } else {
+                for(let i = 0; i < user.teams.length; i++) {
+                    if(user.teams[i].team == currentTeam) {
+                        set(user.teams[i]);
+
+                        return;
+                    }
+                }
+
+               set(undefined);
+            }
+        })
+    }
+
+    return {
+        subscribe: subscribe,
+        clientInit: clientInit,
+        serverInit: serverInit,
+    }
+}
+
 export function createVerified() {
     const {subscribe, set, update} = writable<boolean>();
     let unsubscribe: Unsubscriber | undefined = undefined;
@@ -170,14 +309,14 @@ export function createVerified() {
         set(value);
     }
 
-    const clientInit = (client: ReturnType<typeof firebaseClient>) => {
+    const clientInit = (client: ReturnType<typeof firebaseClient>, team: Writable<string>) => {
         if(unsubscribe != undefined) { //just for development weirdness
             unsubscribe();
             unsubscribe = undefined;
         }
 
         unsubscribe = client.subscribe((value) => {
-            if(value == undefined || value.team == undefined) {
+            if(value == undefined || value.teams == undefined) {
                 set(false);
             } else {
                 set(true);
@@ -196,6 +335,7 @@ interface Link {
     href: string,
     display: string,
     protected: boolean,
+    specific: boolean,
 }
 
 export const navLinks: Writable<Link[]> = writable([
@@ -203,36 +343,31 @@ export const navLinks: Writable<Link[]> = writable([
         href: "/",
         display: "Home",
         protected: false,
-    },
-    {
-        href: "/help",
-        display: "Help",
-        protected: false,
+        specific: false,
     },
     {
         href: "/meetings",
         display: "Meetings",
         protected: true,
+        specific: true,
     },
     {
         href: "/hours",
         display: "Hours",
         protected: true,
+        specific: true,
     },
     {
         href: "/batteries",
         display: "Batteries",
         protected: true,
+        specific: true,
     },
     {
         href: "/schedule",
         display: "Scheduler",
         protected: true,
-    },
-    {
-        href: PUBLIC_NOTION_PAGE,
-        display: "Notion",
-        protected: true,
+        specific: true,
     }
 ]);
 

@@ -1,4 +1,4 @@
-import { DISCORD, CHANNEL, PRIVATE_KEY, DOMAIN } from "$env/static/private";
+import { DISCORD, PRIVATE_KEY, DOMAIN } from "$env/static/private";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import type { DiscordRole } from "$lib/Roles/role";
 import crypto from 'crypto';
@@ -20,12 +20,26 @@ interface DiscordUser {
     bot: boolean
 }
 
-export async function getRoles() {
-    const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/role"));
+export async function getTeamDiscord(team: string): Promise<{ guild: string, channel: string }> {
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db.collection('teams').doc(team).collection('settings').doc('discord');
+
+    const doc = await ref.get();
+
+    if(!doc.exists || doc.data() == undefined) throw new Error("Discord settings not found.");
+
+    return { guild: doc.data()?.guild as string, channel: doc.data()?.channel as string }; 
+}
+
+export async function getRoles(team: string) {
+    const settings = await getTeamDiscord(team);
+
+    const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/" + settings.guild + "/role"));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/server/role", {
+    const result = await fetch(DISCORD + "/server/" + settings.guild + "/role", {
         method: "GET",
         headers: {
             'content-type': 'application/json',
@@ -45,12 +59,14 @@ export async function getRoles() {
     return roles as DiscordRole[];
 }
 
-export async function getUsers() {
-    const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/member"));
+export async function getUsers(team: string) {
+    const settings = await getTeamDiscord(team);
+
+    const request = JSON.stringify(await getRequestObject(undefined, "GET", "/server/" + settings.guild + "/member"));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/server/member", {
+    const result = await fetch(DISCORD + "/server/" + settings.guild + "/member", {
         method: "GET",
         headers: {
             'content-type': 'application/json',
@@ -63,7 +79,9 @@ export async function getUsers() {
     return users as DiscordUser[];
 }
 
-export async function sendSynopsis(name: string, content: string, attachments: {url: string, type: string, name: string, location: string, code: string, ext: string }[], link: string) {
+export async function sendSynopsis(name: string, content: string, attachments: {url: string, type: string, name: string, location: string, code: string, ext: string }[], link: string, team: string) {
+    const settings = await getTeamDiscord(team);
+
     let links: { url: string, label: string }[] = [];
     let photos: { url: string }[] = [];
 
@@ -89,11 +107,11 @@ export async function sendSynopsis(name: string, content: string, attachments: {
     if(links.length > 0) message.links = links;
     if(photos.length > 0) message.attachments = photos;
 
-    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/message/" + CHANNEL));
+    const request = JSON.stringify(await getRequestObject(message, "POST", "/server/" + settings.guild + "/post/message/" + settings.channel));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/post/message/" + CHANNEL, {
+    const result = await fetch(DISCORD + "/server/" + settings.guild + "/post/message/" + settings.channel, {
         method: "POST",
         headers: {
             'content-type': 'application/json',
@@ -106,16 +124,18 @@ export async function sendSynopsis(name: string, content: string, attachments: {
     }
 }
 
-export async function sendDM(content: string, id: string) {
+export async function sendDM(content: string, id: string, team: string) {
+    const settings = await getTeamDiscord(team);
+
     let message: any = {
         content: content,
     }
 
-    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/dm/" + id));
+    const request = JSON.stringify(await getRequestObject(message, "POST","/server/" + settings.guild + "/post/dm/" + id));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/post/dm/" + id, {
+    const result = await fetch(DISCORD + "/server/" + settings.guild + "/post/dm/" + id, {
         method: "POST",
         headers: {
             'content-type': 'application/json',
@@ -128,7 +148,9 @@ export async function sendDM(content: string, id: string) {
     }
 }
 
-export async function sendConfirmation(meeting: Meeting, id: string) {
+export async function sendConfirmation(meeting: Meeting, id: string, team: string) {
+    const settings = await getTeamDiscord(team);
+
     let time = dnt.format(meeting.starts, "h:mm a") + " - " + dnt.format(meeting.ends, "h:mm a");
 
     let message: any = {
@@ -147,11 +169,11 @@ export async function sendConfirmation(meeting: Meeting, id: string) {
         ]
     }
 
-    const request = JSON.stringify(await getRequestObject(message, "POST", "/post/dm/" + id));
+    const request = JSON.stringify(await getRequestObject(message, "POST", "/server/" + settings.guild + "/post/dm/" + id));
 
     console.log(request);
 
-    const result = await fetch(DISCORD + "/post/dm/" + id, {
+    const result = await fetch(DISCORD + "/server/" + settings.guild + "/post/dm/" + id, {
         method: "POST",
         headers: {
             'content-type': 'application/json',

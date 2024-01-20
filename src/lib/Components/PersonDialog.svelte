@@ -19,12 +19,13 @@
     import Dialog from "$lib/Builders/Dialog.svelte";
     import Line from "$lib/Builders/Line.svelte";
     import Loading from "$lib/Builders/Loading.svelte";
-    import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
+    import type { FirestoreUser, SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
     import { getContext, onDestroy, onMount } from "svelte";
-    import type { Unsubscriber } from "svelte/store";
+    import type { Unsubscriber, Writable } from "svelte/store";
     import { createEventDispatcher } from "svelte";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    let team = getContext('team') as Writable<string>;
 
     let dispatch = createEventDispatcher();
 
@@ -54,13 +55,13 @@
                 cached: new Date(),
                 users: new Promise((resolve) => {
                     unsubscribe = client.subscribe(async (user) => {
-                        if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
+                        if(user == undefined || 'preload' in user || user.teams == undefined) { return; } //checking firebase sdk has loaded and user is verified
 
                         if(unsubscribe) {
                             unsubscribe();
                         }
 
-                        let res = await fetch("/api/users/list", {
+                        let res = await fetch("/t/" + $team + "/api/users/list", {
                             method: 'POST',
                         })
 
@@ -72,9 +73,9 @@
 
                         resolve(users);
 
-                        data.users.forEach((secondaryUser: SecondaryUser) => {
+                        /*data.users.forEach((secondaryUser: SecondaryUser) => {
                             client.cacheUser(secondaryUser.id, secondaryUser);
-                        });
+                        });*/
                     })
                 })
             }
@@ -127,9 +128,18 @@
         }
 
         selected = selected;
-
-        console.log(selected);
     }
+
+    function getRole(user: FirestoreUser) {
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == $team) {
+                return user.teams[i].role;
+            }
+        }
+
+        return "Unknown";
+    }
+
 
     function isSelected(id: string) {
         if(selected == undefined) return false;
@@ -167,12 +177,13 @@
         {/if}
         {#each users as user}
             {#if (search == "" || user.displayName.toLowerCase().includes(search.toLowerCase())) && !ignore.includes(user.id)}
+                {@const role = getRole(user)}    
                 {#key selected}
                     <button on:click={() => { select(user); }} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected && isSelected(user.id) ? 'bg-opacity-20' : 'bg-opacity-5'} {selected && isSelected(user.id)  ? 'dark:bg-opacity-20' : 'dark:bg-opacity-5'} w-full transition rounded-lg">
                         <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
                         <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
                             <h1 class="text-left">{user.displayName}{user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
-                            <h2 class="text-left text-sm opacity-80">{user.role.substring(0, 1).toUpperCase() + user.role.substring(1, user.role.length)} <span class="opacity-50">- {user.id}</span></h2>
+                            <h2 class="text-left text-sm opacity-80">{role.substring(0, 1).toUpperCase() + role.substring(1, role.length)} <span class="opacity-50">- {user.id}</span></h2>
                         </div>
                     </button>
                 {/key}

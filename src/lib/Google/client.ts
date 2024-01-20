@@ -3,7 +3,7 @@ import keys from '../../../client_secret.json';
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { calendar_v3, google } from "googleapis";
 import { sendDM } from "$lib/Discord/discord.server";
-import { GOOGLE_KEY, OWNER } from "$env/static/private";
+import { GOOGLE_KEY, OWNER, OWNER_TEAM } from "$env/static/private";
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 
 let oAuth2Client: undefined | OAuth2Client = undefined
@@ -49,7 +49,7 @@ export async function getCalendar(): Promise<calendar_v3.Calendar | undefined> {
     const client = await getClientWithCrendentials();
 
     if(client == undefined) {
-        await sendDM("Authorization Needed", OWNER);
+        await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
 
         process.exit();
     }

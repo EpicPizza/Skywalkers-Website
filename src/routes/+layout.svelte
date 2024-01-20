@@ -1,34 +1,65 @@
 <script lang="ts">
-    import { getContext, onMount, setContext } from "svelte";
+    import { onMount, setContext } from "svelte";
     import "../app.css";
-    import { createMode, createPersistentWritable, createVerified, devMode } from '$lib/stores';
+    import { createCurrentTeam, createMode, createPermissions, createVerified, devMode } from '$lib/stores';
     import Nav from '$lib/Nav/Nav.svelte'
     import { firebaseClient } from "$lib/Firebase/firebase";
     import Warning from '$lib/Builders/Warning.svelte';
-    import { writable } from "svelte/store";
-    import type { _ } from "$env/static/private";
-    import { onNavigate } from '$app/navigation';
-
+    import { derived, writable } from "svelte/store";
+    import { page } from '$app/stores';
     export let data;
 
     let mode = createMode();
     let client = firebaseClient();
-    let verified = createVerified();
-
+    let permissions = createPermissions();
+    let currentTeam = createCurrentTeam();
     let onScroll = writable(false);
     let loading = writable<boolean>();
     let bottom = writable<boolean>();
+    let teamInfo = writable(data.teamInfo);
+    let global = writable<boolean>(!$page.url.pathname.includes("/t/"));
+    let team = writable<string>(data.team ?? "000000");
+
+    let verified = derived([team, client], ([$team, $client], set) => {
+      if($client != undefined && $client.teams != undefined) {
+        if('team' in $client && ($client.team as string[]).includes($team)) {
+          set(true);
+        } else {
+          set(false);
+        }
+      } else {
+        set(false);
+      }
+    })
+
+    $: $team = getTeam($page.data.team, $page.url.pathname);
+    $: $teamInfo = data.teamInfo;
+    $: $global = !$page.url.pathname.includes("/t/");
+
+    function getTeam(cache: string | null, current: string | null) {
+      if(current && current.startsWith("/t/")) {
+        current = current.substring(3, 9);
+      } else {
+        current = null;
+      }
+
+      return current ?? cache ?? "000000";
+    }
 
     let dev = devMode();
 
     mode.serverInit(data.mode);
     client.serverInit(data.preload);
-    verified.serverInit(data.team);
+    permissions.serverInit(data.preload, data.team ?? "000000");
+    currentTeam.serverInit(data.preload, data.team ?? "000000");
+
 
     setContext('mode', mode);
     setContext('client', client);
     setContext('verified', verified);
     setContext('dev', dev);
+    setContext('permissions', permissions);
+    setContext('currentTeam', currentTeam);
 
     setContext('navmenu', writable(false));
     setContext('scroll', writable(true));
@@ -42,11 +73,18 @@
     setContext('bottom', bottom);
     setContext('clicked', writable(false));
     setContext('sidebar', writable(false));
+    setContext('team', team);
+    setContext('teamInfo', teamInfo);
+    setContext('global', global);
+    setContext('leaving', writable(false));
+
+    $: iconInfo = $teamInfo.get($page.data.unverifiedTeam ?? $team ?? "000000")?.icon ?? "/favicon.webp";
 
     onMount(() => {
-        mode.clientInit();
+        mode.clientInit(); 
         client.clientInit(loading);
-        verified.clientInit(client);
+        permissions.clientInit(client, team);
+        currentTeam.clientInit(client, team);
 
         const update = () => {
           let at = window.innerHeight + Math.round(window.scrollY);
@@ -71,12 +109,13 @@
 
         console.log("\n\n███████╗██╗  ██╗██╗   ██╗██╗    ██╗ █████╗ ██╗     ██╗  ██╗███████╗██████╗ ███████╗\n██╔════╝██║ ██╔╝╚██╗ ██╔╝██║    ██║██╔══██╗██║     ██║ ██╔╝██╔════╝██╔══██╗██╔════╝\n███████╗█████╔╝  ╚████╔╝ ██║ █╗ ██║███████║██║     █████╔╝ █████╗  ██████╔╝███████╗\n╚════██║██╔═██╗   ╚██╔╝  ██║███╗██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗╚════██║\n███████║██║  ██╗   ██║   ╚███╔███╔╝██║  ██║███████╗██║  ██╗███████╗██║  ██║███████║\n╚══════╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝\n\n");
         console.warn("%cDo not enter or share anything here or your account could be compromised.", "font-size: 1.5rem;");
-    })
+    });
 </script>
 
 <svelte:head>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,700,0,0" />
+  <link rel="icon" href={$global ? "/favicon.webp" : iconInfo} />
 </svelte:head>
 
 <div class="bg-backgroud-light dark:bg-backgroud-dark">

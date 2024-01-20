@@ -4,8 +4,13 @@
     import type { Role} from "./role";
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
+    import type { Writable } from "svelte/store";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const currentPermissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+    const team = getContext('team') as Writable<string>;
     
     export let permissions: string[];
     export let permission: string;
@@ -86,7 +91,7 @@
         <p class="text-sm opacity-50"><slot name="description"/></p>
     </div>
     <div class="flex ml-4">
-        <button disabled={($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)} on:click={handleClick} class="p-1 {click ? "border-green-600 dark:border-green-600 bg-green-200 dark:bg-green-900 text-green-600" : "border-border-light dark:border-border-dark text-border-light dark:text-border-dark"} border-[1px] rounded-md m-0.5 transition disabled:cursor-not-allowed disabled:opacity-40">
+        <button disabled={(!$currentPermissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)} on:click={handleClick} class="p-1 {click ? "border-green-600 dark:border-green-600 bg-green-200 dark:bg-green-900 text-green-600" : "border-border-light dark:border-border-dark text-border-light dark:text-border-dark"} border-[1px] rounded-md m-0.5 transition disabled:cursor-not-allowed disabled:opacity-40">
             <Icon icon=check></Icon>
         </button>
     </div>

@@ -66,7 +66,7 @@ export const editSchema = z.object({
 })
 
 export async function getUserList(db: Firestore, team: string) {
-    const userDocs = ((await db.collection('users').where('team', '==', team).get()).docs);
+    const userDocs = ((await db.collection('users').where('team', 'array-contains', team).get()).docs);
 
     let users = new Array<string>();
 

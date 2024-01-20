@@ -6,6 +6,7 @@
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
     import { doc, updateDoc } from "firebase/firestore";
+    import type { Writable } from "svelte/store";
 
     dnt.plugin(meridiem);
 
@@ -16,11 +17,12 @@
     $: date = battery.lastchecked;
 
     const client = getContext("client") as ReturnType<typeof firebaseClient>;
+    const team = getContext("team") as Writable<string>;
 
     async function changeLastChecked() {
         const database = client.getFirestore();
 
-        const ref = doc(database, "teams", $client?.team ?? "000000", "batteries", battery.code);
+        const ref = doc(database, "teams", $team ?? "000000", "batteries", battery.code);
 
         await updateDoc(ref, {
             lastchecked: date,

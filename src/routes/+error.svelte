@@ -5,6 +5,19 @@
     import { page } from '$app/stores';
     import Link from "$lib/Builders/Link.svelte";
     import Footer from "$lib/Nav/Footer.svelte";
+    import { getContext, onMount } from "svelte";
+    import type { Writable } from "svelte/store";
+    import { goto } from "$app/navigation";
+
+    let leaving = getContext("leaving") as Writable<boolean>;
+
+    onMount(async () => {
+        if($leaving === true && $page.error?.message) {
+            console.log($leaving);
+            $leaving = false;
+            await goto("/");
+        }
+    })
 </script>
 
 <Background>

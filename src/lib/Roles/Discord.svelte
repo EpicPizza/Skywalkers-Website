@@ -7,8 +7,13 @@
     import Icon from "$lib/Builders/Icon.svelte";
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
+    import type { createCurrentTeam, createPermissions } from "$lib/stores";
+    import type { Writable } from "svelte/store";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+    const team = getContext('team') as Writable<string>;
 
     export let role: Role;
     export let discord: Promise<DiscordRole[]>;
@@ -34,7 +39,7 @@
 
         if(new Date().valueOf() - timestamp.valueOf() > 1000 * 60 * 5 || ( connectedTo == -1 && role.connectTo != null )) {
             rolesPromise = new Promise(async (resolve) => {
-                const result = await fetch("/api/discord/roles/get", {
+                const result = await fetch("/t/" + $team + "/api/discord/roles/get", {
                     method: "POST",
                 })
 
@@ -72,7 +77,7 @@
     let selected: undefined | number;
 
     async function handleConnect(index: number) {
-        await fetch("/api/roles/connect", {
+        await fetch("/t/" + $team + "/api/roles/connect", {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
@@ -87,7 +92,7 @@
     }
 </script>
 
-<button on:click={() => { open = !open; }} disabled={($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)} class="bg-zinc-200 dark:bg-zinc-600 p-2 px-3 rounded-lg hover:opacity-90 disabled:hover:opacity-100 disabled:cursor-not-allowed trnasition disabled:opacity-40 hover:disabled:opacity-40">
+<button on:click={() => { open = !open; }} disabled={(!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)} class="bg-zinc-200 dark:bg-zinc-600 p-2 px-3 rounded-lg hover:opacity-90 disabled:hover:opacity-100 disabled:cursor-not-allowed trnasition disabled:opacity-40 hover:disabled:opacity-40">
     {#if role.connectTo == null}
         Select Discord Role
     {:else}

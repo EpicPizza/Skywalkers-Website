@@ -8,6 +8,7 @@
     import Member from "$lib/Components/Member.svelte";
     import dnt from 'date-and-time';
     import meridiem from "date-and-time/plugin/meridiem";
+    import type { Writable } from "svelte/store";
 
     dnt.plugin(meridiem);
 
@@ -16,13 +17,14 @@
     export let battery: Battery;
 
     const client = getContext("client") as ReturnType<typeof firebaseClient>;
+    const team = getContext("team") as Writable<string>;
 
     let message = "";
 
     function sendMessage() {
         const database = client.getFirestore();
 
-        const ref = doc(database, "teams", $client?.team ?? "000000", "batteries", battery.code);
+        const ref = doc(database, "teams", $team ?? "000000", "batteries", battery.code);
 
         updateDoc(ref, {
             history: arrayUnion({

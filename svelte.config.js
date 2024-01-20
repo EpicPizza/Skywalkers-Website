@@ -20,10 +20,10 @@ const config = {
       directives: {
         'script-src': ['self', "https://apis.google.com"],
         'style-src': ['self', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'unsafe-inline'],
-        'img-src': ['self', 'https://lh3.googleusercontent.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers-dev.appspot.com/', 'https://skywalkers.alexest.net/'],
-        'connect-src': ['self', 'https://identitytoolkit.googleapis.com/', 'https://firestore.googleapis.com/', 'https://securetoken.googleapis.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers-dev.appspot.com/'],
+        'img-src': ['self', 'https://lh3.googleusercontent.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers.appspot.com/', 'https://skywalkers.alexest.net/'],
+        'connect-src': ['self', 'https://identitytoolkit.googleapis.com/', 'https://firestore.googleapis.com/', 'https://securetoken.googleapis.com/', 'https://firebasestorage.googleapis.com/v0/b/frc-skywalkers.appspot.com/'],
         'font-src': ['self', 'https://fonts.gstatic.com/'],
-        'frame-src': ['self', 'https://frc-skywalkers-dev.firebaseapp.com/'],
+        'frame-src': ['self', 'https://frc-skywalkers.firebaseapp.com/'],
         'default-src': ['self']
       }
     }

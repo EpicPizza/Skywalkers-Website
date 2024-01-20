@@ -33,7 +33,5 @@ export async function unlink(id: string) {
                 id: null,
             });
         }
-
-        if(queryRef) firebaseAdmin.addLogWithTransaction("Unlinked their discord account.", "link", user, t);
     })
 }

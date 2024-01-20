@@ -9,8 +9,10 @@
     import { getContext } from "svelte";
     import type { firebaseClient } from "$lib/Firebase/firebase";
     import History from "./History.svelte";
+    import type { Writable } from "svelte/store";
 
     let client = getContext("client") as ReturnType<typeof firebaseClient>;
+    let team = getContext("team") as Writable<string>;
 
     export let battery: Battery;
     export let toPrint: string[];
@@ -18,7 +20,7 @@
     function deleteBattery(code: string) {
         const database = client.getFirestore();
 
-        const ref = doc(database, "teams", $client?.team ?? "000000", "batteries", code);
+        const ref = doc(database, "teams", $team ?? "000000", "batteries", code);
 
         deleteDoc(ref);
     }

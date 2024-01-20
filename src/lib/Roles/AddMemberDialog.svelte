@@ -22,11 +22,12 @@
     import type { Role } from "./role";
     import Member from "$lib/Components/Member.svelte";
     import { getContext, onMount } from "svelte";
-    import type { firebaseClient, SecondaryUser } from "$lib/Firebase/firebase";
-    import type { Unsubscriber } from "svelte/store";
+    import type { firebaseClient, FirestoreUser, SecondaryUser } from "$lib/Firebase/firebase";
+    import type { Unsubscriber, Writable } from "svelte/store";
     import { increment } from "firebase/firestore";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
+    const team = getContext('team') as Writable<string>;
 
     export let open: boolean = false;
     export let role: Role;
@@ -46,13 +47,13 @@
                 cached: new Date(),
                 users: new Promise((resolve) => {
                     unsubscribe = client.subscribe(async (user) => {
-                        if(user == undefined || 'preload' in user || user.role == undefined) { return; } //checking firebase sdk has loaded and user is verified
+                        if(user == undefined || 'preload' in user || user.teams == undefined) { return; } //checking firebase sdk has loaded and user is verified
 
                         if(unsubscribe) {
                             unsubscribe();
                         }
 
-                        let res = await fetch("/api/users/list", {
+                        let res = await fetch("/t/" + $team + "/api/users/list", {
                             method: 'POST',
                         })
 
@@ -61,9 +62,9 @@
 
                         resolve(data.users == undefined ? [] : data.users);
 
-                        data.users.forEach((secondaryUser: SecondaryUser) => {
+                        /*data.users.forEach((secondaryUser: SecondaryUser) => {
                             client.cacheUser(secondaryUser.id, secondaryUser);
-                        });
+                        });*/
 
                         users = data.users == undefined ? [] : data.users;
                     })
@@ -84,7 +85,7 @@
         let id = selected;
         selected = [];
 
-        await fetch("/api/roles/add", {
+        await fetch("/t/" + $team + "/api/roles/add", {
             method: 'POST',
             body: JSON.stringify({
                 uid: id,
@@ -133,6 +134,16 @@
 
         return !found;
     }
+
+    function getRole(user: FirestoreUser) {
+        for(let i = 0; i < user.teams.length; i++) {
+            if(user.teams[i].team == $team) {
+                return user.teams[i].role;
+            }
+        }
+
+        return "Unknown";
+    }
 </script>
 
 <Dialog bind:isOpen={open} {initialFocus}>
@@ -153,12 +164,13 @@
             </div>
         {:then users} 
             {#each users as user}
+                {@const role = getRole(user)}
                 {#if (search == "" || user.displayName.toLowerCase().includes(search.toLowerCase())) && checkIfAlreadyHas(user.id)}
                     <button on:click={() => { selected.includes(user.id) ? (() => { selected.splice(selected.indexOf(user.id), 1); selected = selected; })() : (() => { selected.push(user.id); selected = selected; })() }} class="mt-2 flex items-center p-2 bg-black dark:bg-white {selected.includes(user.id)  ? 'dark:bg-opacity-20 bg-opacity-20' : 'dark:bg-opacity-5 bg-opacity-5'} w-full transition rounded-lg">
                         <img class="rounded-full h-12 w-12" alt={user.displayName + " Profile"} src={user.photoURL}/>
                         <div class="ml-3 overflow-hidden whitespace-nowrap overflow-ellipsis">
                             <h1 class="text-left">{user.displayName}{user.pronouns == undefined || user.pronouns == "" ? "" : " (" + user.pronouns + ")"}</h1>
-                            <h2 class="text-left text-sm opacity-80">{user.role.substring(0, 1).toUpperCase() + user.role.substring(1, user.role.length)} <span class="opacity-50">- {user.id}</span></h2>
+                            <h2 class="text-left text-sm opacity-80">{role.substring(0, 1).toUpperCase() + role.substring(1, role.length)} <span class="opacity-50">- {user.id}</span></h2>
                         </div>
                     </button>
                 {/if}

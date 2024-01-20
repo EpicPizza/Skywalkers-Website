@@ -16,10 +16,16 @@
     import Loading from '$lib/Builders/Loading.svelte';
     import type { firebaseClient } from '$lib/Firebase/firebase';
     import type { Writable } from 'svelte/store';
+    import type { createCurrentTeam, createPermissions } from '$lib/stores';
+    import { dev as env } from '$app/environment';
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
     let sidebar = getContext('sidebar') as Writable<boolean>;
     let clicked = getContext('clicked') as Writable<boolean>;
+    const currentPermissions = getContext('permissions') as ReturnType<typeof createPermissions>;
+    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
+    const team = getContext('team') as Writable<string>;
+    const dev = getContext('dev') as Writable<boolean>;
 
     export let role: Role;
     export let discord: Promise<DiscordRole[]>;
@@ -120,13 +126,17 @@
 
         handlingDelete = true;
 
-        await deleteRole(role.id);
+        console.log("going once");
+
+        await deleteRole(role.id, $team);
 
         $sidebar = true;
 
         (page.parentNode as HTMLElement).style.overflowY = "";
 
-        await goto("/settings/roles");
+        console.log("going");
+
+        await goto("/t/" + $team + "/settings/roles");
 
         handlingDelete = false;
     }
@@ -170,7 +180,7 @@
         originalPermissions = [... permissions];
         role.permissions = [... permissions];
 
-        await fetch("/api/roles/edit", {
+        await fetch("/t/" + $team + "/api/roles/edit", {
             method: 'POST',
             body: JSON.stringify({
                 permissions: permissions,
@@ -199,7 +209,7 @@
 
 <div bind:this={page} class="w-full relative">
     <div style="background-color: {role.color};" class="w-full h-24 relative">
-        {#if !($client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level)}
+        {#if !(!$currentPermissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)}
             <button on:click={() => { openDelete = !openDelete }} class="m-2 p-2 {everyone ? "hidden" : "block"} absolute right-0 top-0 rounded-full bg-opacity-10 hover:bg-opacity-20 transition {mode ? "text-black bg-black" : "text-white bg-white"}">
                 <Icon icon=delete></Icon>
             </button>
@@ -207,9 +217,14 @@
                 <Icon icon=edit></Icon>
             </button>
         {/if}
-        <button on:click={handleListClick} class="m-2 p-2 absolute {$client == undefined || $client.permissions == undefined || !$client.permissions.includes('MANAGE_ROLES') || $client.level == undefined || $client.level <= role.level ? "right-0" : "right-24"} {everyone ? "hidden" : "block"} top-0 rounded-full {openList ? "bg-opacity-20" : "bg-opacity-10" } hover:bg-opacity-20 transition {mode ? "text-black bg-black" : "text-white bg-white"}">
+        <button on:click={handleListClick} class="m-2 p-2 absolute {!$currentPermissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level <= role.level ? "right-0" : "right-24"} {everyone ? "hidden" : "block"} top-0 rounded-full {openList ? "bg-opacity-20" : "bg-opacity-10" } hover:bg-opacity-20 transition {mode ? "text-black bg-black" : "text-white bg-white"}">
             <Icon icon=group></Icon>
         </button>
+        {#if $dev}
+            <a target="_blank" href="https://console.firebase.google.com/u/0/project/frc-skywalkers{env ? "-dev" : ""}/firestore/data/~2Fteams~2F{$team}~2Froles~2F{role.id}" class="m-2 p-2 absolute {!$currentPermissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level ? "right-12" : (everyone ? "right-0" : "right-36") } top-0 rounded-full bg-opacity-10 hover:bg-opacity-20 transition {mode ? "text-black bg-black" : "text-white bg-white"}">
+                <Icon icon=terminal></Icon>
+            </a>
+        {/if}
     </div>
     {#if openList}
         <List {role}></List>
@@ -253,24 +268,6 @@
             </svelte:fragment>
             <svelte:fragment slot=description>
                 Members will be able to kick any person below their level.
-            </svelte:fragment>
-        </RolePermission>
-
-        <RolePermission permission=EDIT_PROFILE bind:permissions {role}>
-            <svelte:fragment slot=title>
-                Edit Profile
-            </svelte:fragment>
-            <svelte:fragment slot=description>
-                Members will be able to edit their name, pronouns, and profile picture.
-            </svelte:fragment>
-        </RolePermission>
-
-        <RolePermission permission=MODERATE_PROFILES bind:permissions {role}>
-            <svelte:fragment slot=title>
-                Moderate Profiles
-            </svelte:fragment>
-            <svelte:fragment slot=description>
-                Members will be able to edit other members' name, pronouns, and profile picture.
             </svelte:fragment>
         </RolePermission>
 

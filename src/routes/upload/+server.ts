@@ -3,8 +3,8 @@ import { error, json, text } from "@sveltejs/kit";
 import { z } from "zod";
 import { Readable, Writable } from 'node:stream';
 
-export async function POST({ request }) {
-    console.log(process.memoryUsage().heapUsed);
+export async function POST({ request, locals }) {
+    if(locals.user == undefined || locals.team == null) throw error(400);
 
     const chunks = z.coerce.number().parse(request.headers.get('uploader-chunks-total'));
     const chunkNumber = z.coerce.number().parse(request.headers.get('uploader-chunk-number'));
@@ -30,8 +30,6 @@ export async function POST({ request }) {
             throw error(400);
         }
     }
-
-    console.log(process.memoryUsage().heapUsed);
 
     if(chunks == chunkNumber - 1) {
         return new Response(id, { status: 200 });

@@ -1,5 +1,6 @@
 <script lang=ts>
     import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
+    import { getDefault } from "$lib/Meetings/helpers";
     import { onMount, getContext } from "svelte";
 
     let client = getContext('client') as ReturnType<typeof firebaseClient>;
@@ -17,17 +18,7 @@
 
             if(user == undefined) {
                 if(silent) {
-                    resolve({
-                        id: id,
-                        permissions: [],
-                        level: 0,
-                        photoURL: "/unknown.webp",
-                        displayName: "User Not Found",
-                        role: "unknown",
-                        team: "unknown",
-                        pronouns: "",
-                        roles: [],
-                    } satisfies SecondaryUser)
+                    resolve(getDefault(id))
                 } else {
                     reject("User not found.");
                 }
@@ -47,17 +38,7 @@
 
                 if(user == undefined) {
                     if(silent) {
-                        resolve({
-                            id: id,
-                            permissions: [],
-                            level: 0,
-                            photoURL: "/unknown.webp",
-                            displayName: "User Not Found",
-                            role: "unknown",
-                            team: "unknown",
-                            pronouns: "",
-                            roles: [],
-                        } satisfies SecondaryUser)
+                        resolve(getDefault(id))
                     } else {
                         reject("User not found.");
                     }

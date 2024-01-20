@@ -4,7 +4,7 @@ import { get, writable, } from "svelte/store";
 import { z } from "zod";
 
 export const RoleForm = z.object({
-    name: z.string({ required_error: "A name must be given.", invalid_type_error: "The name must be a string."}).min(1, { message: "The name must be at least one character long." }).max(32, { message: "The name cannot be more than 32 characters." }).toLowerCase().regex(/^[a-z]*$/, { message: "Only letters are allowed." }).refine((value) => value != 'everyone', { message: 'The name "everyone" is not allowed.'}),
+    name: z.string({ required_error: "A name must be given.", invalid_type_error: "The name must be a string."}).min(1, { message: "The name must be at least one character long." }).max(32, { message: "The name cannot be more than 32 characters." }).regex(/^[A-Za-z1-9 ]*$/, { message: "Only letters are allowed." }).refine((value) => value != 'everyone', { message: 'The name "everyone" is not allowed.'}).refine((value) => value != 'owner', { message: 'The name "owner" is not allowed.'}),
     color: z.string({ required_error: "A color must be given.", invalid_type_error: "Invalid Color"}).regex(/^#([A-Fa-f0-9]{6})$/, { message: "Invalid Color" }),
 })
 
@@ -28,8 +28,8 @@ function custom() {
     }
 }
 
-export async function deleteRole(id: string) {
-    await fetch('/api/roles/delete', {
+export async function deleteRole(id: string, team: string) {
+    await fetch('/t/' + team +  '/api/roles/delete', {
         method: "POST",
         headers: {
             'content-type': 'application/json',

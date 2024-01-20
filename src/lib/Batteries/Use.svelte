@@ -4,17 +4,19 @@
     import type { Battery } from "./batteries";
     import type { firebaseClient } from "$lib/Firebase/firebase";
     import { doc, updateDoc } from "firebase/firestore";
+    import type { Writable } from "svelte/store";
 
     export let battery: Battery;
 
     const client = getContext("client") as ReturnType<typeof firebaseClient>;
+    const team = getContext("team") as Writable<string>;
 
     async function changeUse(use: string) {
         console.log(use);
 
         const database = client.getFirestore();
 
-        const ref = doc(database, "teams", $client?.team ?? "000000", "batteries", battery.code);
+        const ref = doc(database, "teams", $team ?? "000000", "batteries", battery.code);
 
         await updateDoc(ref, {
             use: use,
