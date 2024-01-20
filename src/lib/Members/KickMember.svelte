@@ -1,78 +1,86 @@
-<script lang=ts>
-    import type { Warning } from "$lib/stores";
-    import { getContext, onDestroy } from "svelte";
-    import type { Writable } from "svelte/store";
-    import { superForm } from "sveltekit-superforms/client";
-    import type { SuperValidated } from "sveltekit-superforms";
-    import type { QuarantineMember } from "./members";
-    import type { SecondaryUser } from "$lib/Firebase/firebase";
-    import { goto } from "$app/navigation";
-    import { page } from "$app/stores";
+<script lang="ts">
+  import type { Warning } from "$lib/stores";
+  import { getContext, onDestroy } from "svelte";
+  import type { Writable } from "svelte/store";
+  import { superForm } from "sveltekit-superforms/client";
+  import type { SuperValidated } from "sveltekit-superforms";
+  import type { QuarantineMember } from "./members";
+  import type { SecondaryUser } from "$lib/Firebase/firebase";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
 
-    let quarantineMemberForm: SuperValidated<typeof QuarantineMember>;
-    
-    export { quarantineMemberForm as form };
+  let quarantineMemberForm: SuperValidated<typeof QuarantineMember>;
 
-    let team = getContext('team') as Writable<string>;
+  export { quarantineMemberForm as form };
 
-    export let member: SecondaryUser | string;
+  let team = getContext("team") as Writable<string>;
 
-    export let disableSuccessMessage = false;
+  export let member: SecondaryUser | string;
 
-    let { form, enhance, reset, delayed, message, submitting } = superForm(quarantineMemberForm);
+  export let disableSuccessMessage = false;
 
-    let submit: HTMLButtonElement;
-    let kicking: HTMLInputElement;
+  let { form, enhance, reset, delayed, message, submitting } =
+    superForm(quarantineMemberForm);
 
-    let localLoading = getContext('localLoading') as Writable<boolean>;
-    let warning = getContext('warning') as Writable<Warning | undefined>;
-    let leaving = getContext('leaving') as Writable<boolean>;
+  let submit: HTMLButtonElement;
+  let kicking: HTMLInputElement;
 
-    export let isKicking = true;
+  let localLoading = getContext("localLoading") as Writable<boolean>;
+  let warning = getContext("warning") as Writable<Warning | undefined>;
+  let leaving = getContext("leaving") as Writable<boolean>;
 
-    $: $localLoading = $delayed;
+  export let isKicking = true;
 
-    $: {
-        if($message != undefined && (!disableSuccessMessage || $message != 'Member kicked.' || $message == 'Removed from team.')) {
-            warning.set({
-                message: $message,
-                color: $message == 'Member kicked.' || $message == 'Removed from team.' ? 'green' : 'red',
-            })
+  $: $localLoading = $delayed;
 
-            $leaving = false;
+  $: {
+    if (
+      $message != undefined &&
+      (!disableSuccessMessage ||
+        $message != "Member kicked." ||
+        $message == "Removed from team.")
+    ) {
+      warning.set({
+        message: $message,
+        color:
+          $message == "Member kicked." || $message == "Removed from team."
+            ? "green"
+            : "red",
+      });
 
-            $localLoading = false;
-        }   
+      $leaving = false;
+
+      $localLoading = false;
+    }
+  }
+
+  function handleKickMember() {
+    kicking.value = typeof member == "object" ? member.id : member;
+
+    if (!isKicking) {
+      $leaving = true;
     }
 
-    function handleKickMember() {
-        kicking.value = typeof member == 'object' ? member.id : member;
+    submit.click();
+  }
 
-        if(!isKicking) {
-            $leaving = true;
-        }
+  onDestroy(() => {
+    if ($submitting == true) {
+      if (isKicking) {
+        warning.set({
+          message: "Member kicked",
+          color: "red",
+        });
 
-        submit.click();
+        $localLoading = false;
+      }
     }
-
-    onDestroy(() => {
-        if($submitting == true) {
-            if(isKicking) {
-                warning.set({
-                    message: 'Member kicked',
-                    color: 'red',
-                })
-
-                $localLoading = false;
-            }
-        }
-    })
+  });
 </script>
 
-<form class="hidden" method=POST action=?/kick use:enhance>
-    <input bind:this={kicking} name=id bind:value={$form.id}/>
-    <button bind:this={submit}></button>
+<form class="hidden" method="POST" action="?/kick" use:enhance>
+  <input bind:this={kicking} name="id" bind:value={$form.id} />
+  <button bind:this={submit}></button>
 </form>
 
-<slot {handleKickMember}/>
-
+<slot {handleKickMember} />

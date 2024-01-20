@@ -1,5 +1,5 @@
 export interface Code {
-    access: string,
-    role: string,
-    id: string,
+  access: string;
+  role: string;
+  id: string;
 }

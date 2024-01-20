@@ -1,62 +1,68 @@
 <script lang="ts">
-    import { createCombobox, melt } from '@melt-ui/svelte';
-    import { fly } from 'svelte/transition';
-    import Icon from './Icon.svelte';
-    import { string } from 'zod';
-    import type { Writable } from 'svelte/store';
+  import { createCombobox, melt } from "@melt-ui/svelte";
+  import { fly } from "svelte/transition";
+  import Icon from "./Icon.svelte";
+  import { string } from "zod";
+  import type { Writable } from "svelte/store";
 
-    export let className: string;
-    export let list: { id: string, disabled: boolean, detail: any }[];
-    export let placeholder: string;
-    export let labelString: string;
-    export let inputClass: string;
-    export let labelClass: string;
-    export let defaultChoice: string = "";
+  export let className: string;
+  export let list: { id: string; disabled: boolean; detail: any }[];
+  export let placeholder: string;
+  export let labelString: string;
+  export let inputClass: string;
+  export let labelClass: string;
+  export let defaultChoice: string = "";
 
-    export let name = "";
+  export let name = "";
 
-    const {
-        elements: { menu, input, option, label },
-        states: { open, inputValue, touchedInput, selected },
-        helpers: { isSelected },
-    } = createCombobox({
-        forceVisible: true,
-        multiple: false,
-    });
+  const {
+    elements: { menu, input, option, label },
+    states: { open, inputValue, touchedInput, selected },
+    helpers: { isSelected },
+  } = createCombobox({
+    forceVisible: true,
+    multiple: false,
+  });
 
-    $: if (!$open) {
-        $inputValue = $selected?.label ?? defaultChoice;
-    }
+  $: if (!$open) {
+    $inputValue = $selected?.label ?? defaultChoice;
+  }
 
-    export let value: string;
+  export let value: string;
 
-    $: value = $inputValue;
+  $: value = $inputValue;
 
-    let inputElement: HTMLInputElement;
+  let inputElement: HTMLInputElement;
 </script>
 
 <div class={className}>
-    <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label class={labelClass} use:melt={$label}>
-        {labelString}
-    </label>
+  <!-- svelte-ignore a11y-label-has-associated-control -->
+  <label class={labelClass} use:melt={$label}>
+    {labelString}
+  </label>
 
-    <div class="relative w-full">
-        <input
-            bind:this={inputElement}
-            use:melt={$input}
-            class={inputClass}
-            placeholder={placeholder}
-            name={name}
-        />
-        <button on:click|preventDefault={() => { inputElement.click(); inputElement.focus(); }} class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-text-light dark:text-text-dark">
-            {#if $open}
-                <Icon icon="expand_more"></Icon>
-            {:else}
-                <Icon icon="expand_less"></Icon>
-            {/if}
-        </button>
-    </div>
+  <div class="relative w-full">
+    <input
+      bind:this={inputElement}
+      use:melt={$input}
+      class={inputClass}
+      {placeholder}
+      {name}
+    />
+    <button
+      on:click|preventDefault={() => {
+        inputElement.click();
+        inputElement.focus();
+      }}
+      class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-text-light dark:text-text-dark"
+    >
+      {#if $open}
+        <Icon icon="expand_more"></Icon>
+      {:else}
+        <Icon icon="expand_less"></Icon>
+      {/if}
+    </button>
+  </div>
 </div>
 
 {#if $open}
@@ -81,7 +87,7 @@
         data-[highlighted]:bg-accent-500 data-[highlighted]:text-black
           data-[disabled]:opacity-50"
         >
-          <slot selected={$isSelected(item)} detail={item.detail}></slot>
+          <slot selected={$isSelected(item)} detail={item.detail} />
         </li>
       {:else}
         <li

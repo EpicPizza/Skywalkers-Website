@@ -1,3 +1,3 @@
 <del>
-    <slot></slot>
+  <slot />
 </del>

@@ -1,5 +1,5 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect } from "@sveltejs/kit";
 
 export async function load({ url }) {
-    throw redirect(301, "/t/329832" + url.pathname)
+  throw redirect(301, "/t/329832" + url.pathname);
 }

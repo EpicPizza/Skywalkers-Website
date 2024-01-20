@@ -10,115 +10,129 @@ import { z } from "zod";
 const Finish = z.object({});
 
 export async function load({ locals, params }) {
-    if(locals.user == undefined) throw error(403, "Sign In Required");
-    if(locals.team == undefined || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+  if (locals.user == undefined) throw error(403, "Sign In Required");
+  if (locals.team == undefined || locals.firestoreUser == undefined)
+    throw redirect(307, "/verify?needverify=true");
 
-    const database = firebaseAdmin.getFirestore();
+  const database = firebaseAdmin.getFirestore();
 
-    const ref = database.collection('teams').doc(locals.team).collection('schedule').doc(params.id);
+  const ref = database
+    .collection("teams")
+    .doc(locals.team)
+    .collection("schedule")
+    .doc(params.id);
 
-    const doc = await ref.get();
+  const doc = await ref.get();
 
-    if(!doc.data()) throw error(501, "Scheduler not found.");
+  if (!doc.data()) throw error(501, "Scheduler not found.");
 
-    const form = superValidate(Finish);
+  const form = superValidate(Finish);
 
-    if(doc.data()?.status == true) {
-        throw redirect(303, "/meetings?schedule=" + params.id);
-    }
+  if (doc.data()?.status == true) {
+    throw redirect(303, "/meetings?schedule=" + params.id);
+  }
 
-    return {
-        form,
-        schedule: {
-            title: doc.data()?.title as string,
-            description: doc.data()?.description as string,
-            first: doc.data()?.first.toDate() as Date,
-            days: doc.data()?.days as number,
-            times: doc.data()?.times as number,
-            length: doc.data()?.length as number,
-            count: doc.data()?.count as number,
-            member: doc.data()?.member as number,
-            require: doc.data()?.require as string | null,
-            location: doc.data()?.location as string | null,
-            group: doc.data()?.group as string | null,
-            signups: doc.data()?.signups as { [key: string]: { availability: { day: number, time: number }[] }},
-            confirm: (doc.data()?.confirm ?? []) as null | { members: string[], slots: { day: number, time: number}[] }[],
-        }
-    }
+  return {
+    form,
+    schedule: {
+      title: doc.data()?.title as string,
+      description: doc.data()?.description as string,
+      first: doc.data()?.first.toDate() as Date,
+      days: doc.data()?.days as number,
+      times: doc.data()?.times as number,
+      length: doc.data()?.length as number,
+      count: doc.data()?.count as number,
+      member: doc.data()?.member as number,
+      require: doc.data()?.require as string | null,
+      location: doc.data()?.location as string | null,
+      group: doc.data()?.group as string | null,
+      signups: doc.data()?.signups as {
+        [key: string]: { availability: { day: number; time: number }[] };
+      },
+      confirm: (doc.data()?.confirm ?? []) as
+        | null
+        | { members: string[]; slots: { day: number; time: number }[] }[],
+    },
+  };
 }
 
 export const actions = {
-    default: async function({ locals, request, params }) {
-        if(locals.user == undefined) throw error(403, "Sign In Required");
-        if(locals.team == undefined || locals.firestoreUser == undefined) throw redirect(307, "/verify?needverify=true");
+  default: async function ({ locals, request, params }) {
+    if (locals.user == undefined) throw error(403, "Sign In Required");
+    if (locals.team == undefined || locals.firestoreUser == undefined)
+      throw redirect(307, "/verify?needverify=true");
 
-        const form = await superValidate(request, Finish);
+    const form = await superValidate(request, Finish);
 
-        if(!form.valid) {
-            return fail(400, { form });
-        }
+    if (!form.valid) {
+      return fail(400, { form });
+    }
 
-        const database = firebaseAdmin.getFirestore();
+    const database = firebaseAdmin.getFirestore();
 
-        const ref = database.collection('teams').doc(locals.team).collection('schedule').doc(params.id);
+    const ref = database
+      .collection("teams")
+      .doc(locals.team)
+      .collection("schedule")
+      .doc(params.id);
 
-        await ref.update({
-            status: false,
-        });
-    
-        const doc = await ref.get();
+    await ref.update({
+      status: false,
+    });
 
-        const schedule = {
-            title: doc.data()?.title as string,
-            description: doc.data()?.description as string,
-            first: doc.data()?.first.toDate() as Date,
-            days: doc.data()?.days as number,
-            times: doc.data()?.times as number,
-            length: doc.data()?.length as number,
-            count: doc.data()?.count as number,
-            member: doc.data()?.member as number,
-            require: doc.data()?.require as string | null,
-            signups: doc.data()?.signups as { [key: string]: { availability: { day: number, time: number }[] }},
-        };
+    const doc = await ref.get();
 
-        let spots: { day: number, time: number, members: string[] }[] = new Array();
+    const schedule = {
+      title: doc.data()?.title as string,
+      description: doc.data()?.description as string,
+      first: doc.data()?.first.toDate() as Date,
+      days: doc.data()?.days as number,
+      times: doc.data()?.times as number,
+      length: doc.data()?.length as number,
+      count: doc.data()?.count as number,
+      member: doc.data()?.member as number,
+      require: doc.data()?.require as string | null,
+      signups: doc.data()?.signups as {
+        [key: string]: { availability: { day: number; time: number }[] };
+      },
+    };
 
-        for(let i = 0; i < schedule.days; i++) {
-            for(let j = 0; j < schedule.times; j++) {
-                const keys = Object.keys(schedule.signups);
+    let spots: { day: number; time: number; members: string[] }[] = new Array();
 
-                let available: string[] = [];
+    for (let i = 0; i < schedule.days; i++) {
+      for (let j = 0; j < schedule.times; j++) {
+        const keys = Object.keys(schedule.signups);
 
-                for(let x = 0; x < keys.length; x++) {
-                    let availability = schedule.signups[keys[x]].availability;
+        let available: string[] = [];
 
-                    for(let y = 0; y < availability.length; y++) {
-                        if(availability[y].day == i && availability[y].time == j) {
-                            available.push(keys[x]);
-                        }
-                    }
-                }
+        for (let x = 0; x < keys.length; x++) {
+          let availability = schedule.signups[keys[x]].availability;
 
-                if(available.length != 0) {
-                    spots.push({ day: i, time: j, members: available });
-                }
+          for (let y = 0; y < availability.length; y++) {
+            if (availability[y].day == i && availability[y].time == j) {
+              available.push(keys[x]);
             }
+          }
         }
 
-        let filtered: typeof spots = [];
-
-        interface User extends FirestoreUser {
-            id: string;
+        if (available.length != 0) {
+          spots.push({ day: i, time: j, members: available });
         }
+      }
+    }
 
-        let members: User[] = [];
+    let filtered: typeof spots = [];
 
-        let possibleminimumnotreached = 0;
-        let possiblerequirenotmet = 0;
+    interface User extends FirestoreUser {
+      id: string;
+    }
 
+    let members: User[] = [];
 
+    let possibleminimumnotreached = 0;
+    let possiblerequirenotmet = 0;
 
-        /*for(let i = 0; i < spots.length; i++) {
+    /*for(let i = 0; i < spots.length; i++) {
             let minimumreached = spots[i].members.length >= schedule.member;
             let requirementmet = false;
 
@@ -164,141 +178,156 @@ export const actions = {
             }
         }*/
 
-        filtered = spots;
+    filtered = spots;
 
-        const confirmed: { members: string[], slots: { day: number, time: number}[] }[] = [];
-        const taken: typeof spots = [];
+    const confirmed: {
+      members: string[];
+      slots: { day: number; time: number }[];
+    }[] = [];
+    const taken: typeof spots = [];
 
-        for(let i = 0; i < filtered.length; i++) {
-            if(i > filtered.length - schedule.length) continue;
+    for (let i = 0; i < filtered.length; i++) {
+      if (i > filtered.length - schedule.length) continue;
 
-            let dayCount = 0;
+      let dayCount = 0;
 
-            for(let j = 0; j < (schedule.length - 1); j++) {
-                if(filtered[i + j].day == filtered[i + j + 1].day) {
-                    dayCount++;
-                }
+      for (let j = 0; j < schedule.length - 1; j++) {
+        if (filtered[i + j].day == filtered[i + j + 1].day) {
+          dayCount++;
+        }
+      }
+
+      let dayCheck = dayCount == schedule.length - 1;
+
+      if (!dayCheck) continue;
+
+      let hourCount = 0;
+
+      for (let j = 0; j < schedule.length - 1; j++) {
+        if (filtered[i + j].time == filtered[i + j + 1].time - 1) {
+          hourCount++;
+        }
+      }
+
+      let hourCheck = hourCount == schedule.length - 1;
+
+      if (!hourCheck) continue;
+
+      let found = false;
+
+      for (let j = 0; j < schedule.length; j++) {
+        for (let x = 0; x < taken.length; x++) {
+          if (
+            filtered[i + j].day == taken[x].day &&
+            filtered[i + j].time == taken[x].time
+          ) {
+            found = true;
+          }
+        }
+      }
+
+      if (found) continue;
+
+      let membersInSlots = filtered[i].members;
+
+      for (let j = 1; j < schedule.length; j++) {
+        let found = [];
+
+        for (let x = 0; x < membersInSlots.length; x++) {
+          for (let y = 0; y < filtered[i + j].members.length; y++) {
+            if (filtered[i + j].members[y] == membersInSlots[x]) {
+              found.push(filtered[i + j].members[y]);
             }
-
-            let dayCheck = dayCount == schedule.length - 1;
-
-            if(!dayCheck) continue;
-
-            let hourCount = 0;
-
-            for(let j = 0; j < (schedule.length - 1); j++) {
-                if(filtered[i + j].time == filtered[i + j + 1].time - 1) {
-                    hourCount++;
-                }
-            }
-
-            let hourCheck = hourCount == schedule.length - 1;
-
-            if(!hourCheck) continue;
-
-            let found = false;
-
-            for(let j = 0; j < schedule.length; j++) {
-                for(let x = 0; x < taken.length; x++) {
-                    if(filtered[i + j].day == taken[x].day && filtered[i + j].time == taken[x].time) {
-                        found = true;
-                    }
-                }
-            }
-
-            if(found) continue;
-
-            let membersInSlots = filtered[i].members;
-
-            for(let j = 1; j < schedule.length; j++) {
-                let found = [];
-
-                for(let x = 0; x < membersInSlots.length; x++) {
-                    for(let y = 0; y < filtered[i + j].members.length; y++) {
-                        if(filtered[i + j].members[y] == membersInSlots[x]) {
-                            found.push(filtered[i + j].members[y]);
-                        }
-                    }
-                }
-
-                membersInSlots = found;
-            }
-
-            let requirementmet = false;
-            let who = -1;
-
-            for(let j = 0; j < membersInSlots.length; j++) {
-                let found = false;
-
-                for(let x = 0; x < members.length; x++) {
-                    if(members[x].id == membersInSlots[j]) {
-                        let roles: Role[] = [];
-
-                        for(let b = 0; b < members[x].teams.length; b++) {
-                            if(members[x].teams[b].team == locals.team) {
-                                roles.concat(members[x].teams[b].roles);
-                            }
-                        }
-
-                        for(let y = 0; y < roles.length; y++) {
-                            if(roles[y].id == schedule.require) {
-                                requirementmet = true;
-                                who = j;
-                            }
-                        }
-
-                        found = true;
-                    }
-                }
-
-                if(!found) {
-                    let user = await getMember(membersInSlots[j], locals.team);
-
-                    let roles: Role[] = [];
-
-                    for(let b = 0; b < user.teams.length; b++) {
-                        if(user.teams[b].team == locals.team) {
-                            roles.concat(user.teams[b].roles);
-                        }
-                    }
-
-                    for(let y = 0; y < roles.length; y++) {
-                        if(roles[y].id == schedule.require) {
-                            requirementmet = true;
-                            who = j;
-                        }
-                    }
-                }
-            }
-
-            if(!(requirementmet || schedule.require == null || schedule.require == "")) continue;
-
-            if(schedule.require != null && schedule.require != "") {
-                let id = membersInSlots[who];
-                membersInSlots.splice(who, 1);
-                membersInSlots.unshift(id);
-            }
-            if(membersInSlots.length < schedule.member) continue;
-
-            confirmed.push({
-                members: membersInSlots,
-                slots: [],
-            })
-            
-            for(let j = 0; j < schedule.length; j++) {
-                taken.push(filtered[i + j]);
-                confirmed[confirmed.length - 1].slots.push({day: filtered[i + j].day, time: filtered[i + j].time});
-            }
+          }
         }
 
-        if(confirmed.length == 0) {
-            return message(form, "Unable to find optimal meetings.");
+        membersInSlots = found;
+      }
+
+      let requirementmet = false;
+      let who = -1;
+
+      for (let j = 0; j < membersInSlots.length; j++) {
+        let found = false;
+
+        for (let x = 0; x < members.length; x++) {
+          if (members[x].id == membersInSlots[j]) {
+            let roles: Role[] = [];
+
+            for (let b = 0; b < members[x].teams.length; b++) {
+              if (members[x].teams[b].team == locals.team) {
+                roles.concat(members[x].teams[b].roles);
+              }
+            }
+
+            for (let y = 0; y < roles.length; y++) {
+              if (roles[y].id == schedule.require) {
+                requirementmet = true;
+                who = j;
+              }
+            }
+
+            found = true;
+          }
         }
 
-        ref.update({
-            confirm: confirmed,
-        })
+        if (!found) {
+          let user = await getMember(membersInSlots[j], locals.team);
 
-        throw redirect(303, "/t/" + locals.team + "/schedule/" + params.id + "?confirm=true");
+          let roles: Role[] = [];
+
+          for (let b = 0; b < user.teams.length; b++) {
+            if (user.teams[b].team == locals.team) {
+              roles.concat(user.teams[b].roles);
+            }
+          }
+
+          for (let y = 0; y < roles.length; y++) {
+            if (roles[y].id == schedule.require) {
+              requirementmet = true;
+              who = j;
+            }
+          }
+        }
+      }
+
+      if (
+        !(requirementmet || schedule.require == null || schedule.require == "")
+      )
+        continue;
+
+      if (schedule.require != null && schedule.require != "") {
+        let id = membersInSlots[who];
+        membersInSlots.splice(who, 1);
+        membersInSlots.unshift(id);
+      }
+      if (membersInSlots.length < schedule.member) continue;
+
+      confirmed.push({
+        members: membersInSlots,
+        slots: [],
+      });
+
+      for (let j = 0; j < schedule.length; j++) {
+        taken.push(filtered[i + j]);
+        confirmed[confirmed.length - 1].slots.push({
+          day: filtered[i + j].day,
+          time: filtered[i + j].time,
+        });
+      }
     }
-}
+
+    if (confirmed.length == 0) {
+      return message(form, "Unable to find optimal meetings.");
+    }
+
+    ref.update({
+      confirm: confirmed,
+    });
+
+    throw redirect(
+      303,
+      "/t/" + locals.team + "/schedule/" + params.id + "?confirm=true",
+    );
+  },
+};

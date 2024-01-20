@@ -3,33 +3,49 @@ import { error, json } from "@sveltejs/kit";
 import { FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
 
-const Codes = z.string().length(6).regex(/^[0-9]*$/).array().min(1);
+const Codes = z
+  .string()
+  .length(6)
+  .regex(/^[0-9]*$/)
+  .array()
+  .min(1);
 
 export async function POST({ request, locals }) {
-    if(locals.user == undefined) throw error(403, "Sign In Required");
-    if(locals.firestoreUser == undefined || locals.team == undefined) throw error(403);
+  if (locals.user == undefined) throw error(403, "Sign In Required");
+  if (locals.firestoreUser == undefined || locals.team == undefined)
+    throw error(403);
 
-    if(!locals.permissions.includes('MANAGE_CODES')) throw error(403, "Forbidden");
+  if (!locals.permissions.includes("MANAGE_CODES"))
+    throw error(403, "Forbidden");
 
-    const req = await request.json();
+  const req = await request.json();
 
-    if(!('codes' in req)) throw error(400);
+  if (!("codes" in req)) throw error(400);
 
-    const codes = Codes.parse(req.codes);
+  const codes = Codes.parse(req.codes);
 
-    const db = firebaseAdmin.getFirestore();
+  const db = firebaseAdmin.getFirestore();
 
-    const ref = db.collection('teams').doc(locals.team);
+  const ref = db.collection("teams").doc(locals.team);
 
-    const user = locals.user.uid;
+  const user = locals.user.uid;
 
-    let team = locals.team;
+  let team = locals.team;
 
-    await db.runTransaction(async t => {
-        t.update(ref, codes.reduce((a, v) => ({ ...a, [v]: FieldValue.delete()}), {}));
+  await db.runTransaction(async (t) => {
+    t.update(
+      ref,
+      codes.reduce((a, v) => ({ ...a, [v]: FieldValue.delete() }), {}),
+    );
 
-        firebaseAdmin.addLogWithTransaction("Deleted code(s).", "vpn_key", user, t, team);
-    })
+    firebaseAdmin.addLogWithTransaction(
+      "Deleted code(s).",
+      "vpn_key",
+      user,
+      t,
+      team,
+    );
+  });
 
-    return json("deleted codes");
+  return json("deleted codes");
 }

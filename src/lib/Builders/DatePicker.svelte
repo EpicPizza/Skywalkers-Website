@@ -1,196 +1,310 @@
-<script lang=ts>
-    import Dialog from "$lib/Builders/Dialog.svelte";
-    import Icon from "$lib/Builders/Icon.svelte";
-    import Line from "$lib/Builders/Line.svelte";
-    import DateInput from "$lib/Components/DateInput.svelte";
+<script lang="ts">
+  import Dialog from "$lib/Builders/Dialog.svelte";
+  import Icon from "$lib/Builders/Icon.svelte";
+  import Line from "$lib/Builders/Line.svelte";
+  import DateInput from "$lib/Components/DateInput.svelte";
 
-    export let open = false;
-    import format from 'date-and-time';
-    import meridiem from "date-and-time/plugin/meridiem";
-    import { createEventDispatcher, onMount } from "svelte";
+  export let open = false;
+  import format from "date-and-time";
+  import meridiem from "date-and-time/plugin/meridiem";
+  import { createEventDispatcher, onMount } from "svelte";
 
-    format.plugin(meridiem);
+  format.plugin(meridiem);
 
-    let date = new Date();
-    let start = new Date();
-    let end = new Date();
+  let date = new Date();
+  let start = new Date();
+  let end = new Date();
 
-    export let startTime: Date;
-    export let endTime: Date;
-    export let hideTimes: boolean = false;
+  export let startTime: Date;
+  export let endTime: Date;
+  export let hideTimes: boolean = false;
 
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-    function reset(random: any = undefined) {
-        start = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
-        end = new Date(endTime ? endTime.valueOf() : new Date().valueOf());
-        date = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
+  function reset(random: any = undefined) {
+    start = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
+    end = new Date(endTime ? endTime.valueOf() : new Date().valueOf());
+    date = new Date(startTime ? startTime.valueOf() : new Date().valueOf());
+  }
+
+  $: reset(startTime);
+
+  function handleEndMinutes(e: Event) {
+    const value = (e.target as any).value as string;
+
+    const minutes = parseInt(value);
+
+    if (isNaN(minutes)) return;
+
+    if (minutes < 0) {
+      end.setMinutes(0);
+      end = end;
+      return;
     }
 
-    $: reset(startTime);
-
-    function handleEndMinutes(e: Event) {
-        const value = (e.target as any).value as string;
-
-        const minutes = parseInt(value);
-
-        if(isNaN(minutes)) return;
-
-        if(minutes < 0) {
-            end.setMinutes(0);
-            end = end;
-            return;
-        }
-
-        if(minutes > 59) {
-            end.setMinutes(59);
-            end = end;
-            return;
-        }
-
-
-        end.setMinutes(minutes);
-
-        end = end;
+    if (minutes > 59) {
+      end.setMinutes(59);
+      end = end;
+      return;
     }
 
-    function handleStartMinutes(e: Event) {
-        const value = (e.target as any).value as string;
+    end.setMinutes(minutes);
 
-        const minutes = parseInt(value);
+    end = end;
+  }
 
-        if(isNaN(minutes)) return;
+  function handleStartMinutes(e: Event) {
+    const value = (e.target as any).value as string;
 
-        if(minutes < 0) {
-            start.setMinutes(0);
-            start = start;
-            return;
-        }
+    const minutes = parseInt(value);
 
-        if(minutes > 59) {
-            start.setMinutes(59);
-            start = start;
-            return;
-        }
+    if (isNaN(minutes)) return;
 
-        start.setMinutes(minutes);
-
-        start = start;
+    if (minutes < 0) {
+      start.setMinutes(0);
+      start = start;
+      return;
     }
 
-    function handleStartHours(e: Event) {
-        const value = (e.target as any).value as string;
-
-        let hours = parseInt(value);
-
-        if(isNaN(hours)) return;
-
-        if(hours < 1) hours = 1;
-        if(hours > 12) hours = 12;
-
-        const current = start.getHours() >= 12 ? 'pm' : 'am';
-
-        if(current == 'pm') {
-            start.setHours(hours + 12);
-        } else if(current == 'am') {
-            start.setHours(hours);
-        }
-
-        start = start;
+    if (minutes > 59) {
+      start.setMinutes(59);
+      start = start;
+      return;
     }
 
-    function handleEndHours(e: Event) {
-        console.log("handled");
+    start.setMinutes(minutes);
 
-        const value = (e.target as any).value as string;
+    start = start;
+  }
 
-        let hours = parseInt(value);
+  function handleStartHours(e: Event) {
+    const value = (e.target as any).value as string;
 
-        if(isNaN(hours)) return;
+    let hours = parseInt(value);
 
-        if(hours < 1) hours = 1;
-        if(hours > 12) hours = 12;
+    if (isNaN(hours)) return;
 
-        const current = end.getHours() >= 12 ? 'pm' : 'am';
+    if (hours < 1) hours = 1;
+    if (hours > 12) hours = 12;
 
-        if(current == 'pm') {
-            end.setHours(hours + 12);
-        } else if(current == 'am') {
-            end.setHours(hours);
-        }
+    const current = start.getHours() >= 12 ? "pm" : "am";
 
-        end = end;
+    if (current == "pm") {
+      start.setHours(hours + 12);
+    } else if (current == "am") {
+      start.setHours(hours);
     }
 
-    function submit() {
-        let finalStart = new Date(start.valueOf());
-        let finalEnd = new Date(end.valueOf());
+    start = start;
+  }
 
-        finalStart.setDate(date.getDate());
-        finalStart.setMonth(date.getMonth());
-        finalStart.setFullYear(date.getFullYear());
+  function handleEndHours(e: Event) {
+    console.log("handled");
 
-        finalEnd.setDate(date.getDate());
-        finalEnd.setMonth(date.getMonth());
-        finalEnd.setFullYear(date.getFullYear());
+    const value = (e.target as any).value as string;
 
-        open = !open;
+    let hours = parseInt(value);
 
-        startTime = new Date(finalStart.valueOf());
-        endTime = new Date(finalEnd.valueOf());
+    if (isNaN(hours)) return;
 
-        dispatch('submit');
+    if (hours < 1) hours = 1;
+    if (hours > 12) hours = 12;
+
+    const current = end.getHours() >= 12 ? "pm" : "am";
+
+    if (current == "pm") {
+      end.setHours(hours + 12);
+    } else if (current == "am") {
+      end.setHours(hours);
     }
 
-    let dateInput: HTMLInputElement;
-    let startHours: HTMLInputElement;
-    let startMinutes: HTMLInputElement;
-    let endHours: HTMLInputElement;
-    let endMinutes: HTMLInputElement;
-    let save: HTMLButtonElement;
-    let cancel: HTMLButtonElement;
+    end = end;
+  }
 
-    onMount(() => {
-        reset();
-    })
+  function submit() {
+    let finalStart = new Date(start.valueOf());
+    let finalEnd = new Date(end.valueOf());
 
-    function openDialog() {
-        open = true;
-    }
+    finalStart.setDate(date.getDate());
+    finalStart.setMonth(date.getMonth());
+    finalStart.setFullYear(date.getFullYear());
+
+    finalEnd.setDate(date.getDate());
+    finalEnd.setMonth(date.getMonth());
+    finalEnd.setFullYear(date.getFullYear());
+
+    open = !open;
+
+    startTime = new Date(finalStart.valueOf());
+    endTime = new Date(finalEnd.valueOf());
+
+    dispatch("submit");
+  }
+
+  let dateInput: HTMLInputElement;
+  let startHours: HTMLInputElement;
+  let startMinutes: HTMLInputElement;
+  let endHours: HTMLInputElement;
+  let endMinutes: HTMLInputElement;
+  let save: HTMLButtonElement;
+  let cancel: HTMLButtonElement;
+
+  onMount(() => {
+    reset();
+  });
+
+  function openDialog() {
+    open = true;
+  }
 </script>
 
-<slot {openDialog}/>
+<slot {openDialog} />
 
-<Dialog bind:initialFocus={cancel} bind:isOpen={open} width=22rem top>
-    <h1 class="text-2xl">Date Picker</h1>
-    <Line class="my-4"></Line>
-    <div class="flex items-center">
-        <button on:click={() => { date.setDate(date.getDate() - 1); date = date; }} class="b-accent h-[38px] flex items-center justify-around mr-2"><Icon scale=1.5rem icon=arrow_back></Icon></button>
-        <DateInput on:enter={() => { startHours.focus(); }} bind:element={dateInput} name=date class="p-2 py-1.5 rounded-md w-full" bind:date/>
-        <button on:click={() => { date.setDate(date.getDate() + 1); date = date; }} class="b-accent h-[38px] flex items-center justify-around ml-2"><Icon scale=1.5rem icon=arrow_forward></Icon></button>
+<Dialog bind:initialFocus={cancel} bind:isOpen={open} width="22rem" top>
+  <h1 class="text-2xl">Date Picker</h1>
+  <Line class="my-4"></Line>
+  <div class="flex items-center">
+    <button
+      on:click={() => {
+        date.setDate(date.getDate() - 1);
+        date = date;
+      }}
+      class="b-accent h-[38px] flex items-center justify-around mr-2"
+      ><Icon scale="1.5rem" icon="arrow_back"></Icon></button
+    >
+    <DateInput
+      on:enter={() => {
+        startHours.focus();
+      }}
+      bind:element={dateInput}
+      name="date"
+      class="p-2 py-1.5 rounded-md w-full"
+      bind:date
+    />
+    <button
+      on:click={() => {
+        date.setDate(date.getDate() + 1);
+        date = date;
+      }}
+      class="b-accent h-[38px] flex items-center justify-around ml-2"
+      ><Icon scale="1.5rem" icon="arrow_forward"></Icon></button
+    >
+  </div>
+  <p class="text-center {!hideTimes ? 'py-1' : 'pt-1'} opacity-75 italic">
+    {format.format(date, "dddd, MMMM D")}
+  </p>
+  {#if !hideTimes}
+    <div class="flex items-center mt-4 gap-1 sm:gap-2 sm:flex-row flex-col">
+      <div class="flex items-center gap-2">
+        <input
+          bind:this={startHours}
+          on:keypress={(e) => {
+            if (e.key == "Enter") {
+              startMinutes.focus();
+            }
+          }}
+          value={start.getHours() >= 12
+            ? start.getHours() - 12 == 0
+              ? "12"
+              : start.getHours() - 12
+            : start.getHours() == 0
+              ? "12"
+              : start.getHours()}
+          on:change={handleStartHours}
+          class="w-[42px] p-2 py-1.5 rounded-md text-center"
+          type="string"
+        />
+        <p class="font-lg font-bold -mx-1">:</p>
+        <input
+          bind:this={startMinutes}
+          on:keypress={(e) => {
+            if (e.key == "Enter") {
+              endHours.focus();
+            }
+          }}
+          value={start.getMinutes() < 10
+            ? "0" + start.getMinutes()
+            : start.getMinutes()}
+          on:change={handleStartMinutes}
+          class="w-[42px] p-2 py-1.5 rounded-md text-center"
+          type="string"
+        />
+        <button
+          on:click={() => {
+            start.setHours(
+              start.getHours() >= 12
+                ? start.getHours() - 12
+                : start.getHours() + 12,
+            );
+            start = start;
+          }}
+          class="b-accent flex items-center justify-around w-[43px] h-[36px]"
+          >{start.getHours() >= 12 && start.getHours() != 24
+            ? "pm"
+            : "am"}</button
+        >
+      </div>
+      <p class="font-lg font-bold">-</p>
+      <div class="flex items-center gap-2">
+        <input
+          bind:this={endHours}
+          on:keypress={(e) => {
+            if (e.key == "Enter") {
+              endMinutes.focus();
+            }
+          }}
+          value={end.getHours() >= 12
+            ? end.getHours() - 12 == 0
+              ? "12"
+              : end.getHours() - 12
+            : end.getHours() == 0
+              ? "12"
+              : end.getHours()}
+          on:change={handleEndHours}
+          class="w-[42px] p-2 py-1.5 rounded-md text-center"
+          type="string"
+        />
+        <p class="font-lg font-bold -mx-1">:</p>
+        <input
+          bind:this={endMinutes}
+          on:keypress={(e) => {
+            if (e.key == "Enter") {
+              save.focus();
+            }
+          }}
+          value={end.getMinutes() < 10
+            ? "0" + end.getMinutes()
+            : end.getMinutes()}
+          on:change={handleEndMinutes}
+          class="w-[42px] p-2 py-1.5 rounded-md text-center"
+          type="string"
+        />
+        <button
+          on:click={() => {
+            end.setHours(
+              end.getHours() >= 12 ? end.getHours() - 12 : end.getHours() + 12,
+            );
+            end = end;
+          }}
+          class="b-accent flex items-center justify-around w-[43px] h-[36px]"
+          >{end.getHours() >= 12 && end.getHours() != 24 ? "pm" : "am"}</button
+        >
+      </div>
     </div>
-    <p class="text-center {!hideTimes ? "py-1" : "pt-1"} opacity-75 italic">{format.format(date, "dddd, MMMM D")}</p>
-    {#if !hideTimes}
-        <div class="flex items-center mt-4 gap-1 sm:gap-2 sm:flex-row flex-col">
-            <div class="flex items-center gap-2">
-                <input bind:this={startHours} on:keypress={(e) => { if(e.key == 'Enter') { startMinutes.focus(); } }} value={start.getHours() >= 12 ? (start.getHours() - 12 == 0 ? '12' : start.getHours() - 12) : (start.getHours() == 0 ? '12' : start.getHours())} on:change={handleStartHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-                <p class="font-lg font-bold -mx-1">:</p>
-                <input bind:this={startMinutes} on:keypress={(e) => { if(e.key == 'Enter') { endHours.focus(); } }} value={start.getMinutes() < 10 ? "0" + start.getMinutes() : start.getMinutes()} on:change={handleStartMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-                <button on:click={() => { start.setHours(start.getHours() >= 12 ? (start.getHours() - 12) : (start.getHours() + 12)); start = start; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{start.getHours() >= 12 && start.getHours() != 24 ? "pm" : "am"}</button>
-            </div>
-            <p class="font-lg font-bold">-</p>
-            <div class="flex items-center gap-2">
-                <input bind:this={endHours} on:keypress={(e) => { if(e.key == 'Enter') { endMinutes.focus(); } }} value={end.getHours() >= 12 ? (end.getHours() - 12 == 0 ? '12' : end.getHours() - 12)  : (end.getHours() == 0 ? '12' : end.getHours())} on:change={handleEndHours} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-                <p class="font-lg font-bold -mx-1">:</p>
-                <input bind:this={endMinutes} on:keypress={(e) => { if(e.key == 'Enter') { save.focus(); } }} value={end.getMinutes() < 10 ? "0" + end.getMinutes() : end.getMinutes()} on:change={handleEndMinutes} class="w-[42px] p-2 py-1.5 rounded-md text-center" type="string"/>
-                <button on:click={() => { end.setHours(end.getHours() >= 12 ? (end.getHours() - 12) : (end.getHours() + 12)); end = end; }} class="b-accent flex items-center justify-around w-[43px] h-[36px]">{end.getHours() >= 12 && end.getHours() != 24 ? "pm" : "am"}</button>
-            </div>
-        </div>
-        <p class="text-center pt-1 opacity-75 italic">{format.format(start, "h:mm a")} - {format.format(end, "h:mm a")}</p>
-    {/if}
-    <Line class="my-4"></Line>
-    <div class="flex flex-row-reverse gap-2">
-        <button bind:this={save} on:click={submit} class="b-green">Save</button>
-        <button bind:this={cancel} on:click={() => { open = !open; reset(); }} class="b-default">Cancel</button>
-    </div>
+    <p class="text-center pt-1 opacity-75 italic">
+      {format.format(start, "h:mm a")} - {format.format(end, "h:mm a")}
+    </p>
+  {/if}
+  <Line class="my-4"></Line>
+  <div class="flex flex-row-reverse gap-2">
+    <button bind:this={save} on:click={submit} class="b-green">Save</button>
+    <button
+      bind:this={cancel}
+      on:click={() => {
+        open = !open;
+        reset();
+      }}
+      class="b-default">Cancel</button
+    >
+  </div>
 </Dialog>

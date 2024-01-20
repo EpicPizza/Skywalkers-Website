@@ -1,40 +1,50 @@
-import { ADMIN, DEV, OWNER, OWNER_TEAM } from '$env/static/private';
-import { getCalendar, getClient, getClientWithCrendentials } from '$lib/Google/client';
-import { editEvent, getEvent } from '$lib/Google/calendar';
-import { sendDM } from '$lib/Discord/discord.server';
-import type { DocumentData } from 'firebase-admin/firestore';
-import { firebaseAdmin } from '$lib/Firebase/firebase.server';
+import { ADMIN, DEV, OWNER, OWNER_TEAM } from "$env/static/private";
+import {
+  getCalendar,
+  getClient,
+  getClientWithCrendentials,
+} from "$lib/Google/client";
+import { editEvent, getEvent } from "$lib/Google/calendar";
+import { sendDM } from "$lib/Discord/discord.server";
+import type { DocumentData } from "firebase-admin/firestore";
+import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 
-export default async function editAttendees(data: ReturnType<DocumentData["data"]>) {
-    const client = await getClientWithCrendentials();
+export default async function editAttendees(
+  data: ReturnType<DocumentData["data"]>,
+) {
+  const client = await getClientWithCrendentials();
 
-    if(client == undefined) {
-        if(DEV == 'TRUE') {
-            return;
-        }
-
-        await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
-
-        process.exit();
+  if (client == undefined) {
+    if (DEV == "TRUE") {
+      return;
     }
 
-    const calendar = await getCalendar();
+    await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
 
-    if(calendar == undefined) {
-        if(DEV == 'TRUE') {
-            return;
-        }
+    process.exit();
+  }
 
-        await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
+  const calendar = await getCalendar();
 
-        process.exit();
+  if (calendar == undefined) {
+    if (DEV == "TRUE") {
+      return;
     }
 
-    const id = data.calendar;
+    await sendDM("Authorization Needed", OWNER, OWNER_TEAM);
 
-    const users = await firebaseAdmin.getAuth().getUsers(Array.from(data.signups, (x) => ({ uid: x as string })));
+    process.exit();
+  }
 
-    const attendees = Array.from(users.users, x => ({ email: x.email as string }));
+  const id = data.calendar;
 
-    await editEvent(client, id, calendar, { attendees: attendees });
+  const users = await firebaseAdmin
+    .getAuth()
+    .getUsers(Array.from(data.signups, (x) => ({ uid: x as string })));
+
+  const attendees = Array.from(users.users, (x) => ({
+    email: x.email as string,
+  }));
+
+  await editEvent(client, id, calendar, { attendees: attendees });
 }

@@ -1,21 +1,33 @@
-<!DOCTYPE html>
-<html lang="en" style="color-scheme: %theme%;">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-    	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    	<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;0,1000;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-		%sveltekit.head%
-	</head>
-	<body class="%theme%" data-sveltekit-preload-data="hover">
-		<noscript>
-			<div class="fixed w-screen h-screen top-0 left-0 bg-white dark:bg-black opacity-60 z-60"></div>
-			<div class="fixed max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl z-70 flex items-center">
-				<div><span class="text-red-500 transform scale-150 translate-x-1 translate-y-1 mr-6 material-symbols-rounded">cancel</span></div>
-				<div class="mr-1">Javascript must be enabled to run this page.</div>
-			</div>
-		</noscript>
-		<div style="display: contents">%sveltekit.body%</div>
-	</body>
+<!doctype html>
+<html lang="en" style="color-scheme: %theme%">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;0,1000;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
+    %sveltekit.head%
+  </head>
+  <body class="%theme%" data-sveltekit-preload-data="hover">
+    <noscript>
+      <div
+        class="fixed w-screen h-screen top-0 left-0 bg-white dark:bg-black opacity-60 z-60"
+      ></div>
+      <div
+        class="fixed max-w-[calc(100%-4rem)] max-h-[calc(100dvh-4rem)] -translate-y-1/2 -translate-x-1/2 left-1/2 top-1/2 bg-backgroud-light dark:bg-backgroud-dark p-4 rounded-2xl border-[1px] border-border-light dark:border-border-dark shadow-2xl z-70 flex items-center"
+      >
+        <div>
+          <span
+            class="text-red-500 transform scale-150 translate-x-1 translate-y-1 mr-6 material-symbols-rounded"
+            >cancel</span
+          >
+        </div>
+        <div class="mr-1">Javascript must be enabled to run this page.</div>
+      </div>
+    </noscript>
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
 </html>

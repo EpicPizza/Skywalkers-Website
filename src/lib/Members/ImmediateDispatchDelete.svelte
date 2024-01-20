@@ -1,9 +1,9 @@
-<script lang=ts>
-    import { createEventDispatcher, onMount } from "svelte";
+<script lang="ts">
+  import { createEventDispatcher, onMount } from "svelte";
 
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-    onMount(() => {
-        dispatch("delete");
-    })
+  onMount(() => {
+    dispatch("delete");
+  });
 </script>

@@ -1,3 +1,3 @@
 <blockquote class="w-fit">
-    <slot></slot>
+  <slot />
 </blockquote>

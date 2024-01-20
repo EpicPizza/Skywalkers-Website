@@ -8,35 +8,40 @@ import { message, superValidate } from "sveltekit-superforms/server";
 import { z } from "zod";
 
 export async function load({ locals }) {
-    if(locals.user == undefined) throw error(401, "Sign In Required");
-    if(locals.firestoreUser == undefined) throw redirect(307, "/verify");
+  if (locals.user == undefined) throw error(401, "Sign In Required");
+  if (locals.firestoreUser == undefined) throw redirect(307, "/verify");
 
-    const db = firebaseAdmin.getFirestore();
+  const db = firebaseAdmin.getFirestore();
 
-    const docs = await (db.collection('users').where('team', 'array-contains', locals.team).get());
+  const docs = await db
+    .collection("users")
+    .where("team", "array-contains", locals.team)
+    .get();
 
-    let users = new Array<SecondaryUser>();
+  let users = new Array<SecondaryUser>();
 
-    for(let i = 0; i < docs.docs.length; i++) {
-        for(let j = 0; j < docs.docs[i].data().teams; j++) {
-            docs.docs[i].data().teams[j].roles = await getSpecifiedRoles(docs.docs[i].data().teams[j].roles as DocumentReference[])
-        }
-
-        users.push({
-            photoURL: docs.docs[i].data().photoURL,
-            displayName: docs.docs[i].data().displayName,
-            pronouns: docs.docs[i].data().pronouns,
-            id: docs.docs[i].id,
-            teams: [],
-        })
+  for (let i = 0; i < docs.docs.length; i++) {
+    for (let j = 0; j < docs.docs[i].data().teams; j++) {
+      docs.docs[i].data().teams[j].roles = await getSpecifiedRoles(
+        docs.docs[i].data().teams[j].roles as DocumentReference[],
+      );
     }
 
-    const kickForm = await superValidate(QuarantineMember);
+    users.push({
+      photoURL: docs.docs[i].data().photoURL,
+      displayName: docs.docs[i].data().displayName,
+      pronouns: docs.docs[i].data().pronouns,
+      id: docs.docs[i].id,
+      teams: [],
+    });
+  }
 
-    return {
-        members: users,
-        forms: {
-            kickForm: kickForm,
-        }
-    }
+  const kickForm = await superValidate(QuarantineMember);
+
+  return {
+    members: users,
+    forms: {
+      kickForm: kickForm,
+    },
+  };
 }

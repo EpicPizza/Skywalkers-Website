@@ -1,78 +1,106 @@
-<script lang=ts>
-    import { slide } from "svelte/transition";
-    import type { Role } from "./role";
-    import Line from "$lib/Builders/Line.svelte";
-    import Loading from "$lib/Builders/Loading.svelte";
-    import AddMemberDialog from "./AddMemberDialog.svelte";
-    import { getContext } from "svelte";
-    import type { firebaseClient } from "$lib/Firebase/firebase";
-    import type { Writable } from "svelte/store";
-    import type { createCurrentTeam, createPermissions } from "$lib/stores";
+<script lang="ts">
+  import { slide } from "svelte/transition";
+  import type { Role } from "./role";
+  import Line from "$lib/Builders/Line.svelte";
+  import Loading from "$lib/Builders/Loading.svelte";
+  import AddMemberDialog from "./AddMemberDialog.svelte";
+  import { getContext } from "svelte";
+  import type { firebaseClient } from "$lib/Firebase/firebase";
+  import type { Writable } from "svelte/store";
+  import type { createCurrentTeam, createPermissions } from "$lib/stores";
 
-    let client = getContext('client') as ReturnType<typeof firebaseClient>;
-    const permissions = getContext('permissions') as ReturnType<typeof createPermissions>;
-    const currentTeam = getContext('currentTeam') as ReturnType<typeof createCurrentTeam>;
-    const team = getContext('team') as Writable<string>;
+  let client = getContext("client") as ReturnType<typeof firebaseClient>;
+  const permissions = getContext("permissions") as ReturnType<
+    typeof createPermissions
+  >;
+  const currentTeam = getContext("currentTeam") as ReturnType<
+    typeof createCurrentTeam
+  >;
+  const team = getContext("team") as Writable<string>;
 
-    export let role: Role;   
+  export let role: Role;
 
-    let loading = false;
+  let loading = false;
 
-    async function handleRemove(id: string) {
-        if(loading) return;
+  async function handleRemove(id: string) {
+    if (loading) return;
 
-        loading = true;
+    loading = true;
 
-        await fetch("/t/" + $team + "/api/roles/remove", {
-            method: 'POST',
-            body: JSON.stringify({
-                uid: id,
-                role: role.id
-            })
-        })
+    await fetch("/t/" + $team + "/api/roles/remove", {
+      method: "POST",
+      body: JSON.stringify({
+        uid: id,
+        role: role.id,
+      }),
+    });
 
-        loading = false;
-    }
+    loading = false;
+  }
 
-    let open = false;
+  let open = false;
 </script>
 
 <AddMemberDialog {role} bind:open></AddMemberDialog>
 
-<div in:slide style="background: {role.color};" class="w-full p-4 absolute z-20 top-12 right-0 h-[calc(100dvh-140px)]">
-    <div class="p-4 pt-0 w-full h-full overflow-scroll bg-backgroud-light dark:bg-backgroud-dark rounded-xl relative">
-        <div class="flex justify-between items-center h-[4.125rem]">
-            <h1 class="text-2xl font-bold">{role.name}</h1>
-            {#if !(!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)}
-                <button on:click={() => { open = !open; }} class="b-default">Add</button>
-            {/if}
-        </div>
-
-        <Line class="mb-4"></Line>
-
-        {#await role.members}
-            <div class="w-full pt-8 flex justify-around">
-                <Loading></Loading>
-            </div>
-        {:then members}
-            {#each members as member}
-                <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center">
-                        <img class="h-9 w-9 rounded-full" referrerpolicy="no-referrer" alt="{member.displayName}'s profile" src={member.photoURL} />
-                        <p class="text-lg ml-2 font-light">{member.displayName}{member.pronouns ? " (" + member.pronouns + ")" : ""}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        {#if !(!$permissions.includes('MANAGE_ROLES') || $currentTeam == undefined || $currentTeam.level <= role.level)}
-                            <button class="b-default h-[2.125rem]" on:click={() => { handleRemove(member.id) }}>Remove</button>
-                        {/if}
-                    </div>
-                </div>
-            {:else}
-                <div class="w-full text-center text-lg font-bold text-red-500">
-                    No one has this role.
-                </div>
-            {/each}
-        {/await}
+<div
+  in:slide
+  style="background: {role.color};"
+  class="w-full p-4 absolute z-20 top-12 right-0 h-[calc(100dvh-140px)]"
+>
+  <div
+    class="p-4 pt-0 w-full h-full overflow-scroll bg-backgroud-light dark:bg-backgroud-dark rounded-xl relative"
+  >
+    <div class="flex justify-between items-center h-[4.125rem]">
+      <h1 class="text-2xl font-bold">{role.name}</h1>
+      {#if !(!$permissions.includes("MANAGE_ROLES") || $currentTeam == undefined || $currentTeam.level == undefined || $currentTeam.level <= role.level)}
+        <button
+          on:click={() => {
+            open = !open;
+          }}
+          class="b-default">Add</button
+        >
+      {/if}
     </div>
-</div>
 
+    <Line class="mb-4"></Line>
+
+    {#await role.members}
+      <div class="w-full pt-8 flex justify-around">
+        <Loading></Loading>
+      </div>
+    {:then members}
+      {#each members as member}
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center">
+            <img
+              class="h-9 w-9 rounded-full"
+              referrerpolicy="no-referrer"
+              alt="{member.displayName}'s profile"
+              src={member.photoURL}
+            />
+            <p class="text-lg ml-2 font-light">
+              {member.displayName}{member.pronouns
+                ? " (" + member.pronouns + ")"
+                : ""}
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            {#if !(!$permissions.includes("MANAGE_ROLES") || $currentTeam == undefined || $currentTeam.level <= role.level)}
+              <button
+                class="b-default h-[2.125rem]"
+                on:click={() => {
+                  handleRemove(member.id);
+                }}>Remove</button
+              >
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <div class="w-full text-center text-lg font-bold text-red-500">
+          No one has this role.
+        </div>
+      {/each}
+    {/await}
+  </div>
+</div>

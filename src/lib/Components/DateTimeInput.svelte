@@ -1,40 +1,50 @@
-<script lang=ts>
-    import format from 'date-and-time';
-    import { onMount } from 'svelte';
-    import type { Unsubscriber, Writable } from 'svelte/store';
-    import { onDestroy } from 'svelte';
-    import { createEventDispatcher } from 'svelte';
+<script lang="ts">
+  import format from "date-and-time";
+  import { onMount } from "svelte";
+  import type { Unsubscriber, Writable } from "svelte/store";
+  import { onDestroy } from "svelte";
+  import { createEventDispatcher } from "svelte";
 
-    export {style as class};
-    export let date: Date;
-    export let name: string;
+  export { style as class };
+  export let date: Date;
+  export let name: string;
 
-    let stringdate: string;
-    let style = "";
+  let stringdate: string;
+  let style = "";
 
-    let dispatch = createEventDispatcher();
+  let dispatch = createEventDispatcher();
 
-    $: date = trytoparse(stringdate);
+  $: date = trytoparse(stringdate);
 
-    let trytoparse = (input: string): Date => {
-        if(stringdate != null && stringdate != undefined && stringdate != '') {
-            return format.parse(input, "YYYY-MM-DDTHH:mm");   
-        } else {
-            return date;
-        }
+  let trytoparse = (input: string): Date => {
+    if (stringdate != null && stringdate != undefined && stringdate != "") {
+      return format.parse(input, "YYYY-MM-DDTHH:mm");
+    } else {
+      return date;
     }
+  };
 
-    let unsubscribe: Unsubscriber | undefined;
+  let unsubscribe: Unsubscriber | undefined;
 
-    onMount(() => {
-        if(date) {
-            stringdate = format.format(date, "YYYY-MM-DDTHH:mm");
-        }
-    });
+  onMount(() => {
+    if (date) {
+      stringdate = format.format(date, "YYYY-MM-DDTHH:mm");
+    }
+  });
 
-    onDestroy(() => {
-        if(unsubscribe) unsubscribe();
-    })
+  onDestroy(() => {
+    if (unsubscribe) unsubscribe();
+  });
 </script>
 
-<input on:keypress={(e) => { if(e.key == 'Enter') { dispatch("enter") } }} name={name} type="datetime-local" bind:value={stringdate} class={style}/>
+<input
+  on:keypress={(e) => {
+    if (e.key == "Enter") {
+      dispatch("enter");
+    }
+  }}
+  {name}
+  type="datetime-local"
+  bind:value={stringdate}
+  class={style}
+/>
