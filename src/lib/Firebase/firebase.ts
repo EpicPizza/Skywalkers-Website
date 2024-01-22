@@ -89,12 +89,14 @@ export function firebaseClient() {
 
         if (app == undefined) {
           const firebaseConfig = {
-                             apiKey: "AIzaSyDUStXNyzY5sOm23Mxh0I40lRQdoNkux58",
-                             authDomain: "frc-skywalkers-dev.firebaseapp.com",
-                            projectId: "frc-skywalkers-dev",
-                             storageBucket: "frc-skywalkers-dev.appspot.com",
-                             messagingSenderId: "570673802109",
-          }
+                             apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
+                             authDomain: "skywalkers.alexest.net",
+                             projectId: "frc-skywalkers",
+                             storageBucket: "frc-skywalkers.appspot.com",
+                             messagingSenderId: "86129312478",
+                             appId: "1:86129312478:web:b06670457b876827e1784f",
+                             measurementId: "G-GMZX3PY5H6"
+                         }
 
           app = initializeApp(firebaseConfig);
         }
