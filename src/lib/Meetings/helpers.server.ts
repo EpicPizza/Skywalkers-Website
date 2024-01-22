@@ -893,31 +893,31 @@ export async function createMeeting(
 
   const notionMeeting = await notion.pages.create(page);
 
-  const meeting = {
-    name: name,
-    lead: lead,
-    synopsis: synopsis,
-    mentor: mentor,
-    location: location,
-    starts: starts,
-    ends: ends,
-    thumbnail: thumbnail,
-    completed: false,
-    role: role,
-    calendar: event.id,
-    link: event.link ?? null,
-    signups: signups,
-    update: signups.length == 0 ? false : true,
-    id: id,
-    version: "v3.0",
-    virtual: virtual,
-    notion: notionMeeting.id,
-    confirmations: null,
-    guests: [],
-  } satisfies Meeting as Meeting;
-
-  await db.runTransaction(async (t) => {
-    t.create(ref.doc(id), meeting);
+    const meeting = {
+        name: name,
+        lead: lead,
+        synopsis: synopsis,
+        mentor: mentor,
+        location: location,
+        starts: starts,
+        ends: ends,
+        thumbnail: thumbnail,
+        completed: false,
+        role: role,
+        calendar: event.id,
+        link: event.link ?? null,
+        signups: signups,
+        update: signups.length == 0 ? false : true,
+        id: id,
+        version: "v3.1",
+        virtual: virtual,
+        notion: notionMeeting.id,
+        confirmations: null,
+        guests: [],
+    } satisfies Meeting as Meeting;
+ 
+    await db.runTransaction(async t => {
+        t.create(ref.doc(id), meeting);
 
     firebaseAdmin.addLogWithTransaction(
       "Meeting created.",
@@ -1145,30 +1145,30 @@ export async function createMeetingFromSchedule(
 
   const notionMeeting = await notion.pages.create(page);
 
-  const meeting = {
-    name: name,
-    lead: lead,
-    synopsis: synopsis,
-    mentor: mentor,
-    location: location,
-    starts: starts,
-    ends: ends,
-    thumbnail: thumbnail,
-    completed: false,
-    role: role,
-    calendar: event.id,
-    link: event.link ?? null,
-    signups: signups,
-    update: signups.length == 0 ? false : true,
-    id: id,
-    version: "v3.0",
-    virtual: virtual,
-    notion: notionMeeting.id,
-    confirmations: null,
-    guests: [],
-    //@ts-expect-error
-    schedule: schedule, //niche use for filtering scheduled meetings
-  } satisfies Meeting as Meeting;
+    const meeting = {
+        name: name,
+        lead: lead,
+        synopsis: synopsis,
+        mentor: mentor,
+        location: location,
+        starts: starts,
+        ends: ends,
+        thumbnail: thumbnail,
+        completed: false,
+        role: role,
+        calendar: event.id,
+        link: event.link ?? null,
+        signups: signups,
+        update: signups.length == 0 ? false : true,
+        id: id,
+        version: "v3.1",
+        virtual: virtual,
+        notion: notionMeeting.id,
+        confirmations: null,
+        guests: [],
+        //@ts-expect-error
+        schedule: schedule, //niche use for filtering scheduled meetings
+    } satisfies Meeting as Meeting;
 
   await db.runTransaction(async (t) => {
     t.create(ref.doc(id), meeting);
@@ -1390,28 +1390,28 @@ export async function editMeeting(
 
   const notionMeeting = await notion.pages.update(page);
 
-  const meeting = {
-    name: name,
-    lead: lead,
-    synopsis: synopsis,
-    mentor: mentor,
-    location: location,
-    starts: starts,
-    ends: ends,
-    thumbnail: thumbnail,
-    completed: false,
-    role: role,
-    calendar: event.id,
-    link: event.link ?? null,
-    signups: signups,
-    update: currentMeeting.update,
-    id: currentMeeting.id,
-    version: "v3.0",
-    virtual: virtual,
-    notion: notionMeeting.id,
-    confirmations: currentMeeting.confirmations,
-    guests: [],
-  } satisfies Meeting;
+    const meeting = {
+        name: name,
+        lead: lead,
+        synopsis: synopsis,
+        mentor: mentor,
+        location: location,
+        starts: starts,
+        ends: ends,
+        thumbnail: thumbnail,
+        completed: false,
+        role: role,
+        calendar: event.id,
+        link: event.link ?? null,
+        signups: signups,
+        update: currentMeeting.update,
+        id: currentMeeting.id,
+        version: "v3.1",
+        virtual: virtual,
+        notion: notionMeeting.id,
+        confirmations: currentMeeting.confirmations,
+        guests: [],
+    } satisfies Meeting;
 
   await db.runTransaction(async (t) => {
     t.update(ref.doc(currentMeeting.id), meeting as any); //weird type error?

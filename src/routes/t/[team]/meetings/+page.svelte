@@ -1,55 +1,30 @@
-<script lang="ts">
-  import { browser } from "$app/environment";
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import DatePicker from "$lib/Builders/DatePicker.svelte";
-  import Icon from "$lib/Builders/Icon.svelte";
-  import Line from "$lib/Builders/Line.svelte";
-  import Loading from "$lib/Builders/Loading.svelte";
-  import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
-  import {
-    remove,
-    add,
-    deleteMeetings,
-    deleteMeeting,
-  } from "$lib/Meetings/meetings";
-  import { dev as env } from "$app/environment";
-  import {
-    Menu,
-    MenuButton,
-    MenuItems,
-    MenuItem,
-  } from "@rgossiaux/svelte-headlessui";
-  import Dialog from "$lib/Builders/Dialog.svelte";
-  import format from "date-and-time";
-  import meridiem from "date-and-time/plugin/meridiem";
-  import type { Query, DocumentData } from "firebase/firestore";
-  import type { Unsubscribe } from "firebase/auth";
-  import {
-    query,
-    collection,
-    where,
-    orderBy,
-    limit,
-    onSnapshot,
-  } from "firebase/firestore";
-  import type {
-    Warning,
-    createCurrentTeam,
-    createPermissions,
-  } from "$lib/stores.js";
-  import { getContext, onMount, onDestroy } from "svelte";
-  import { flip } from "svelte/animate";
-  import {
-    type Writable,
-    type Unsubscriber,
-    writable,
-    get,
-  } from "svelte/store";
-  import { slide } from "svelte/transition";
-  import { getDefault } from "$lib/Meetings/helpers.js";
-  import Tooltip from "$lib/Builders/Tooltip.svelte";
-  import { PUBLIC_MEETING_VERSION } from "$env/static/public";
+<script lang=ts>
+    import { browser } from "$app/environment";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
+    import DatePicker from "$lib/Builders/DatePicker.svelte";
+    import Icon from "$lib/Builders/Icon.svelte";
+    import Line from "$lib/Builders/Line.svelte";
+    import Loading from "$lib/Builders/Loading.svelte";
+    import type { SecondaryUser, firebaseClient } from "$lib/Firebase/firebase";
+    import { remove, add, deleteMeetings, deleteMeeting } from "$lib/Meetings/meetings";
+    import { dev as env } from '$app/environment';
+    import { Menu, MenuButton, MenuItems, MenuItem } from "@rgossiaux/svelte-headlessui";
+    import Dialog from "$lib/Builders/Dialog.svelte";
+    import format from "date-and-time";
+    import meridiem from "date-and-time/plugin/meridiem";
+    import type { Query, DocumentData } from "firebase/firestore";
+    import type { Unsubscribe } from "firebase/auth";
+    import { query, collection, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+    import type { Warning, createCurrentTeam, createPermissions } from "$lib/stores.js";
+    import { getContext, onMount, onDestroy } from "svelte";
+    import { flip } from "svelte/animate";
+    import { type Writable, type Unsubscriber, writable, get } from "svelte/store";
+    import { slide } from "svelte/transition";
+    import { getDefault } from "$lib/Meetings/helpers.js";
+    import Tooltip from "$lib/Builders/Tooltip.svelte";
+    import { PUBLIC_MEETING_VERSION } from "$env/static/public";
+    import { visitEachChild } from "typescript";
 
   let client = getContext("client") as ReturnType<typeof firebaseClient>;
   let bottom = getContext("bottom") as Writable<boolean>;
@@ -576,230 +551,108 @@
   bind:innerHeight={windowHeight}
 />
 
-<div
-  class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 {$permissions.includes(
-    'CREATE_MEETINGS',
-  )
-    ? 'pb-[4.5rem] lg:pb-16'
-    : ''} overflow-x-auto"
->
-  <div class="p-4 pb-0 flex justify-between items-center">
-    <p class="ml-1">
-      Showing {data.meetingsShown}
-      {order} Meeting{data.meetingsShown == 1 ? "" : "s"}
-    </p>
-    {#if data.verified}
-      <div class="flex gap-2">
-        <button
-          on:click={() => {
-            changeOrder("Upcoming");
-          }}
-          disabled={order == "Upcoming"}
-          class="{order == 'Upcoming'
-            ? 'b-secondary'
-            : 'b-secondary'} disabled:cursor-not-allowed">Upcoming</button
-        >
-        <button
-          on:click={() => {
-            changeOrder("Recent");
-          }}
-          disabled={order == "Recent"}
-          class="{order == 'Recent'
-            ? 'b-secondary'
-            : 'b-secondary'} disabled:cursor-not-allowed">Recent</button
-        >
-      </div>
-    {/if}
-  </div>
-  <div class="p-4 pb-2">
-    {#each data.meetings as meeting, i (meeting.id)}
-      <div animate:flip>
-        {#if showTime(data.meetings, i)}
-          <p class="mb-4 ml-1 {i == 0 ? 'mt-0' : 'mt-8'} opacity-80">
-            {#if isToday(data.meetings[i].starts)}
-              Today
-            {:else}
-              {format.format(meeting.starts, "dddd, MMMM DD")}
-            {/if}
-          </p>
+<div class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 { $permissions.includes('CREATE_MEETINGS') ? "pb-[4.5rem] lg:pb-16" : ""} overflow-x-auto">
+    <div class="p-4 pb-0 flex justify-between items-center">
+        <p class="ml-1">Showing {data.meetingsShown} {order} Meeting{data.meetingsShown == 1 ? "" : "s"}</p>
+        {#if data.verified}
+            <div class="flex gap-2">
+                <button on:click={() => { changeOrder('Upcoming') }} disabled={order == 'Upcoming'} class="{order == 'Upcoming' ? "b-secondary" : "b-secondary"} disabled:cursor-not-allowed">Upcoming</button>
+                <button on:click={() => { changeOrder('Recent') }} disabled={order == 'Recent'} class="{order == 'Recent' ? "b-secondary" : "b-secondary"} disabled:cursor-not-allowed">Recent</button>
+            </div>
         {/if}
-        {#if meeting.version != PUBLIC_MEETING_VERSION}
-          <div
-            class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-alloutline-2 outline -outline-offset-1 outline-transparent"
-          >
-            <div class="ml-4">
-              <div class="animate-spin">
-                <Icon style="transform: scaleX(-1);" scale="2rem" icon="sync" />
-              </div>
-            </div>
-            <div
-              class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto"
-            >
-              <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-                Updating Meeting
-              </p>
-            </div>
-          </div>
-        {:else}
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <button
-            style="background-color: {meeting.role != null
-              ? meeting.role.color + '1E'
-              : 'transparent'};"
-            aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar."
-            on:click={() => {
-              if ($selected.length != 0) {
-                selected.toggle(meeting.id);
-              } else {
-                goto(
-                  "/t/" +
-                    $team +
-                    "/meetings/" +
-                    meeting.id +
-                    (data.public ? "?public=" + data.public : ""),
-                );
-              }
-            }}
-            class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(
-              meeting.id,
-            )
-              ? '-outline-offset-1 outline-2 outline-blue-500 outline'
-              : 'outline-2 outline -outline-offset-1 outline-transparent'}"
-          >
-            <div class="ml-4">
-              {#if meeting.thumbnail.startsWith("icon:")}
-                <Icon
-                  scale="2rem"
-                  icon={meeting.thumbnail.substring(
-                    5,
-                    meeting.thumbnail.length,
-                  )}
-                />
-              {/if}
-            </div>
-            <div
-              class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden"
-            >
-              <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-                {meeting.name}
-              </p>
-              <div
-                class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"
-              ></div>
-              <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-                {#if meeting.location == "Google Meet Link Insert"}
-                  On <a
-                    class="underline text-blue-600 dark:text-blue-500"
-                    href={meeting.link}>Google Meet</a
-                  >
-                {:else}
-                  {meeting.location}
+    </div>
+    <div class="p-4 pb-2">
+        {#each data.meetings as meeting, i (meeting.id)}
+            <div animate:flip>
+                {#if showTime(data.meetings, i)}
+                    <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
+                        {#if isToday(data.meetings[i].starts)}
+                            Today
+                        {:else}
+                            {format.format(meeting.starts, "dddd, MMMM DD")}
+                        {/if}
+                    </p>
                 {/if}
-              </p>
-              <div
-                class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"
-              ></div>
-              <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-                {format.format(meeting.starts, "h:mm a")} - {format.format(
-                  meeting.ends,
-                  "h:mm a",
-                )}
-              </p>
-              {#if meeting.role != null}
-                <div
-                  class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-3 h-4/6"
-                ></div>
-                <div class="flex items-center gap-2 ml-4 md:ml-0">
-                  <div
-                    style="background-color: {meeting.role.color};"
-                    class="h-4 w-4 rounded-full"
-                  ></div>
-                  <p class="text-left lg:text-lg -ml-0.5">
-                    {meeting.role.name}
-                  </p>
-                </div>
-              {/if}
-              {#if meeting.signups.length > 0}
-                <div
-                  class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"
-                ></div>
-                <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
-                  {#each meeting.signups as signup, i}
-                    <div
-                      class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full"
-                    >
-                      <Tooltip
-                        text="{signup.displayName}{signup.pronouns != ''
-                          ? ' (' + signup.pronouns + ')'
-                          : ''}"
-                      >
-                        <img
-                          style="border-color: {meeting.role != null
-                            ? meeting.role.color + '1E'
-                            : 'transparent'};"
-                          class=" h-8 w-8 md:w-10 md:h-10 border-[4px] rounded-full"
-                          alt="{signup.displayName}{signup.pronouns != ''
-                            ? ' (' + signup.pronouns + ')'
-                            : ''}'s Profile"
-                          src={signup.photoURL}
-                        />
-                      </Tooltip>
+            {#if meeting.version != PUBLIC_MEETING_VERSION}
+                <div class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-alloutline-2 outline -outline-offset-1 outline-transparent">
+                    <div class="ml-4">
+                        <div class="animate-spin">
+                            <Icon style="transform: scaleX(-1);" scale=2rem icon="sync"/>
+                        </div>
                     </div>
-                  {/each}
+                    <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full overflow-auto">
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">Updating Meeting</p>
+                    </div>
                 </div>
-              {/if}
-            </div>
-            <Menu
-              on:click={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <MenuButton
-                on:click={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10"
-              >
-                <Icon
-                  scale={0}
-                  class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]"
-                  rounded={true}
-                  icon="more_vert"
-                />
-              </MenuButton>
-              <MenuItems>
-                <div
-                  style="max-height: {maxheight}px;"
-                  on:introstart={menuCheck}
-                  transition:slide={{ duration: 0 }}
-                  bind:this={menu}
-                  class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto"
-                >
-                  <MenuItem
-                    on:click={() => {
-                      gotoMeeting(meeting.id);
-                    }}
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    Go to Page
-                    <Icon scale="1.15rem" icon="description"></Icon>
-                  </MenuItem>
-                  <MenuItem
-                    href="https://www.notion.so/{meeting.notion.replaceAll(
-                      '-',
-                      '',
-                    )}"
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    Notion
-                    <Icon scale="1.15rem" icon="open_in_new"></Icon>
-                  </MenuItem>
-                  {#if (!(meeting.role == null || (meeting.role && !meeting.role.permissions.includes("LEAVE_SIGNUP"))) || $permissions.includes("MODERATE_MEETINGS")) && data.verified}
-                    <MenuItem
-                      on:click={async (event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
+            {:else}
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <button style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } else { goto("/t/" + $team + "/meetings/" + meeting.id + (data.public ? "?public=" + data.public : "")); }} } class="flex box-content bg-opacity-10 items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">        
+                    <div class="ml-4">
+                        {#if meeting.thumbnail.startsWith("icon:")}
+                            <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
+                        {/if}
+                    </div>
+                    <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden">
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
+                            {#if meeting.location == "Google Meet Link Insert"}
+                                On <a class="underline text-blue-600 dark:text-blue-500" href="{meeting.link}">Google Meet</a>
+                            {:else}
+                                {meeting.location}
+                            {/if}
+                        </p>
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
+                        {#if meeting.role != null}
+                            <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-3 h-4/6"></div>
+                            <div class="flex items-center gap-2 ml-4 md:ml-0">
+                                <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
+                                <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
+                            </div>
+                        {/if}
+                        {#if meeting.signups.length > 0 || meeting.guests.length > 0}
+                            <div class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                            <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
+                                {#each meeting.signups as signup, i}
+                                    <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                        <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
+                                            <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
+                                        </Tooltip>
+                                    </div>
+                                {/each}
+                                {#each meeting.guests as guest}
+                                <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                    <Tooltip text="{guest}">
+                                        <div style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class="h-8 w-8 md:w-10 md:h-10 rounded-full border-[4px] overflow-hidden">
+                                            <div class="w-full h-full bg-accent-500 flex justify-around items-center">
+                                                <p class="text-black font-bold md:text-lg">{guest.substring(0, 1).toUpperCase()}</p>
+                                            </div>
+                                        </div>
+                                    </Tooltip>
+                                </div>
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+                    <Menu on:click={(e) => { e.stopPropagation(); }}>
+                        <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
+                            <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
+                        </MenuButton>
+                        <MenuItems>
+                            <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
+                                <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Go to Page
+                                    <Icon scale=1.15rem icon=description></Icon>
+                                </MenuItem>
+                                <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Notion
+                                    <Icon scale=1.15rem icon=open_in_new></Icon>
+                                </MenuItem>
+                                {#if (!(meeting.role == null || (meeting.role && !meeting.role.permissions.includes('LEAVE_SIGNUP'))) || $permissions.includes('MODERATE_MEETINGS')) && data.verified}
+                                    <MenuItem on:click={async (event) => { 
+                                        event.preventDefault(); 
+                                        event.stopPropagation(); 
 
                         if (includesSignup(meeting.signups)) {
                           await remove(meeting.id, warning, client, $team);

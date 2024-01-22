@@ -267,306 +267,150 @@
   bind:innerHeight={windowHeight}
 />
 
-<div
-  class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 overflow-x-auto"
->
-  <div class="p-4 pb-0 flex justify-between items-center">
-    <p class="ml-1">
-      Showing {data.page.showing} / {data.page.total.count} Completed Meetings
-    </p>
-    <div class="flex gap-2 ml-4">
-      <svelte:element
-        this={data.page.beginning ? "button" : "a"}
-        disabled={data.page.beginning}
-        href="/t/{$team}/meetings/completed/1"
-        class="b-secondary disabled:opacity-50 rotate-180"
-        ><Icon icon="double_arrow"></Icon></svelte:element
-      >
-      <svelte:element
-        this={data.page.beginning ? "button" : "a"}
-        disabled={data.page.beginning}
-        href="/t/{$team}/meetings/completed/{data.page.on - 1}"
-        class="b-secondary disabled:opacity-50"
-        ><Icon icon="arrow_back"></Icon></svelte:element
-      >
-      <svelte:element
-        this={data.page.end ? "button" : "a"}
-        disabled={data.page.end}
-        href="/t/{$team}/meetings/completed/{data.page.on + 1}"
-        class="b-secondary disabled:opacity-50"
-        ><Icon icon="arrow_forward"></Icon></svelte:element
-      >
-      <svelte:element
-        this={data.page.end ? "button" : "a"}
-        disabled={data.page.end}
-        href="/t/{$team}/meetings/completed/{data.page.total.pages}"
-        class="b-secondary disabled:opacity-50"
-        ><Icon icon="double_arrow"></Icon></svelte:element
-      >
+<div class="min-h-[calc(100dvh-3rem)] lg:min-h-[calc(100dvh-3.5rem)] pt-[4.5rem] w-full bg-zinc-100 dark:bg-zinc-900 overflow-x-auto">
+    <div class="p-4 pb-0 flex justify-between items-center">
+        <p class="ml-1">Showing {data.page.showing} / {data.page.total.count} Completed Meetings</p>
+        <div class="flex gap-2 ml-4">
+            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/t/{$team}/meetings/completed/1"  class="b-secondary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
+            <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/t/{$team}/meetings/completed/{data.page.on - 1}"  class="b-secondary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
+            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/t/{$team}/meetings/completed/{data.page.on + 1}" class="b-secondary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
+            <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/t/{$team}/meetings/completed/{data.page.total.pages}"  class="b-secondary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
+        </div>
     </div>
-  </div>
-  <div class="p-4 pb-2">
-    {#each data.meetings as meeting, i (meeting.id)}
-      <div animate:flip>
-        {#if showTime(data.meetings, i)}
-          <p class="mb-4 ml-1 {i == 0 ? 'mt-0' : 'mt-8'} opacity-80">
-            {#if isToday(data.meetings[i].starts)}
-              Today
-            {:else}
-              {format.format(meeting.starts, "dddd, MMMM DD")}
-            {/if}
-          </p>
-        {/if}
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <svelte:element
-          this={$selected.length == 0 ? "a" : "button"}
-          style="background-color: {meeting.role != null
-            ? meeting.role.color + '1E'
-            : 'transparent'};"
-          aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar."
-          on:click={() => {
-            if ($selected.length != 0) {
-              selected.toggle(meeting.id);
-            }
-          }}
-          href="/t/{$team}/meetings/{meeting.id}"
-          class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(
-            meeting.id,
-          )
-            ? '-outline-offset-1 outline-2 outline-blue-500 outline'
-            : 'outline-2 outline -outline-offset-1 outline-transparent'}"
-        >
-          <div class="ml-4">
-            {#if meeting.thumbnail.startsWith("icon:")}
-              <Icon
-                scale="2rem"
-                icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}
-              />
-            {/if}
-          </div>
-          <div
-            class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden"
-          >
-            <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-              {meeting.name}
-            </p>
-            <div
-              class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"
-            ></div>
-            <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-              {#if meeting.location == "Google Meet Link Insert"}
-                On <a
-                  class="underline text-blue-600 dark:text-blue-500"
-                  href={meeting.link}>Google Meet</a
-                >
-              {:else}
-                {meeting.location}
-              {/if}
-            </p>
-            <div
-              class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"
-            ></div>
-            <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
-              {format.format(meeting.starts, "h:mm a")} - {format.format(
-                meeting.ends,
-                "h:mm a",
-              )}
-            </p>
-            {#if meeting.role != null}
-              <div
-                class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"
-              ></div>
-              <div class="flex items-center gap-2">
-                <p class="text-left lg:text-lg ml-4">Group:</p>
-                <div
-                  style="background-color: {meeting.role.color};"
-                  class="h-4 w-4 rounded-full"
-                ></div>
-                <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
-              </div>
-            {/if}
-            {#if meeting.signups.length > 0}
-              <div
-                class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"
-              ></div>
-              <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
-                {#each meeting.signups as signup, i}
-                  <div
-                    class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full"
-                  >
-                    <Tooltip
-                      text="{signup.displayName}{signup.pronouns != ''
-                        ? ' (' + signup.pronouns + ')'
-                        : ''}"
-                    >
-                      <img
-                        style="border-color: {meeting.role != null
-                          ? meeting.role.color + '1E'
-                          : 'transparent'};"
-                        class=" h-8 w-8 md:w-10 md:h-10 border-[4px] rounded-full"
-                        alt="{signup.displayName}{signup.pronouns != ''
-                          ? ' (' + signup.pronouns + ')'
-                          : ''}'s Profile"
-                        src={signup.photoURL}
-                      />
-                    </Tooltip>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
-          <Menu>
-            <MenuButton
-              on:click={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10"
-            >
-              <Icon
-                scale={0}
-                class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]"
-                rounded={true}
-                icon="more_vert"
-              />
-            </MenuButton>
-            <MenuItems>
-              <div
-                style="max-height: {maxheight}px;"
-                on:introstart={menuCheck}
-                transition:slide={{ duration: 0 }}
-                bind:this={menu}
-                class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto"
-              >
-                <MenuItem
-                  on:click={() => {
-                    gotoMeeting(meeting.id);
-                  }}
-                  class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                >
-                  Go to Page
-                  <Icon scale="1.15rem" icon="description"></Icon>
-                </MenuItem>
-                <MenuItem
-                  href="https://www.notion.so/{meeting.notion.replaceAll(
-                    '-',
-                    '',
-                  )}"
-                  class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                >
-                  Notion
-                  <Icon scale="1.15rem" icon="open_in_new"></Icon>
-                </MenuItem>
-                <MenuItem
-                  href="/t/{$team}/synopsis/{meeting.id}/"
-                  class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                >
-                  Synopsis
-                  <Icon scale="1.15rem" icon="summarize"></Icon>
-                </MenuItem>
-                {#if $permissions.includes("DELETE_MEETINGS") || $permissions.includes("CREATE_MEETINGS") || $permissions.includes("LEAVE_SIGNUP")}
-                  <MenuItem
-                    on:click={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      selected.toggle(meeting.id);
-                    }}
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    {#if $selected.includes(meeting.id)}
-                      Deselect
-                      <Icon scale="1.15rem" icon="radio_button_checked"></Icon>
+    <div class="p-4 pb-2">
+        {#each data.meetings as meeting, i (meeting.id)}
+            <div animate:flip>
+            {#if showTime(data.meetings, i)}
+                <p class="mb-4 ml-1 {i == 0 ? "mt-0" : "mt-8"} opacity-80">
+                    {#if isToday(data.meetings[i].starts)}
+                        Today
                     {:else}
-                      Select
-                      <Icon scale="1.15rem" icon="radio_button_unchecked"
-                      ></Icon>
+                        {format.format(meeting.starts, "dddd, MMMM DD")}
                     {/if}
-                  </MenuItem>
-                {/if}
-                {#if $permissions.includes("CREATE_MEETINGS")}
-                  <MenuItem
-                    href="/t/{$team}/meetings/{meeting.id}/duplicate"
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    Duplicate
-                    <Icon scale="1.15rem" icon="content_copy"></Icon>
-                  </MenuItem>
-                {/if}
-                {#if $dev}
-                  <MenuItem
-                    target="_blank"
-                    href="https://console.firebase.google.com/u/0/project/frc-skywalkers{env
-                      ? '-dev'
-                      : ''}/firestore/data/~2Fteams~2F{$team}~2Fmeetings~2F{meeting.id}"
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    Firebase
-                    <Icon scale="1.15rem" icon="terminal"></Icon>
-                  </MenuItem>
-                  <MenuItem
-                    on:click={(e) => {
-                      navigator.clipboard.writeText(meeting.id);
-                    }}
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    Copy ID
-                    <Icon scale="1.15rem" icon="content_copy"></Icon>
-                  </MenuItem>
-                  <MenuItem
-                    class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md"
-                  >
-                    <p>Version</p>
-                    <p>{meeting.version}</p>
-                  </MenuItem>
-                {/if}
-              </div>
-            </MenuItems>
-          </Menu>
-        </svelte:element>
-      </div>
-    {:else}
-      <div class="w-screen absolute left-0 flex justify-around pt-8">
-        <p class="text-2xl text-red-500 dark:text-red-500 font-bold">
-          No Meetings Found
-        </p>
-      </div>
-    {/each}
-  </div>
-  {#if data.meetings.length != 0}
-    <div class="flex justify-around md:block md:float-right p-4 pt-0">
-      <div class="flex gap-2 items-center">
-        <svelte:element
-          this={data.page.beginning ? "button" : "a"}
-          disabled={data.page.beginning}
-          href="/t/{$team}/meetings/completed/1"
-          class="b-secondary disabled:opacity-50 rotate-180"
-          ><Icon icon="double_arrow"></Icon></svelte:element
-        >
-        <svelte:element
-          this={data.page.beginning ? "button" : "a"}
-          disabled={data.page.beginning}
-          href="/t/{$team}/meetings/completed/{data.page.on - 1}"
-          class="b-secondary disabled:opacity-50"
-          ><Icon icon="arrow_back"></Icon></svelte:element
-        >
-        <p class="mx-2">{data.page.showing} / {data.page.total.count}</p>
-        <svelte:element
-          this={data.page.end ? "button" : "a"}
-          disabled={data.page.end}
-          href="/t/{$team}/meetings/completed/{data.page.on + 1}"
-          class="b-secondary disabled:opacity-50"
-          ><Icon icon="arrow_forward"></Icon></svelte:element
-        >
-        <svelte:element
-          this={data.page.end ? "button" : "a"}
-          disabled={data.page.end}
-          href="/t/{$team}/meetings/completed/{data.page.total.pages}"
-          class="b-secondary disabled:opacity-50"
-          ><Icon icon="double_arrow"></Icon></svelte:element
-        >
-      </div>
+                </p>
+            {/if}
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
+            <svelte:element  style="background-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" aria-roledescription="Meeting Listing, when clicked, goes to meeting listing, or gets selected if selecting meetings for action bar." this={$selected.length == 0 ? "a" : "button"} on:click={() => { if($selected.length != 0) { selected.toggle(meeting.id); } }} href="/t/{$team}/meetings/{meeting.id}" class="flex box-content items-center w-full p-0 border-[1px] border-border-light dark:border-border-dark rounded-2xl md:rounded-full h-auto md:h-12 lg:h-[3.5rem] mb-2 transition-all {$selected.includes(meeting.id) ? "-outline-offset-1 outline-2 outline-blue-500 outline" : "outline-2 outline -outline-offset-1 outline-transparent"}">
+                <div class="ml-4">
+                    {#if meeting.thumbnail.startsWith("icon:")}
+                        <Icon scale=2rem icon={meeting.thumbnail.substring(5, meeting.thumbnail.length)}/>
+                    {/if}
+                </div>
+                <div class="flex-grow-[1] flex flex-col md:flex-row md:items-center my-3 md:my-0 h-full gap-1 md:gap-0 w-full md:overflow-auto overflow-hidden">
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{meeting.name}</p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">
+                        {#if meeting.location == "Google Meet Link Insert"}
+                            On <a class="underline text-blue-600 dark:text-blue-500" href="{meeting.link}">Google Meet</a>
+                        {:else}
+                            {meeting.location}
+                        {/if}
+                    </p>
+                    <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                    <p class="text-left lg:text-lg ml-4 whitespace-nowrap">{format.format(meeting.starts, "h:mm a")} - {format.format(meeting.ends, "h:mm a")}</p>
+                    {#if meeting.role != null}
+                        <div class="hidden md:block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 -mr-1 h-4/6"></div>
+                        <div class="flex items-center gap-2">
+                            <p class="text-left lg:text-lg ml-4">Group:</p>
+                            <div style="background-color: {meeting.role.color};" class="h-4 w-4 rounded-full"></div>
+                            <p class="text-left lg:text-lg -ml-0.5">{meeting.role.name}</p>
+                        </div>
+                    {/if}
+                    {#if meeting.signups.length > 0 || meeting.guests.length > 0}
+                        <div class="block bg-border-light dark:bg-border-dark min-w-[1px] ml-3 mr-2 h-4/6"></div>
+                        <div class="flex items-center gap-2 ml-3 sm:ml-4 md:ml-0 -my-1">
+                            {#each meeting.signups as signup, i}
+                                <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                    <Tooltip text="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}">
+                                        <img style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class=" h-8 w-8 md:w-10 md:h-10 border-[4px]  rounded-full" alt="{signup.displayName}{signup.pronouns != "" ? " (" + signup.pronouns + ")" : ""}'s Profile" src={signup.photoURL}/>
+                                    </Tooltip>
+                                </div>
+                            {/each}
+                            {#each meeting.guests as guest}
+                            <div class="bg-zinc-100 dark:bg-zinc-900 w-8 md:w-10 md:min-w-[2.5rem] min-w-[2rem] -mr-4 md:-mr-5 rounded-full">
+                                <Tooltip text="{guest}">
+                                    <div style="border-color: {meeting.role != null ? meeting.role.color + "1E" : "transparent" };" class="h-8 w-8 md:w-10 md:h-10 rounded-full border-[4px] overflow-hidden">
+                                        <div class="w-full h-full bg-accent-500 flex justify-around items-center">
+                                            <p class="text-black font-bold md:text-lg">{guest.substring(0, 1).toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                </Tooltip>
+                            </div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
+                <Menu>    
+                    <MenuButton on:click={(event) => { event.preventDefault(); event.stopPropagation();}} class="rounded-full b-clear transition h-8 w-8 lg:w-[2.5rem] lg:h-[2.5rem] mr-2 flex items-center justify-around bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10">
+                        <Icon scale={0} class="text-[1.5rem] w-[1.5rem] h-[1.5rem] lg:text-[1.6rem] lg:w-[1.5rem] lg:h-[1.6rem]" rounded={true} icon=more_vert/>
+                    </MenuButton>
+                    <MenuItems>
+                        <div style="max-height: {maxheight}px;" on:introstart={menuCheck} transition:slide={{ duration: 0, }} bind:this={menu} class="absolute z-10 right-6 max-w-[9.5rem] bg-backgroud-light dark:bg-backgroud-dark p-1.5 border-border-light dark:border-border-dark border-[1px] rounded-lg shadow-lg shadow-shadow-light dark:shadow-shadow-dark overflow-auto">
+                            <MenuItem on:click={() => { gotoMeeting(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Go to Page
+                                <Icon scale=1.15rem icon=description></Icon>
+                            </MenuItem>
+                            <MenuItem href="https://www.notion.so/{meeting.notion.replaceAll("-", "")}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Notion
+                                <Icon scale=1.15rem icon=open_in_new></Icon>
+                            </MenuItem>
+                            <MenuItem href="/t/{$team}/synopsis/{meeting.id}/" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                Synopsis
+                                <Icon scale=1.15rem icon=summarize></Icon>
+                            </MenuItem>
+                            {#if $permissions.includes('DELETE_MEETINGS') || $permissions.includes('CREATE_MEETINGS') || $permissions.includes('LEAVE_SIGNUP')}
+                                <MenuItem on:click={(e) => { e.preventDefault(); e.stopPropagation(); selected.toggle(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    {#if $selected.includes(meeting.id)}
+                                        Deselect
+                                        <Icon scale=1.15rem icon=radio_button_checked></Icon>
+                                    {:else}
+                                        Select
+                                        <Icon scale=1.15rem icon=radio_button_unchecked></Icon>
+                                    {/if}
+                                </MenuItem>
+                            {/if}
+                            {#if $permissions.includes('CREATE_MEETINGS')}
+                                <MenuItem href="/t/{$team}/meetings/{meeting.id}/duplicate" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Duplicate
+                                    <Icon scale=1.15rem icon=content_copy></Icon>
+                                </MenuItem>
+                            {/if}
+                            {#if $dev}
+                                <MenuItem target="_blank" href="https://console.firebase.google.com/u/0/project/frc-skywalkers{env ? "-dev" : ""}/firestore/data/~2Fteams~2F{$team}~2Fmeetings~2F{meeting.id}" class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Firebase
+                                    <Icon scale=1.15rem icon=terminal></Icon>
+                                </MenuItem>
+                                <MenuItem on:click={(e) => { navigator.clipboard.writeText(meeting.id); }} class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    Copy ID
+                                    <Icon scale=1.15rem icon=content_copy></Icon>
+                                </MenuItem>
+                                <MenuItem class="flex items-center justify-between float-left px-2 py-1 bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 transition w-full text-left rounded-md">
+                                    <p>Version</p>
+                                    <p>{meeting.version}</p>
+                                </MenuItem>
+                            {/if}
+                        </div>
+                    </MenuItems>
+                </Menu>
+            </svelte:element>
+            </div>
+        {:else}
+            <div class="w-screen absolute left-0 flex justify-around pt-8">
+                <p class="text-2xl text-red-500 dark:text-red-500 font-bold">No Meetings Found</p>
+            </div>
+        {/each}
     </div>
-  {/if}
+    {#if data.meetings.length != 0}
+        <div class="flex justify-around md:block md:float-right p-4 pt-0">
+            <div class="flex gap-2 items-center">
+                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/t/{$team}/meetings/completed/1"  class="b-secondary disabled:opacity-50 rotate-180"><Icon icon=double_arrow></Icon></svelte:element>
+                <svelte:element this={data.page.beginning ? "button" : "a"} disabled={data.page.beginning}  href="/t/{$team}/meetings/completed/{data.page.on - 1}"  class="b-secondary disabled:opacity-50"><Icon icon=arrow_back></Icon></svelte:element>
+                <p class="mx-2">{data.page.showing} / {data.page.total.count}</p>
+                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end} href="/t/{$team}/meetings/completed/{data.page.on + 1}" class="b-secondary disabled:opacity-50"><Icon icon=arrow_forward></Icon></svelte:element>
+                <svelte:element this={data.page.end ? "button" : "a"} disabled={data.page.end}  href="/t/{$team}/meetings/completed/{data.page.total.pages}"  class="b-secondary disabled:opacity-50"><Icon icon=double_arrow></Icon></svelte:element>
+            </div>
+        </div>
+    {/if}
 </div>
 
 {#if !data.completed}

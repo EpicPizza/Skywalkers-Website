@@ -134,6 +134,6 @@ export const actions = {
       }),
     });
 
-    return message(form, "Success");
-  },
-};
+        return message(form, "Success");
+    }   
+}

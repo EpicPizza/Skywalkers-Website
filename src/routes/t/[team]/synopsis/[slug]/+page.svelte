@@ -122,138 +122,71 @@
 </svelte:head>
 
 <div class="min-h-[calc(100dvh)] p-8 pt-[88px] flex justify-around">
-  <div
-    class="w-[36rem] max-w-[36rem] lg:w-[44rem] lg:max-w-[44rem] overflow-clip"
-  >
-    <div class="w-full flex justify-between">
-      <a
-        href="/meetings/{data.meeting.id}"
-        class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg"
-      >
-        <Icon
-          scale={0}
-          class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]"
-          icon="arrow_back"
-        ></Icon>
-        <p>Back</p>
-      </a>
-    </div>
-    <div class="sticky top-24 z-10">
-      <div
-        class="p-4 lg:p-6 bg-accent-500 text-black rounded-2xl flex items-center"
-      >
-        {#if data.meeting.thumbnail.startsWith("icon:")}
-          <Icon
-            scale={0}
-            class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]"
-            icon={data.meeting.thumbnail.substring(
-              5,
-              data.meeting.thumbnail.length,
-            )}
-          />
-        {/if}
-        <div class="ml-4 lg:ml-5">
-          <div class="text-2xl lg:text-3xl lg:mb-1">
-            Synopsis for {data.meeting.name}
-          </div>
-          <div class="text-lg lg:text-xl opacity-80">
-            At {data.meeting.location}
-          </div>
+    <div class="w-[36rem] max-w-[36rem] lg:w-[44rem] lg:max-w-[44rem] overflow-clip">
+        <div class="w-full flex justify-between">
+            <a href="/t/{$team}/meetings/{data.meeting.id}" class="flex gap-1 p-1 mb-2 pr-2 items-center bg-black dark:bg-white bg-opacity-0 dark:bg-opacity-0 hover:bg-opacity-10 dark:hover:bg-opacity-10 rounded-md transition lg:text-lg">
+                <Icon scale={0} class="text-[1.25rem] w-[1.25rem] h-[1.25rem] lg:text-[1.5rem] lg:w-[1.5rem] lg:h-[1.5rem]" icon=arrow_back></Icon>
+                <p>Back</p>
+            </a>
         </div>
-      </div>
-    </div>
-    <Markdown content={data.synopsis.body} />
-    <JustifiedGrid columnRange={2} gap={10}>
-      {#each photos as attachment}
-        <Image name={attachment.name} url={attachment.url}></Image>
-      {/each}
-    </JustifiedGrid>
-    {#if data.synopsis.attachments.length == 0}
-      <div class="mb-4"></div>
-    {/if}
-    {#each files as attachment}
-      <div
-        class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto"
-      >
-        <button
-          on:click={() => {
-            download(attachment.url, attachment.name + "." + attachment.ext);
-          }}
-        >
-          {#if loading.includes(attachment.url)}
-            <div
-              class="w-5 h-5 mx-0.5 rounded-full border-[3px] border-t-black dark:border-t-white border-b-transparent border-l-transparent border-r-transparent animate-spin"
-            ></div>
-          {:else}
-            <Icon icon="download"></Icon>
-          {/if}
-        </button>
-        <p>{attachment.name}</p>
-        <p
-          class="p-1 px-3 rounded-full bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10"
-        >
-          {attachment.ext}
-        </p>
-      </div>
-    {/each}
-    <div
-      class="my-4 p-4 lg:p-6 border-border-light dark:border-border-dark border-[1px] rounded-2xl"
-    >
-      <div class="gap-4 flex flex-col">
-        {#each data.synopsis.hours as entry}
-          {@const role = getRole(entry.member)}
-          <div
-            class="flex items-center gap-2.5 {entry.time == 0
-              ? 'opacity-25'
-              : ''}"
-          >
-            <img
-              class="h-8 w-8 lg:h-9 lg:w-9 rounded-full"
-              alt="{entry.member.displayName}{entry.member.pronouns == ''
-                ? ''
-                : ' (' + entry.member.pronouns + ')'}'s Profile"
-              src={entry.member.photoURL}
-            />
-            <p
-              class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis {entry
-                .member.photoURL == '/unknown.webp'
-                ? 'italic'
-                : ''}"
-            >
-              {entry.member.displayName}{entry.member.pronouns == ""
-                ? ""
-                : " (" + entry.member.pronouns + ")"}
-            </p>
-            {#if role == "student"}
-              <a
-                href="/hours/{entry.member.id}"
-                class="bg-black dark:bg-white bg-opacity-10 ml-1 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg"
-                >{entry.time} hour{entry.time == 1 ? "" : "s"}</a
-              >
-            {/if}
-          </div>
-        {:else}
-          <div class="flex justify-around">
-            <p>No Members Participated</p>
-          </div>
+        <div class="sticky top-24 z-10">
+            <div class="p-4 lg:p-6 bg-accent-500 text-black rounded-2xl flex items-center">
+                {#if data.meeting.thumbnail.startsWith("icon:")}
+                    <Icon scale={0} class="text-[4rem] w-[4rem] h-[4rem] lg:text-[5rem] lg:w-[5rem] lg:h-[5rem]" icon={data.meeting.thumbnail.substring(5, data.meeting.thumbnail.length)}/>
+                {/if}
+                <div class="ml-4 lg:ml-5">
+                    <div class="text-2xl lg:text-3xl lg:mb-1">Synopsis for {data.meeting.name}</div>
+                    <div class="text-lg lg:text-xl opacity-80">At {data.meeting.location}</div>
+                </div>
+            </div>
+        </div>
+        <Markdown content={data.synopsis.body}/>
+        <JustifiedGrid columnRange={2} gap={10}>
+            {#each photos as attachment}
+                <Image name={attachment.name} url={attachment.url}></Image>
+            {/each}
+        </JustifiedGrid>
+        {#if data.synopsis.attachments.length == 0}
+            <div class="mb-4"></div>
+        {/if}
+        {#each files as attachment}
+            <div class="inline-flex bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10 p-2 px-3 rounded-lg w-fit items-center gap-2 mb-2 mr-2 max-w-full overflow-x-auto">
+                <button on:click={() => { download(attachment.url, attachment.name + "." + attachment.ext); }}>
+                    {#if loading.includes(attachment.url)}
+                        <div class="w-5 h-5 mx-0.5 rounded-full border-[3px] border-t-black dark:border-t-white border-b-transparent border-l-transparent border-r-transparent animate-spin"></div>
+                    {:else}
+                        <Icon icon=download></Icon>
+                    {/if}
+                </button>
+                <p>{attachment.name}</p>
+                <p class="p-1 px-3 rounded-full bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10">{attachment.ext}</p>
+            </div>
         {/each}
-      </div>
+        <div class="my-4 p-4 lg:p-6 border-border-light dark:border-border-dark border-[1px] rounded-2xl">
+            <div class="gap-4 flex flex-col">
+                {#each data.synopsis.hours as entry}
+                    {@const role = getRole(entry.member)}
+                    <div class="flex items-center gap-2.5 {entry.time == 0 ? "opacity-25" : ""}">
+                        <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full" alt="{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}'s Profile" src={entry.member.photoURL}/>
+                        <p class="text-lg lg:text-xl grow overflow-hidden whitespace-nowrap overflow-ellipsis {entry.member.photoURL == '/unknown.webp' ? "italic" : ""}">{entry.member.displayName}{entry.member.pronouns == "" ? "" : " (" + entry.member.pronouns + ")"}</p>
+                        {#if role == 'student'}
+                            <a href="/t/{$team}/hours/{entry.member.id}" class="bg-black  dark:bg-white bg-opacity-10 ml-1 text-center text-lg dark:bg-opacity-10 p-1 px-2 rounded-lg">{entry.time} hour{entry.time == 1 ? "" : 's'}</a>
+                        {/if}
+                    </div>
+                {:else}
+                    <div class="flex justify-around">
+                        <p>No Members Participated</p>
+                    </div>
+                {/each}
+            </div>  
+        </div>
+        <div class="flex flex-row-reverse gap-2">
+            {#if $permissions.includes('EDIT_SYNOPSES')}
+                <a href="/t/{team}/synopsis/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
+            {/if}
+            {#if $permissions.includes('MODERATE_SYNOPSES')}
+                <a href="/t/{team}/synopsis/{data.meeting.id}/reject" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=cancel/><span>Reject</span></a>
+            {/if}
+        </div>
     </div>
-    <div class="flex flex-row-reverse gap-2">
-      {#if $permissions.includes("EDIT_SYNOPSES")}
-        <a
-          href="/synopsis/{data.meeting.id}/edit"
-          class="b-secondary lg:text-lg flex gap-1 items-center"
-          ><Icon scale="1.25rem" icon="edit" /><span>Edit</span></a
-        >
-      {/if}
-      {#if $permissions.includes("MODERATE_SYNOPSES")}
-        <a
-          href="/synopsis/{data.meeting.id}/reject"
-          class="b-secondary lg:text-lg flex gap-1 items-center"
-          ><Icon scale="1.25rem" icon="cancel" /><span>Reject</span></a
-        >
-      {/if}
-    </div>
-  </div>
 </div>

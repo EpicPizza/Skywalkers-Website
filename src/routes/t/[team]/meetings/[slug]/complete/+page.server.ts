@@ -169,11 +169,11 @@ export const actions = {
       } else if (form.data.discord) {
         let user = await getMember(form.data.hours[i].id, locals.team);
 
-        if (user) {
-          names.push(user.displayName);
+                if(user && form.data.hours[i].time != 0) {
+                    names.push(user.displayName);
+                }
+            }
         }
-      }
-    }
 
     for (let j = 0; j < signups.length; j++) {
       let found = false;
@@ -297,36 +297,15 @@ export const actions = {
 
         if (!data) throw error(400, "Hours not found.");
 
-        toUpdate.push({
-          ref,
-          data: {
-            total: data.total + form.data.hours[i].time,
-            entries: FieldValue.arrayUnion({
-              total: form.data.hours[i].time,
-              id: form.data.id,
-              latest: 0,
-              history: [
-                {
-                  total: form.data.hours[i].time,
-                  link:
-                    DOMAIN + "/t/" + locals.team + "/synopsis/" + form.data.id,
-                  reason:
-                    meeting.name +
-                    " - " +
-                    format.format(meeting.starts, "M/D/Y"),
-                  id: uid,
-                  date: new Date().valueOf(),
-                  indicator: meetingIndicator,
-                },
-              ],
-            }),
-          },
-        });
-      }
+                toUpdate.push({ref, data: {
+                    total: data.total + form.data.hours[i].time,
+                    entries: FieldValue.arrayUnion({ total: form.data.hours[i].time, id: form.data.id, latest: 0, history: [{ total: form.data.hours[i].time, link: DOMAIN + "/t/" + locals.team + "/synopsis/" + form.data.id, reason: meeting.name + " - " + format.format(new Date(meeting.starts.valueOf() - (1000 * 60 * 60 * 8)), "M/D/Y"), id: uid, date: new Date().valueOf(), indicator: meetingIndicator }]})
+                }});
+            }
 
-      for (let i = 0; i < toUpdate.length; i++) {
-        t.update(toUpdate[i].ref, toUpdate[i].data);
-      }
+            for(let i = 0; i < toUpdate.length; i++) {
+                t.update(toUpdate[i].ref, toUpdate[i].data);
+            }
 
       t.create(synopsisRef, synopsis);
 

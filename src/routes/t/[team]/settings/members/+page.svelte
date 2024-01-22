@@ -61,10 +61,8 @@
 
       const db = client.getFirestore();
 
-      unsubscribeFirestoreVerified = onSnapshot(
-        query(collection(db, "users"), where("team", "array-contains", $team)),
-        (snapshot) => {
-          let users = new Array<SecondaryUser>();
+            unsubscribeFirestoreVerified = onSnapshot(query(collection(db, "users"), where('team', 'array-contains-any', [ $team ])), (snapshot) => {
+                let users = new Array<SecondaryUser>();
 
           for (let i = 0; i < snapshot.docs.length; i++) {
             users.push({

@@ -382,14 +382,13 @@ export function firebaseClient() {
 
         const inTeams = Array.from(currentUser.teams, (team) => team.team);
 
-        for (let i = 0; i < cache.teams.length; i++) {
-          if (inTeams.includes(cache.teams[i].team)) {
-            cache.teams[i].roles = await getSpecifiedRoles(
-              cache.teams[i].roles as unknown as DocumentReference[],
-              cache.teams[i].team,
-            );
-          }
-        }
+                for(let i = 0 ; i < cache.teams.length; i++) {
+                    if(inTeams.includes(cache.teams[i].team)) {
+                      if(cache.teams[i].roles[0] && 'parent' in cache.teams[i].roles[0]) {
+                        cache.teams[i].roles = await getSpecifiedRoles(cache.teams[i].roles as unknown as DocumentReference[], cache.teams[i].team)
+                      }
+                    }
+                }
 
         cacheUser(id, cache as SecondaryUser);
 

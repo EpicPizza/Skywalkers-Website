@@ -334,26 +334,21 @@ export const actions = {
             }
           }
 
-          change = true;
-          by = form.data.hours[i].time;
-          data.entries.push({
-            latest: 0,
-            total: form.data.hours[i].time,
-            id: params.slug,
-            history: [
-              {
-                total: form.data.hours[i].time,
-                link:
-                  DOMAIN + "/t/" + locals.team + "/synopsis/" + form.data.id,
-                reason:
-                  meeting.name + " - " + format.format(meeting.starts, "M/D/Y"),
-                id: uid,
-                date: new Date().valueOf(),
-                indicator: meetingIndicator,
-              },
-            ],
-          });
-        })();
+                    change = true;
+                    by = form.data.hours[i].time;
+                    data.entries.push({
+                        latest: 0,
+                        total: form.data.hours[i].time,
+                        id: params.slug,
+                        history: [{ 
+                            total: form.data.hours[i].time, 
+                            link: DOMAIN + "/t/" + locals.team +  "/synopsis/" + form.data.id, reason: meeting.name + " - " + format.format(new Date(meeting.starts.valueOf() - (1000 * 60 * 60 * 8)), "M/D/Y"), 
+                            id: uid, 
+                            date: new Date().valueOf(), 
+                            indicator: meetingIndicator 
+                        }]
+                    })
+                })();
 
         if (change) {
           toUpdate.push({
