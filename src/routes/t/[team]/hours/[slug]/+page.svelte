@@ -28,6 +28,7 @@
   import type { createCurrentTeam } from "$lib/stores.js";
   import { page } from "$app/stores";
 
+  const permissions = getContext('permissions') as Writable<string[]>;
   const team = getContext("team") as Writable<string>;
   let teamInfo = getContext("teamInfo") as Writable<
     Map<string, { name: string; website: string; icon: string }>
@@ -119,9 +120,27 @@
     { clearOnSubmit: "errors-and-message" },
   );
 
+  const strikeValidated = superForm(
+    data.forms.strike,
+    { clearOnSubmit: "errors-and-message" },
+  );
+
   $: {
     if ($message == "Success") {
       reset();
+    }
+  }
+
+  const strikeMessage = strikeValidated.message;
+  const strikeReset = strikeValidated.reset;
+  const strikeDelayed = strikeValidated.delayed;
+  const strikeAllErrors = strikeValidated.allErrors;
+  const strikeForm = strikeValidated.form;
+  const strikeEnhance = strikeValidated.enhance;
+
+  $: {
+    if ($strikeMessage == "Success") {
+      strikeReset();
     }
   }
 
@@ -198,7 +217,7 @@
           <p>Add<span class="mx-0.5">/</span>Remove Hours</p>
         </div>
         <div class="w-full">
-          <form method="POST" use:enhance>
+          <form action=?/hours method="POST" use:enhance>
             <textarea
               name="reason"
               placeholder="Add Reason"
@@ -263,6 +282,44 @@
           </form>
         </div>
       </div>
+      {#if $permissions.includes("KICK_MEMBERS")}
+        <div
+          class="rounded-lg border-border-light dark:border-border-dark border-[1px] p-4 flex flex-col items-center gap-4 mb-6"
+        >
+          <div class="flex items-center gap-2">
+            <Icon icon="lock" />
+            <p>Strike</p>
+          </div>
+          <div class="w-full">
+            <form method="POST" action=?/strike use:strikeEnhance>
+              <textarea
+                name="reason"
+                placeholder="Add Reason"
+                bind:value={$strikeForm.reason}
+                on:input={() => {
+                  $strikeForm.reason = $strikeForm.reason.replace(/\n/g, "");
+                }}
+                class="p-2 rounded-md w-full h-16 mb-0 whitespace-pre-wrap"
+              />
+              <div class="flex justify-between">
+                  <div class="flex items-center ml-auto gap-2">
+                    {#if $strikeDelayed}
+                      <div
+                        class="scale-75 flex items-center h-[2.125rem] overflow-hidden"
+                      >
+                        <Loading />
+                      </div>
+                    {/if}
+                    <button class="b-primary">
+                      Post
+                    </button>
+                  </div>
+              </div>
+              <Error disallowMessage="Success" allErrors={strikeAllErrors} message={strikeMessage} />
+            </form>
+          </div>
+        </div>
+      {/if}
       <h2 class="text-lg mb-2 font-bold">History:</h2>
       <Line class="mb-8" />
       {#if data.hours.entries.length > 0}
@@ -302,8 +359,7 @@
           </div>
         {/if}
         <div
-          class="flex items-center py-4 gap-4 w-full overflow-hidden {entry.total ==
-          0
+          class="flex items-center py-4 gap-4 w-full overflow-hidden {entry.total == 0 && entry.history[0].indicator.icon != "lock"
             ? 'opacity-50'
             : ''}"
         >
@@ -346,10 +402,17 @@
               {entry.history[entry.latest].reason ?? "No Reason Given"}
             </svelte:element>
           </div>
-          <span
-            class="bg-black whitespace-nowrap dark:bg-white bg-opacity-10 ml-1 text-center dark:bg-opacity-10 p-1 px-2 rounded-lg"
-            >{entry.total} hour{entry.total == 1 ? "" : "s"}</span
-          >
+          {#if entry.history[0].indicator.icon != "lock"}
+            <span
+              class="bg-black whitespace-nowrap dark:bg-white bg-opacity-10 ml-1 text-center dark:bg-opacity-10 p-1 px-2 rounded-lg"
+              >{entry.total} hour{entry.total == 1 ? "" : "s"}</span
+            >
+          {:else}
+              <span
+              class="bg-red-600 whitespace-nowrap dark:bg-red-600 text-white ml-1 text-center p-1 px-2 rounded-lg"
+              >Strike</span
+            >
+          {/if}
         </div>
       {:else}
         <p

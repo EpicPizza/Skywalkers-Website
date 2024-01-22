@@ -6,6 +6,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import { message, superValidate } from "sveltekit-superforms/server";
 import colors from "tailwindcss/colors.js";
 import { z } from "zod";
+import mail from '@sendgrid/mail';
+import { SENDGRID, SENDGRIDFROM, SENDGRIDNAME, SENDGRIDSTRIKE, SENDGRIDREPLYTO, DOMAIN } from "$env/static/private";
 
 const AddHours = z.object({
   reason: z
@@ -20,6 +22,14 @@ const AddHours = z.object({
       return number != 0;
     }, "Zero not allowed."),
 });
+
+const Strike = z.object({
+  reason: z
+    .string()
+    .min(1, { message: "A reason must be given."})
+    .max(100, { message: "Reason can not be more than 100 characters." }),
+});
+
 
 let addIndicator: Indicator = {
   color: colors.green["500"],
@@ -61,6 +71,8 @@ export async function load({ locals, params, url, depends }) {
 
   const form = await superValidate(AddHours);
 
+  const strike = await superValidate(Strike);
+
   type Hours = {
     deleted: boolean;
     entries: {
@@ -81,14 +93,14 @@ export async function load({ locals, params, url, depends }) {
 
   return {
     hours: data as Hours,
-    forms: { add: form },
+    forms: { add: form, strike: strike,  },
     id: params.slug,
     name: user?.displayName ?? "Deleted User",
   };
 }
 
 export const actions = {
-  default: async function ({ locals, request, params }) {
+  hours: async function ({ locals, request, params }) {
     if (locals.user == undefined) throw error(401, "Sign In Required");
     if (locals.firestoreUser == undefined || locals.team == undefined)
       throw redirect(307, "/verify");
@@ -134,6 +146,79 @@ export const actions = {
       }),
     });
 
-        return message(form, "Success");
-    }   
+    return message(form, "Success");
+  }, strike: async function ({ locals, request, params }) {
+    if (locals.user == undefined) throw error(401, "Sign In Required");
+    if (locals.firestoreUser == undefined || locals.team == undefined)
+      throw redirect(307, "/verify");
+
+    if(!locals.permissions.includes("KICK_MEMBERS")) throw error(400, "Unauthorized");
+
+    const form = await superValidate(request, Strike);
+
+    if (!form.valid) {
+      return fail(400, { form });
+    }
+
+    const db = firebaseAdmin.getFirestore();
+
+    const ref = db
+      .collection("teams")
+      .doc(locals.team)
+      .collection("hours")
+      .doc(params.slug);
+
+    const doc = await ref.get();
+
+    if (!doc.exists) throw error(400, "Hours not found.");
+
+    const data = doc.data() as Hours;
+
+    if (!data) throw error(400, "Hours not found.");
+
+    ref.update({
+      entries: FieldValue.arrayUnion({
+        total: 0,
+        id: crypto.randomUUID(),
+        latest: 0,
+        history: [
+          {
+            hours: 0,
+            reason: form.data.reason,
+            id: locals.user.uid,
+            link: null,
+            indicator: {
+              color: colors.red["500"],
+              icon: "lock",
+            },
+            date: new Date().valueOf(),
+          },
+        ],
+      }),
+    });
+
+    mail.setApiKey(SENDGRID);
+
+      const msg = {
+        from: {
+          email: SENDGRIDFROM,
+          name: SENDGRIDNAME,
+        },
+        templateId: SENDGRIDSTRIKE,
+        replyTo: SENDGRIDREPLYTO,
+        subject:
+          "Strike: " + form.data.reason,
+        to: (await firebaseAdmin.getAuth().getUser(params.slug)).email,
+        dynamicTemplateData: {
+          link: DOMAIN + "/t/" + locals.team + "/hours/" + params.slug,
+          subject:
+            "Strike: " + form.data.reason,
+          strike: form.data.reason,
+        },
+      }
+
+      mail.send(msg);
+
+    return message(form, "Success");
+  }   
 }
