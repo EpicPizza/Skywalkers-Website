@@ -27,6 +27,7 @@ import { createVerified } from "$lib/stores";
 import { navigating, page } from "$app/stores";
 import type { Role } from "$lib/Roles/role";
 import { browser } from "$app/environment";
+import { PUBLIC_FIREBASE } from "$env/static/public";
 
 interface Preload {
   photoURL: string | undefined;
@@ -88,15 +89,7 @@ export function firebaseClient() {
     if (!browser) return undefined as any;                    
 
         if (app == undefined) {
-          const firebaseConfig = {
-                             apiKey: "AIzaSyBmGeT2iQZM1K7opC1Rcsjg1MRXTckVLmE",
-                             authDomain: "skywalkers.alexest.net",
-                             projectId: "frc-skywalkers",
-                             storageBucket: "frc-skywalkers.appspot.com",
-                             messagingSenderId: "86129312478",
-                             appId: "1:86129312478:web:b06670457b876827e1784f",
-                             measurementId: "G-GMZX3PY5H6"
-                         }
+          const firebaseConfig = JSON.parse(PUBLIC_FIREBASE);
 
           app = initializeApp(firebaseConfig);
         }

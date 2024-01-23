@@ -4,8 +4,12 @@
   import { PUBLIC_DOMAIN } from "$env/static/public";
   import { fly } from "svelte/transition";
   import { cubicInOut } from "svelte/easing";
+    import { getContext } from "svelte";
+    import type { Writable } from "svelte/store";
 
   export let toPrint: string[];
+
+  let team = getContext('team') as Writable<string>;
 
   function printPDF() {
     html2pdf().from(page).save("skywalkers_battery_labels.pdf");
@@ -57,7 +61,7 @@
         <img
           alt="qrcode"
           class="h-[calc(100%-0.5rem)] m-1 float-left"
-          src="{PUBLIC_DOMAIN}/batteries/code/{code}"
+          src="{PUBLIC_DOMAIN}/t/{$team}/batteries/code/{code}"
         />
         <img
           alt="logo"

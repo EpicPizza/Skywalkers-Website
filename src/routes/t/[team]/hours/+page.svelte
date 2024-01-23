@@ -47,6 +47,10 @@
   <Page size="24rem" expand>
     <h1 class="text-2xl font-bold">Team Hours</h1>
     <Line class="my-4 mt-2"></Line>
+    <div class="rounded-lg p-4 bg-accent-500 mb-4 flex flex-col items-center">
+      <h2 class="text-black font-bold text-lg opacity-75 uppercase mb-1">Total</h2>
+      <p class="text-black text-3xl font-bold">{data.total} Hour{data.total == 1 ? "" : "s"}</p>
+    </div>
     <div class="flex flex-col gap-2">
       {#each data.hours as hours}
         <Member id={hours.member} let:member>

@@ -21,9 +21,13 @@ export async function load({ locals, params, url }) {
 
   const users = new Array<{ total: number; member: string }>();
 
+  let total = 0;
+
   for (let i = 0; i < docs.length; i++) {
     if (docs[i].data() != undefined && docs[i].data().deleted == false) {
       let hours = docs[i].data() as Hours;
+
+      total += hours.total;
 
       users.push({
         total: hours.total,
@@ -32,5 +36,5 @@ export async function load({ locals, params, url }) {
     }
   }
 
-  return { hours: users };
+  return { hours: users, total };
 }

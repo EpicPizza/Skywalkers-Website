@@ -1,11 +1,13 @@
+import { DOMAIN } from "$env/static/private";
 import { error, text } from "@sveltejs/kit";
 import qrcode from "qrcode-generator";
 import { z } from "zod";
 
 const Number = z.coerce.number();
 
-export async function GET({ params }) {
+export async function GET({ params, locals }) {
   let id = params.id;
+  let team = locals.unverifiedTeam;
 
   try {
     id = Number.parse(id).toString();
@@ -13,9 +15,11 @@ export async function GET({ params }) {
     throw error(404, "Invalid Code");
   }
 
+  if(team == null) throw error(404, "Invalid Code");
+
   let qr = await new Promise<string>((resolve) => {
     let qr = qrcode(0, "H");
-    qr.addData("https://skywalkers.alexest.net/batteries?id=" + id);
+    qr.addData(DOMAIN + "/t/" + locals.unverifiedTeam + "/batteries?id=" + id);
     qr.make();
     resolve(qr.createSvgTag());
   });

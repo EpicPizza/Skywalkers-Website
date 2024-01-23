@@ -182,10 +182,10 @@
         </div>
         <div class="flex flex-row-reverse gap-2">
             {#if $permissions.includes('EDIT_SYNOPSES')}
-                <a href="/t/{team}/synopsis/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
+                <a href="/t/{$team}/synopsis/{data.meeting.id}/edit" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=edit/><span>Edit</span></a>
             {/if}
             {#if $permissions.includes('MODERATE_SYNOPSES')}
-                <a href="/t/{team}/synopsis/{data.meeting.id}/reject" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=cancel/><span>Reject</span></a>
+                <a href="/t/{$team}/synopsis/{data.meeting.id}/reject" class="b-secondary lg:text-lg flex gap-1 items-center"><Icon scale=1.25rem icon=cancel/><span>Reject</span></a>
             {/if}
         </div>
     </div>

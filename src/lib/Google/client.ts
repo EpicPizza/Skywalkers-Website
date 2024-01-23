@@ -1,5 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
-import keys from "../../../client_secret.json";
+import keys from "../../../client_secret_dev.json";
 import { firebaseAdmin } from "$lib/Firebase/firebase.server";
 import { calendar_v3, google } from "googleapis";
 import { sendDM } from "$lib/Discord/discord.server";

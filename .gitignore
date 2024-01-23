@@ -17,3 +17,6 @@ client_secret_dev.json
 firebase-debug.log
 client_secret_dev.json
 client_secret_prod.json
+csp.json
+csp_dev.json
+csp_prod.json
