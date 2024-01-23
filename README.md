@@ -1,38 +1,24 @@
-# create-svelte
+# Skywalkers' Team Website
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+This website was made using mainly Sveltekit and Firebase. 
 
-## Creating a project
+## About Integrations
 
-If you're seeing this, you've probably already done this step. Congrats!
+Discord bot integration runs seperately and is hosted on a seperate server, this serve then sends request to the Discord bot for anything it needs. Other integrations (Google Calendar, Notion, SMS, etc) are done here.
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+## Commands
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+All commands are run from the root of the project, from a terminal:
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+| Command                   | Action                                                 |
+| :------------------------ | :------------------------------------------------------|
+| `npm install`             | Installs dependencies                                  |
+| `npm run dev`             | Starts local dev server at `localhost:5173`            |
+| `npm run build`           | Build the production site to `./build/`                |
+| `npm run replace`         | Fixes predictable build errors.                        |
+| `npm run preview`         | Preview the build locally, before deploying            |
+| `npm run deploy`          | Deploy the website to firebase.                        |
+| `npm run serve`           | Combination of build, deploy, and replace commands.    |
+| `npm run check`           | Runs svelte debugger                                   |
+| `npm run config-dev`      | Sets config for developement, included in npm run dev  |
+| `npm run config-prod`     | Sets config for production, included in npm run prod   |
